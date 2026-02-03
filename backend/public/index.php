@@ -19,6 +19,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+$path = parse_url($requestUri, PHP_URL_PATH);
+$path = is_string($path) ? $path : '/';
+
+$scriptName = (string)($_SERVER['SCRIPT_NAME'] ?? '');
+$scriptDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+if ($scriptDir !== '' && str_starts_with($path, $scriptDir)) {
+    $path = substr($path, strlen($scriptDir));
+    if ($path === false || $path === '') {
+        $path = '/';
+    }
+}
+
+if (str_starts_with($path, '/index.php')) {
+    $path = substr($path, strlen('/index.php'));
+    if ($path === false || $path === '') {
+        $path = '/';
+    }
+}
+
+if (str_starts_with($path, '/api')) {
+    require __DIR__ . '/../routes/api.php';
+    exit;
+}
+
 // Response mặc định
 $response = [
     'status' => 'success',
