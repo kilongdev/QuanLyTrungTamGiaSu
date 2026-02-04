@@ -1,32 +1,17 @@
 <?php
-/**
- * Email Service
- * Gửi email sử dụng PHPMailer
- * 
- * Cài đặt PHPMailer: composer require phpmailer/phpmailer
- */
-
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
 class EmailService
 {
-    // Cấu hình SMTP - NÊN đặt trong file .env
     private static $smtpHost = 'smtp.gmail.com';
     private static $smtpPort = 587;
-    private static $smtpUsername = 'your-email@gmail.com'; // Email của bạn
-    private static $smtpPassword = 'your-app-password';     // App Password (không phải mật khẩu Gmail)
-    private static $fromEmail = 'your-email@gmail.com';
+    private static $smtpUsername = 'n.kimlong205@gmail.com';
+    private static $smtpPassword = 'xtsr aaox xbmc xias';
+    private static $fromEmail = 'n.kimlong205@gmail.com';
     private static $fromName = 'Trung Tâm Gia Sư';
 
-    /**
-     * Gửi email OTP
-     * @param string $toEmail Email người nhận
-     * @param string $otp Mã OTP
-     * @param string $type Loại OTP
-     * @return bool
-     */
     public static function sendOTP(string $toEmail, string $otp, string $type = 'register'): bool
     {
         $subject = self::getSubject($type);
@@ -35,12 +20,8 @@ class EmailService
         return self::send($toEmail, $subject, $body);
     }
 
-    /**
-     * Gửi email
-     */
     public static function send(string $to, string $subject, string $body): bool
     {
-        // Kiểm tra PHPMailer đã cài đặt chưa
         $autoloadPath = __DIR__ . '/../../vendor/autoload.php';
         if (!file_exists($autoloadPath)) {
             error_log("PHPMailer chưa được cài đặt. Chạy: composer require phpmailer/phpmailer");
@@ -52,7 +33,6 @@ class EmailService
         $mail = new PHPMailer(true);
 
         try {
-            // Cấu hình SMTP
             $mail->isSMTP();
             $mail->Host = self::$smtpHost;
             $mail->SMTPAuth = true;
@@ -62,11 +42,9 @@ class EmailService
             $mail->Port = self::$smtpPort;
             $mail->CharSet = 'UTF-8';
 
-            // Người gửi & người nhận
             $mail->setFrom(self::$fromEmail, self::$fromName);
             $mail->addAddress($to);
 
-            // Nội dung
             $mail->isHTML(true);
             $mail->Subject = $subject;
             $mail->Body = $body;
@@ -80,9 +58,6 @@ class EmailService
         }
     }
 
-    /**
-     * Lấy tiêu đề email theo loại OTP
-     */
     private static function getSubject(string $type): string
     {
         switch ($type) {
@@ -97,9 +72,6 @@ class EmailService
         }
     }
 
-    /**
-     * Template email OTP
-     */
     private static function getOTPTemplate(string $otp, string $type): string
     {
         $typeText = match($type) {

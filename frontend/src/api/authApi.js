@@ -113,28 +113,16 @@ export const authAPI = {
  * OTP API - Gửi và xác minh OTP qua Email
  */
 export const otpAPI = {
-    /**
-     * Gửi OTP qua Email
-     * @param {string} email 
-     * @param {string} phone 
-     * @param {string} type - 'register' | 'login' | 'reset_password'
-     */
-    send: (email, phone, type = 'register') =>
+    send: (email) =>
         request('/otp/send', {
             method: 'POST',
-            body: JSON.stringify({ email, phone, type }),
+            body: JSON.stringify({ email }),
         }),
 
-    /**
-     * Xác minh OTP
-     * @param {string} phone 
-     * @param {string} otp 
-     * @param {string} type 
-     */
-    verify: (phone, otp, type = 'register') =>
+    verify: (token, otp) =>
         request('/otp/verify', {
             method: 'POST',
-            body: JSON.stringify({ phone, otp, type }),
+            body: JSON.stringify({ token, otp }),
         }),
 };
 

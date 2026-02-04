@@ -1,14 +1,6 @@
 <?php
-/**
- * Model Học Sinh
- * Xử lý các truy vấn database liên quan đến học sinh
- */
-
 class HocSinh
 {
-    /**
-     * Lấy danh sách học sinh với phân trang và tìm kiếm
-     */
     public static function getAll(string $search = '', int $limit = 10, int $offset = 0): array
     {
         $where = "WHERE 1=1";
@@ -44,9 +36,6 @@ class HocSinh
         ];
     }
 
-    /**
-     * Tìm học sinh theo ID
-     */
     public static function findById(string $id): ?array
     {
         return Database::queryOne(
@@ -58,9 +47,6 @@ class HocSinh
         );
     }
 
-    /**
-     * Lấy lớp học của học sinh
-     */
     public static function getLopHoc(string $hocSinhId): array
     {
         return Database::query(
@@ -73,9 +59,6 @@ class HocSinh
         );
     }
 
-    /**
-     * Lấy học sinh theo phụ huynh ID
-     */
     public static function getByPhuHuynhId(string $phuHuynhId): array
     {
         return Database::query(
@@ -84,9 +67,6 @@ class HocSinh
         );
     }
 
-    /**
-     * Tạo học sinh mới
-     */
     public static function create(array $data): int
     {
         Database::execute(
@@ -103,9 +83,6 @@ class HocSinh
         return Database::lastInsertId();
     }
 
-    /**
-     * Cập nhật học sinh
-     */
     public static function update(string $id, array $data): bool
     {
         $allowedFields = ['ho_ten', 'ngay_sinh', 'khoi_lop'];
@@ -130,9 +107,6 @@ class HocSinh
         return true;
     }
 
-    /**
-     * Xóa học sinh
-     */
     public static function delete(string $id): int
     {
         return Database::execute("DELETE FROM hoc_sinh WHERE hoc_sinh_id = ?", [$id]);

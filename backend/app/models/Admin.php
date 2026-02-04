@@ -1,14 +1,6 @@
 <?php
-/**
- * Model Admin
- * Xử lý các truy vấn database liên quan đến admin
- */
-
 class Admin
 {
-    /**
-     * Tìm admin theo số điện thoại
-     */
     public static function findByPhone(string $phone): ?array
     {
         return Database::queryOne(
@@ -19,9 +11,6 @@ class Admin
         );
     }
 
-    /**
-     * Tìm admin theo email
-     */
     public static function findByEmail(string $email): ?array
     {
         return Database::queryOne(
@@ -30,9 +19,6 @@ class Admin
         );
     }
 
-    /**
-     * Tìm admin theo email để đăng nhập (trả về đầy đủ thông tin)
-     */
     public static function findByEmailForLogin(string $email): ?array
     {
         return Database::queryOne(
@@ -43,9 +29,6 @@ class Admin
         );
     }
 
-    /**
-     * Lấy thông tin chi tiết admin
-     */
     public static function getDetails(int $userId): ?array
     {
         return Database::queryOne(

@@ -1,14 +1,6 @@
 <?php
-/**
- * Model Gia Sư
- * Xử lý các truy vấn database liên quan đến gia sư
- */
-
 class GiaSu
 {
-    /**
-     * Lấy danh sách gia sư với phân trang và tìm kiếm
-     */
     public static function getAll(string $search = '', string $trangThai = '', int $limit = 10, int $offset = 0): array
     {
         $where = "WHERE 1=1";
@@ -46,9 +38,6 @@ class GiaSu
         ];
     }
 
-    /**
-     * Tìm gia sư theo ID
-     */
     public static function findById(string $id): ?array
     {
         $giaSu = Database::queryOne(
@@ -63,9 +52,6 @@ class GiaSu
         return $giaSu;
     }
 
-    /**
-     * Tìm gia sư theo email
-     */
     public static function findByEmail(string $email): ?array
     {
         return Database::queryOne(
@@ -74,9 +60,6 @@ class GiaSu
         );
     }
 
-    /**
-     * Tìm gia sư theo email để đăng nhập (trả về đầy đủ thông tin)
-     */
     public static function findByEmailForLogin(string $email): ?array
     {
         return Database::queryOne(
@@ -87,9 +70,6 @@ class GiaSu
         );
     }
 
-    /**
-     * Tìm gia sư theo số điện thoại
-     */
     public static function findByPhone(string $phone): ?array
     {
         return Database::queryOne(
@@ -100,9 +80,6 @@ class GiaSu
         );
     }
 
-    /**
-     * Lấy môn học của gia sư
-     */
     public static function getMonHoc(string $giaSuId): array
     {
         return Database::query(
@@ -113,9 +90,6 @@ class GiaSu
         );
     }
 
-    /**
-     * Lấy lớp đang dạy của gia sư
-     */
     public static function getLopHoc(string $giaSuId): array
     {
         return Database::query(
@@ -124,9 +98,6 @@ class GiaSu
         );
     }
 
-    /**
-     * Tạo gia sư mới
-     */
     public static function create(array $data): int
     {
         $hashedPassword = password_hash($data['mat_khau'], PASSWORD_DEFAULT);
@@ -147,9 +118,6 @@ class GiaSu
         return Database::lastInsertId();
     }
 
-    /**
-     * Cập nhật gia sư
-     */
     public static function update(string $id, array $data): bool
     {
         $allowedFields = ['ho_ten', 'so_dien_thoai', 'dia_chi', 'bang_cap', 'kinh_nghiem', 'gioi_thieu'];
@@ -174,17 +142,11 @@ class GiaSu
         return true;
     }
 
-    /**
-     * Xóa gia sư
-     */
     public static function delete(string $id): int
     {
         return Database::execute("DELETE FROM gia_su WHERE gia_su_id = ?", [$id]);
     }
 
-    /**
-     * Cập nhật trạng thái gia sư (duyệt)
-     */
     public static function updateStatus(string $id, string $trangThai): void
     {
         Database::execute(
@@ -193,9 +155,6 @@ class GiaSu
         );
     }
 
-    /**
-     * Lấy thông tin chi tiết gia sư (cho Auth)
-     */
     public static function getDetails(int $userId): ?array
     {
         return Database::queryOne(

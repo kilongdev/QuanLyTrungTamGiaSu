@@ -1,18 +1,9 @@
 <?php
-/**
- * Phụ Huynh Controller
- * Xử lý các request liên quan đến phụ huynh
- */
-
 require_once __DIR__ . '/../models/PhuHuynh.php';
 require_once __DIR__ . '/../models/HocSinh.php';
 
 class PhuHuynhController
 {
-    /**
-     * Danh sách phụ huynh
-     * GET /phu-huynh
-     */
     public static function index(): void
     {
         $page = (int)($_GET['page'] ?? 1);
@@ -34,10 +25,6 @@ class PhuHuynhController
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * Chi tiết phụ huynh
-     * GET /phu-huynh/{id}
-     */
     public static function show(string $id): void
     {
         $phuHuynh = PhuHuynh::findById($id);
@@ -59,10 +46,6 @@ class PhuHuynhController
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * Tạo phụ huynh mới
-     * POST /phu-huynh
-     */
     public static function store(): void
     {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -95,10 +78,6 @@ class PhuHuynhController
         }
     }
 
-    /**
-     * Cập nhật phụ huynh
-     * PUT /phu-huynh/{id}
-     */
     public static function update(string $id): void
     {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -129,10 +108,6 @@ class PhuHuynhController
         }
     }
 
-    /**
-     * Xóa phụ huynh
-     * DELETE /phu-huynh/{id}
-     */
     public static function destroy(string $id): void
     {
         try {

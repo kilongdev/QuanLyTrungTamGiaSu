@@ -1,14 +1,6 @@
 <?php
-/**
- * Model Phụ Huynh
- * Xử lý các truy vấn database liên quan đến phụ huynh
- */
-
 class PhuHuynh
 {
-    /**
-     * Lấy danh sách phụ huynh với phân trang và tìm kiếm
-     */
     public static function getAll(string $search = '', int $limit = 10, int $offset = 0): array
     {
         $where = "WHERE 1=1";
@@ -41,9 +33,6 @@ class PhuHuynh
         ];
     }
 
-    /**
-     * Tìm phụ huynh theo ID
-     */
     public static function findById(string $id): ?array
     {
         return Database::queryOne(
@@ -53,9 +42,6 @@ class PhuHuynh
         );
     }
 
-    /**
-     * Tìm phụ huynh theo email
-     */
     public static function findByEmail(string $email): ?array
     {
         return Database::queryOne(
@@ -64,9 +50,6 @@ class PhuHuynh
         );
     }
 
-    /**
-     * Tìm phụ huynh theo email để đăng nhập (trả về đầy đủ thông tin)
-     */
     public static function findByEmailForLogin(string $email): ?array
     {
         return Database::queryOne(
@@ -77,9 +60,6 @@ class PhuHuynh
         );
     }
 
-    /**
-     * Tìm phụ huynh theo số điện thoại
-     */
     public static function findByPhone(string $phone): ?array
     {
         return Database::queryOne(
@@ -90,9 +70,6 @@ class PhuHuynh
         );
     }
 
-    /**
-     * Tạo phụ huynh mới
-     */
     public static function create(array $data): int
     {
         $hashedPassword = password_hash($data['mat_khau'], PASSWORD_DEFAULT);
@@ -112,9 +89,6 @@ class PhuHuynh
         return Database::lastInsertId();
     }
 
-    /**
-     * Cập nhật phụ huynh
-     */
     public static function update(string $id, array $data): bool
     {
         $allowedFields = ['ho_ten', 'so_dien_thoai', 'dia_chi'];
@@ -139,17 +113,11 @@ class PhuHuynh
         return true;
     }
 
-    /**
-     * Xóa phụ huynh
-     */
     public static function delete(string $id): int
     {
         return Database::execute("DELETE FROM phu_huynh WHERE phu_huynh_id = ?", [$id]);
     }
 
-    /**
-     * Lấy thông tin chi tiết phụ huynh (cho Auth)
-     */
     public static function getDetails(int $userId): ?array
     {
         $parent = Database::queryOne(

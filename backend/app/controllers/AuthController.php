@@ -1,9 +1,4 @@
 <?php
-/**
- * Auth Controller
- * Xử lý đăng nhập, đăng ký cho Admin, Gia Sư, Phụ Huynh
- */
-
 require_once __DIR__ . '/../core/JWT.php';
 require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../models/Admin.php';
@@ -13,21 +8,14 @@ require_once __DIR__ . '/../models/HocSinh.php';
 
 class AuthController
 {
-    /**
-     * Đăng nhập
-     * POST /auth/login
-     * Body: { email/phone, password }
-     */
     public static function login(): void
     {
         $input = json_decode(file_get_contents('php://input'), true);
 
-        // Hỗ trợ cả email và phone
         $email = trim($input['email'] ?? '');
         $phone = trim($input['phone'] ?? '');
         $password = $input['password'] ?? '';
 
-        // Validate - cần ít nhất email hoặc phone
         if ((empty($email) && empty($phone)) || empty($password)) {
             http_response_code(400);
             echo json_encode([
@@ -37,7 +25,6 @@ class AuthController
             return;
         }
 
-        // Tìm user trong database (ưu tiên email, nếu không có thì tìm theo phone)
         $user = null;
         if (!empty($email)) {
             $user = self::findUserByEmailForLogin($email);
@@ -55,7 +42,6 @@ class AuthController
             return;
         }
 
-        // Kiểm tra mật khẩu (hỗ trợ cả password cũ chưa hash)
         $passwordValid = password_verify($password, $user['password']) || $password === $user['password'];
         
         if (!$passwordValid) {
@@ -67,7 +53,6 @@ class AuthController
             return;
         }
 
-        // Tạo JWT Token
         $token = JWT::encode([
             'user_id' => $user['id'],
             'email' => $user['email'],
@@ -90,12 +75,6 @@ class AuthController
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * Đăng ký
-     * POST /auth/register
-     * Body: { name, email, phone, password, role, student? }
-     * role: 'phu_huynh' | 'gia_su'
-     */
     public static function register(): void
     {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -107,7 +86,6 @@ class AuthController
         $role = $input['role'] ?? 'phu_huynh';
         $student = $input['student'] ?? null;
 
-        // Validate
         if (empty($name) || empty($email) || empty($password)) {
             http_response_code(400);
             echo json_encode([
@@ -117,7 +95,6 @@ class AuthController
             return;
         }
 
-        // Kiểm tra email đã tồn tại
         if (self::findUserByEmail($email)) {
             http_response_code(400);
             echo json_encode([
@@ -133,7 +110,6 @@ class AuthController
             $newUser = null;
 
             if ($role === 'phu_huynh') {
-                // Đăng ký Phụ huynh sử dụng Model
                 $phuHuynhId = PhuHuynh::create([
                     'ho_ten' => $name,
                     'so_dien_thoai' => $phone,
@@ -141,7 +117,6 @@ class AuthController
                     'mat_khau' => $password
                 ]);
 
-                // Tạo học sinh nếu có thông tin
                 if ($student && !empty($student['name'])) {
                     HocSinh::create([
                         'phu_huynh_id' => $phuHuynhId,
@@ -159,7 +134,6 @@ class AuthController
                 ];
 
             } elseif ($role === 'gia_su') {
-                // Đăng ký Gia sư sử dụng Model
                 $giaSuId = GiaSu::create([
                     'ho_ten' => $name,
                     'email' => $email,
@@ -177,7 +151,6 @@ class AuthController
 
             Database::commit();
 
-            // Tạo JWT Token
             $token = JWT::encode([
                 'user_id' => $newUser['id'],
                 'email' => $newUser['email'],
@@ -205,11 +178,6 @@ class AuthController
         }
     }
 
-    /**
-     * Lấy thông tin user hiện tại
-     * GET /auth/me
-     * Header: Authorization: Bearer <token>
-     */
     public static function me(): void
     {
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
@@ -220,7 +188,6 @@ class AuthController
             return;
         }
 
-        // Lấy thêm thông tin chi tiết từ DB
         $details = self::getUserDetails($user['user_id'], $user['role']);
 
         echo json_encode([
@@ -235,11 +202,6 @@ class AuthController
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * Refresh Token
-     * POST /auth/refresh
-     * Header: Authorization: Bearer <token>
-     */
     public static function refresh(): void
     {
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
@@ -250,7 +212,6 @@ class AuthController
             return;
         }
 
-        // Tạo token mới
         $newToken = JWT::encode([
             'user_id' => $user['user_id'],
             'email' => $user['email'],
@@ -267,63 +228,42 @@ class AuthController
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * Logout
-     * POST /auth/logout
-     */
     public static function logout(): void
     {
-        // JWT stateless nên chỉ cần client xóa token
         echo json_encode([
             'status' => 'success',
             'message' => 'Đăng xuất thành công'
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * Tìm user theo số điện thoại từ database
-     * Tìm trong các bảng: admin, gia_su, phu_huynh
-     */
     private static function findUserByPhone(string $phone): ?array
     {
-        // Tìm trong bảng admin
         $admin = Admin::findByPhone($phone);
         if ($admin) return $admin;
 
-        // Tìm trong bảng gia_su
         $tutor = GiaSu::findByPhone($phone);
         if ($tutor) return $tutor;
 
-        // Tìm trong bảng phu_huynh
         $parent = PhuHuynh::findByPhone($phone);
         if ($parent) return $parent;
 
         return null;
     }
 
-    /**
-     * Tìm user theo email để đăng nhập (trả về đầy đủ thông tin bao gồm password)
-     */
     private static function findUserByEmailForLogin(string $email): ?array
     {
-        // Tìm trong bảng admin
         $admin = Admin::findByEmailForLogin($email);
         if ($admin) return $admin;
 
-        // Tìm trong bảng gia_su
         $tutor = GiaSu::findByEmailForLogin($email);
         if ($tutor) return $tutor;
 
-        // Tìm trong bảng phu_huynh
         $parent = PhuHuynh::findByEmailForLogin($email);
         if ($parent) return $parent;
 
         return null;
     }
 
-    /**
-     * Tìm user theo email (cho kiểm tra đăng ký)
-     */
     private static function findUserByEmail(string $email): ?array
     {
         $admin = Admin::findByEmail($email);
@@ -338,9 +278,6 @@ class AuthController
         return null;
     }
 
-    /**
-     * Lấy thông tin chi tiết user
-     */
     private static function getUserDetails(int $userId, string $role): ?array
     {
         switch ($role) {

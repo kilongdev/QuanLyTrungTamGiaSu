@@ -1,17 +1,8 @@
 <?php
-/**
- * Gia Sư Controller
- * Xử lý các request liên quan đến gia sư
- */
-
 require_once __DIR__ . '/../models/GiaSu.php';
 
 class GiaSuController
 {
-    /**
-     * Danh sách gia sư
-     * GET /gia-su
-     */
     public static function index(): void
     {
         $page = (int)($_GET['page'] ?? 1);
@@ -34,10 +25,6 @@ class GiaSuController
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * Chi tiết gia sư
-     * GET /gia-su/{id}
-     */
     public static function show(string $id): void
     {
         $giaSu = GiaSu::findById($id);
@@ -60,10 +47,6 @@ class GiaSuController
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * Tạo gia sư mới
-     * POST /gia-su
-     */
     public static function store(): void
     {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -96,10 +79,6 @@ class GiaSuController
         }
     }
 
-    /**
-     * Cập nhật gia sư
-     * PUT /gia-su/{id}
-     */
     public static function update(string $id): void
     {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -130,10 +109,6 @@ class GiaSuController
         }
     }
 
-    /**
-     * Xóa gia sư
-     * DELETE /gia-su/{id}
-     */
     public static function destroy(string $id): void
     {
         try {
@@ -162,10 +137,6 @@ class GiaSuController
         }
     }
 
-    /**
-     * Duyệt gia sư
-     * PUT /gia-su/{id}/duyet
-     */
     public static function approve(string $id): void
     {
         $input = json_decode(file_get_contents('php://input'), true);

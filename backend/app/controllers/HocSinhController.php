@@ -1,17 +1,8 @@
 <?php
-/**
- * Học Sinh Controller
- * Xử lý các request liên quan đến học sinh
- */
-
 require_once __DIR__ . '/../models/HocSinh.php';
 
 class HocSinhController
 {
-    /**
-     * Danh sách học sinh
-     * GET /hoc-sinh
-     */
     public static function index(): void
     {
         $page = (int)($_GET['page'] ?? 1);
@@ -33,10 +24,6 @@ class HocSinhController
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * Chi tiết học sinh
-     * GET /hoc-sinh/{id}
-     */
     public static function show(string $id): void
     {
         $hocSinh = HocSinh::findById($id);
@@ -58,10 +45,6 @@ class HocSinhController
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * Tạo học sinh mới
-     * POST /hoc-sinh
-     */
     public static function store(): void
     {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -94,10 +77,6 @@ class HocSinhController
         }
     }
 
-    /**
-     * Cập nhật học sinh
-     * PUT /hoc-sinh/{id}
-     */
     public static function update(string $id): void
     {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -128,10 +107,6 @@ class HocSinhController
         }
     }
 
-    /**
-     * Xóa học sinh
-     * DELETE /hoc-sinh/{id}
-     */
     public static function destroy(string $id): void
     {
         try {
@@ -160,10 +135,6 @@ class HocSinhController
         }
     }
 
-    /**
-     * Lấy học sinh của phụ huynh
-     * GET /phu-huynh/{id}/hoc-sinh
-     */
     public static function getByPhuHuynh(string $id): void
     {
         $hocSinh = HocSinh::getByPhuHuynhId($id);
