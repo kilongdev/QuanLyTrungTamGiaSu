@@ -32,7 +32,7 @@ const ContactForm = () => {
     }
   };
   return (
-    <section className="relative w-full p-3 bg-gradient-to-br from-[#275192] to-[#9cacd5]">
+    <section className="relative w-full p-3 bg-gradient-to-br from-[#275192] to-[#9cacd5] z-20">
       <div className="relative py-5 grid items-center gap-4 lg:gap-10 xl:gap-[62px] md:grid-cols-1 lg:grid-cols-2 justify-self-center px-5 md:px-0 z-10 ">
         <div className="relative flex justify-center">
           <div className="relative w-full max-w-[430px]">

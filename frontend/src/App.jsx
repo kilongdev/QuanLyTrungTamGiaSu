@@ -7,6 +7,7 @@ import FeesPage from "./pages/FeesPage";
 import ContactPage from "./pages/ContactPage";
 import AvailableClassPage from "./pages/AvailableClassPage";
 import { Toaster } from "sonner";
+import RegisterforATrialClass from "./pages/RegisterforATrialClass";
 
 function App() {
   return (
@@ -21,6 +22,10 @@ function App() {
             <Route path="/hoc-phi-gia-su" element={<FeesPage />} />
             <Route path="/lien-he" element={<ContactPage />} />
             <Route path="/lop-hien-co" element={<AvailableClassPage />} />
+            <Route
+              path="/dang-ky-hoc-thu"
+              element={<RegisterforATrialClass />}
+            />
           </Route>
         </Routes>
       </BrowserRouter>

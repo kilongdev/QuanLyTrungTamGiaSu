@@ -75,6 +75,13 @@ button {
 p {
   margin: 0;
 }
+/* td {
+  border: 1px solid gray;
+  padding: 12px;
+} */
+tr:hover {
+  background-color: #f2d5d5;
+}
 /* 
 button:focus,
 button:focus-visible {
