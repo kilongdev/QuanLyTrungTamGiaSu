@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /backend/public/
+
+    # Bỏ qua các file và thư mục tồn tại
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Chuyển hướng tất cả request đến index.php
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
