@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import DashboardLayout from '../components/layout/DashboardLayout'
+import DashboardLayout from '../Layouts/DashboardLayout'
 
 export default function PhuHuynhDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('dashboard')

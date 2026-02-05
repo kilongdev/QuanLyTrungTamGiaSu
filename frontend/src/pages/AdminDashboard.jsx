@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import DashboardLayout from '../components/layout/DashboardLayout'
+import DashboardLayout from '../Layouts/DashboardLayout'
 
 export default function AdminDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('dashboard')
@@ -65,11 +65,11 @@ export default function AdminDashboard({ user, onLogout }) {
 // Dashboard Overview Content
 function DashboardContent() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
-          icon="👨‍🏫" 
+          icon="📊" 
           iconBg="bg-blue-100" 
           value="150" 
           label="Gia sư" 
@@ -103,25 +103,25 @@ function DashboardContent() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h3 className="font-bold text-gray-800 mb-4">📈 Thống kê đăng ký</h3>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
-            <p className="text-gray-400">Biểu đồ thống kê</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <h3 className="font-bold text-gray-800 text-sm mb-3">📈 Thống kê đăng ký</h3>
+          <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg">
+            <p className="text-gray-400 text-sm">Biểu đồ thống kê</p>
           </div>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h3 className="font-bold text-gray-800 mb-4">📊 Doanh thu theo tháng</h3>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
-            <p className="text-gray-400">Biểu đồ doanh thu</p>
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <h3 className="font-bold text-gray-800 text-sm mb-3">📊 Doanh thu theo tháng</h3>
+          <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg">
+            <p className="text-gray-400 text-sm">Biểu đồ doanh thu</p>
           </div>
         </div>
       </div>
 
       {/* Recent Activities */}
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h3 className="font-bold text-gray-800 mb-4">🕒 Hoạt động gần đây</h3>
-        <div className="space-y-4">
+      <div className="bg-white rounded-xl shadow-sm p-4">
+        <h3 className="font-bold text-gray-800 text-sm mb-3">🕒 Hoạt động gần đây</h3>
+        <div className="space-y-2">
           <ActivityItem 
             avatar="T"
             title="Nguyễn Văn Tuấn đã đăng ký làm gia sư"
@@ -149,17 +149,17 @@ function DashboardContent() {
 // Stat Card Component
 function StatCard({ icon, iconBg, value, label, trend, trendUp }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-6">
+    <div className="bg-white rounded-xl shadow-sm p-4">
       <div className="flex items-center justify-between">
-        <div className={`w-12 h-12 ${iconBg} rounded-xl flex items-center justify-center text-2xl`}>
+        <div className={`w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center text-lg`}>
           {icon}
         </div>
-        <span className={`text-sm font-medium ${trendUp ? 'text-green-500' : 'text-red-500'}`}>
+        <span className={`text-xs font-medium ${trendUp ? 'text-green-500' : 'text-red-500'}`}>
           {trend}
         </span>
       </div>
-      <p className="text-2xl font-bold text-gray-800 mt-4">{value}</p>
-      <p className="text-gray-500 text-sm">{label}</p>
+      <p className="text-xl font-bold text-gray-800 mt-3">{value}</p>
+      <p className="text-gray-500 text-xs">{label}</p>
     </div>
   )
 }
@@ -173,13 +173,13 @@ function ActivityItem({ avatar, title, time, type }) {
   }
 
   return (
-    <div className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-xl transition-colors">
-      <div className={`w-10 h-10 ${bgColors[type] || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold`}>
+    <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+      <div className={`w-8 h-8 ${bgColors[type] || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-xs`}>
         {avatar}
       </div>
       <div className="flex-1">
-        <p className="text-gray-800">{title}</p>
-        <p className="text-gray-400 text-sm">{time}</p>
+        <p className="text-gray-800 text-sm">{title}</p>
+        <p className="text-gray-400 text-xs">{time}</p>
       </div>
     </div>
   )
@@ -188,13 +188,13 @@ function ActivityItem({ avatar, title, time, type }) {
 // Placeholder Content Component
 function PlaceholderContent({ title, description }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-      <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-        <span className="text-4xl">🚧</span>
+    <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+        <span className="text-3xl">🚧</span>
       </div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
-      <p className="text-gray-500 mb-6">{description}</p>
-      <p className="text-gray-400 text-sm">Tính năng đang được phát triển...</p>
+      <h2 className="text-lg font-bold text-gray-800 mb-2">{title}</h2>
+      <p className="text-gray-500 text-sm mb-4">{description}</p>
+      <p className="text-gray-400 text-xs">Tính năng đang được phát triển...</p>
     </div>
   )
 }

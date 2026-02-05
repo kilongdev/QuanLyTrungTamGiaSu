@@ -179,32 +179,32 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-4xl p-8">
+      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         {onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-red-100 text-red-500 hover:bg-red-200 text-xl font-bold transition"
+            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xl transition"
           >
-            ✕
+            ×
           </button>
         )}
 
         {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-gray-900">
             {step === 1 ? 'Đăng ký tài khoản' : 'Xác thực Email'}
           </h2>
-          <p className="text-gray-500 mt-1">
+          <p className="text-gray-500 text-sm mt-1">
             {step === 1 ? 'Tạo tài khoản để sử dụng dịch vụ' : `Nhập mã OTP đã gửi đến ${formData.email}`}
           </p>
         </div>
 
         {step === 2 ? (
           /* OTP Form */
-          <form onSubmit={handleSubmit} className="space-y-5 max-w-md mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
             <div>
-              <label className="block text-gray-700 font-medium mb-2">Mã OTP</label>
+              <label className="block text-gray-700 text-sm font-medium mb-1.5">Mã OTP</label>
               <input
                 type="text"
                 value={otp}
@@ -213,36 +213,36 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
                   setError('')
                 }}
                 placeholder="Nhập mã 6 số"
-                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-center text-2xl tracking-[0.5em] font-mono focus:border-blue-500 focus:ring-0 outline-none"
+                className="w-full px-3 py-3 border-2 border-gray-200 rounded-lg text-center text-xl tracking-[0.5em] font-mono focus:border-red-500 focus:ring-0 outline-none text-gray-900 bg-white"
                 maxLength={6}
                 autoFocus
               />
             </div>
 
-            <div className="text-center">
+            <div className="text-center text-sm">
               {countdown > 0 ? (
-                <span className="text-gray-500">Gửi lại sau <span className="text-blue-600 font-semibold">{countdown}s</span></span>
+                <span className="text-gray-500">Gửi lại sau <span className="text-red-600 font-semibold">{countdown}s</span></span>
               ) : (
-                <button type="button" onClick={handleResendOtp} disabled={sendingOtp} className="text-blue-600 hover:underline font-medium">
+                <button type="button" onClick={handleResendOtp} disabled={sendingOtp} className="text-red-600 hover:underline font-medium">
                   {sendingOtp ? 'Đang gửi...' : 'Gửi lại mã OTP'}
                 </button>
               )}
             </div>
 
-            {error && <p className="text-red-500 text-center">{error}</p>}
+            {error && <p className="text-red-500 text-center text-sm">{error}</p>}
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-1">
               <button
                 type="button"
                 onClick={() => { setStep(1); setOtp(''); setError('') }}
-                className="flex-1 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition"
+                className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition text-sm"
               >
                 Quay lại
               </button>
               <button
                 type="submit"
                 disabled={loading || otp.length !== 6}
-                className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition"
+                className="flex-1 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition text-sm"
               >
                 {loading ? 'Đang xử lý...' : 'Xác nhận'}
               </button>
@@ -251,21 +251,21 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
         ) : (
           /* Register Form - Horizontal Layout */
           <form onSubmit={handleSubmit}>
-            <div className="flex gap-8">
+            <div className="flex gap-6">
               {/* Left Column - Account Info */}
-              <div className="flex-1 space-y-4">
-                <h3 className="font-semibold text-gray-700 text-lg border-b pb-2">Thông tin tài khoản</h3>
+              <div className="flex-1 space-y-3">
+                <h3 className="font-semibold text-gray-800 text-sm border-b pb-2">Thông tin tài khoản</h3>
                 
                 {/* Role Selection */}
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2">Bạn là</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <label className="block text-gray-700 text-sm font-medium mb-1.5">Bạn là</label>
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, role: 'phu_huynh' })}
-                      className={`py-3 px-4 rounded-xl font-medium border-2 transition ${
+                      className={`py-2 px-3 rounded-lg text-sm font-medium border transition ${
                         formData.role === 'phu_huynh'
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          ? 'border-red-500 bg-red-50 text-red-700'
                           : 'border-gray-200 text-gray-600 hover:border-gray-300'
                       }`}
                     >
@@ -274,9 +274,9 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, role: 'gia_su' })}
-                      className={`py-3 px-4 rounded-xl font-medium border-2 transition ${
+                      className={`py-2 px-3 rounded-lg text-sm font-medium border transition ${
                         formData.role === 'gia_su'
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          ? 'border-red-500 bg-red-50 text-red-700'
                           : 'border-gray-200 text-gray-600 hover:border-gray-300'
                       }`}
                     >
@@ -287,70 +287,70 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
 
                 {/* Name */}
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2">Họ và tên</label>
+                  <label className="block text-gray-700 text-sm font-medium mb-1">Họ và tên</label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Nguyễn Văn A"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none transition"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
                     required
                   />
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2">Email</label>
+                  <label className="block text-gray-700 text-sm font-medium mb-1">Email</label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="email@gmail.com"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none transition"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
                     required
                   />
                 </div>
 
                 {/* Phone */}
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2">Số điện thoại</label>
+                  <label className="block text-gray-700 text-sm font-medium mb-1">Số điện thoại</label>
                   <input
                     type="tel"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="0901234567"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none transition"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
                     required
                   />
                 </div>
 
                 {/* Password */}
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2">Mật khẩu</label>
+                  <label className="block text-gray-700 text-sm font-medium mb-1">Mật khẩu</label>
                   <input
                     type="password"
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="••••••••"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none transition"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
                     required
                   />
                 </div>
 
                 {/* Confirm Password */}
                 <div>
-                  <label className="block text-gray-700 font-medium mb-2">Xác nhận mật khẩu</label>
+                  <label className="block text-gray-700 text-sm font-medium mb-1">Xác nhận mật khẩu</label>
                   <input
                     type="password"
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="••••••••"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none transition"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
                     required
                   />
                 </div>
@@ -358,44 +358,44 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
 
               {/* Right Column - Student Info (only for phu_huynh) */}
               {formData.role === 'phu_huynh' && (
-                <div className="flex-1 space-y-4">
-                  <h3 className="font-semibold text-gray-700 text-lg border-b pb-2">Thông tin học sinh</h3>
+                <div className="flex-1 space-y-3">
+                  <h3 className="font-semibold text-gray-800 text-sm border-b pb-2">Thông tin học sinh</h3>
                   
                   {/* Student Name */}
                   <div>
-                    <label className="block text-gray-700 font-medium mb-2">Tên học sinh</label>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Tên học sinh</label>
                     <input
                       type="text"
                       name="studentName"
                       value={formData.studentName}
                       onChange={handleChange}
                       placeholder="Nguyễn Văn B"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none transition"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
                       required
                     />
                   </div>
 
                   {/* Student Birthday */}
                   <div>
-                    <label className="block text-gray-700 font-medium mb-2">Ngày sinh</label>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Ngày sinh</label>
                     <input
                       type="date"
                       name="studentBirthday"
                       value={formData.studentBirthday}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none transition"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
                       required
                     />
                   </div>
 
                   {/* Student Grade */}
                   <div>
-                    <label className="block text-gray-700 font-medium mb-2">Khối lớp</label>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Khối lớp</label>
                     <select
                       name="studentGrade"
                       value={formData.studentGrade}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none transition"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
                     >
                       {grades.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                     </select>
@@ -404,13 +404,13 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
               )}
             </div>
 
-            {error && <p className="text-red-500 mt-4">{error}</p>}
+            {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
 
             {/* Submit */}
             <button
               type="submit"
               disabled={loading || sendingOtp}
-              className="w-full py-4 mt-6 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition text-lg"
+              className="w-full py-2.5 mt-4 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition text-sm"
             >
               {loading || sendingOtp ? 'Đang xử lý...' : 'Tiếp tục'}
             </button>
@@ -418,9 +418,9 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
         )}
 
         {/* Footer */}
-        <p className="text-center text-gray-500 mt-6">
+        <p className="text-center text-gray-500 text-sm mt-4">
           Đã có tài khoản?{' '}
-          <button onClick={onSwitchToLogin} className="text-blue-600 font-semibold hover:underline">
+          <button onClick={onSwitchToLogin} className="text-red-600 font-medium hover:underline">
             Đăng nhập
           </button>
         </p>

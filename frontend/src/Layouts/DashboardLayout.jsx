@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import Sidebar from './Sidebar'
-import Navbar from './Navbar'
-import Footer from './Footer'
+import DashboardSidebar from './DashboardSidebar'
+import DashboardNavbar from './DashboardNavbar'
+import DashboardFooter from './DashboardFooter'
 
 export default function DashboardLayout({ 
   children, 
@@ -17,7 +17,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Sidebar */}
-      <Sidebar 
+      <DashboardSidebar 
         menuItems={menuItems}
         activeItem={activeItem}
         onMenuClick={onMenuClick}
@@ -29,7 +29,7 @@ export default function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
         {/* Navbar */}
-        <Navbar 
+        <DashboardNavbar 
           user={user} 
           onLogout={onLogout}
           pageTitle={pageTitle}
@@ -37,12 +37,12 @@ export default function DashboardLayout({
         />
 
         {/* Content */}
-        <main className={`flex-1 p-6 transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
+        <main className={`flex-1 p-4 transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-56'}`}>
           {children}
         </main>
 
         {/* Footer */}
-        <Footer sidebarCollapsed={sidebarCollapsed} />
+        <DashboardFooter sidebarCollapsed={sidebarCollapsed} />
       </div>
     </div>
   )
