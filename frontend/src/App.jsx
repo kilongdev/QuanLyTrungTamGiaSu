@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import Layouts from "./Layouts/Layouts";
 import Homepage from "./pages/HomePage";
 import Tutorpage from "./pages/TutorPage";
@@ -14,21 +14,25 @@ import PhuHuynhDashboard from "./pages/PhuHuynhDashboard";
 import AuthModal from "./components/AuthModal";
 import { Toaster } from "sonner";
 
-function App() {
+// Component chính được wrap trong BrowserRouter
+function AppContent() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authTab, setAuthTab] = useState("login");
+  const navigate = useNavigate();
 
   // Kiểm tra token đã lưu
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-    if (savedUser) {
+    if (savedUser && token) {
       setUser(JSON.parse(savedUser));
       console.log("=== APP LOADED ===");
       console.log("Saved User:", JSON.parse(savedUser));
       console.log("Token:", token);
     }
+    setLoading(false);
   }, []);
 
   const handleAuthSuccess = (data) => {
@@ -39,6 +43,9 @@ function App() {
 
     setUser(data.user);
     setShowAuthModal(false);
+    
+    // Chuyển đến dashboard sau khi đăng nhập thành công
+    navigate("/dashboard");
   };
 
   const handleLogout = () => {
@@ -60,6 +67,15 @@ function App() {
 
   // Component để bảo vệ route dashboard
   const DashboardRoute = () => {
+    // Đợi load user từ localStorage
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
     if (!user) {
       return <Navigate to="/" replace />;
     }
@@ -79,36 +95,33 @@ function App() {
 
   return (
     <>
-      <Toaster richColors />
-      <BrowserRouter>
-        <Routes>
-          {/* Public routes với Layout */}
-          <Route
-            element={
-              <Layouts
-                user={user}
-                onLogin={openLogin}
-                onRegister={openRegister}
-                onLogout={handleLogout}
-              />
-            }
-          >
-            <Route path="/" element={<Homepage />} />
-            <Route path="/dich-vu-gia-su" element={<Tutorpage />} />
-            <Route path="/ve-chung-toi" element={<Introduce />} />
-            <Route path="/hoc-phi-gia-su" element={<FeesPage />} />
-            <Route path="/lien-he" element={<ContactPage />} />
-            <Route path="/lop-hien-co" element={<AvailableClassPage />} />
-            <Route
-              path="/dang-ky-hoc-thu"
-              element={<RegisterforATrialClass />}
+      <Routes>
+        {/* Public routes với Layout */}
+        <Route
+          element={
+            <Layouts
+              user={user}
+              onLogin={openLogin}
+              onRegister={openRegister}
+              onLogout={handleLogout}
             />
-          </Route>
+          }
+        >
+          <Route path="/" element={<Homepage />} />
+          <Route path="/dich-vu-gia-su" element={<Tutorpage />} />
+          <Route path="/ve-chung-toi" element={<Introduce />} />
+          <Route path="/hoc-phi-gia-su" element={<FeesPage />} />
+          <Route path="/lien-he" element={<ContactPage />} />
+          <Route path="/lop-hien-co" element={<AvailableClassPage />} />
+          <Route
+            path="/dang-ky-hoc-thu"
+            element={<RegisterforATrialClass />}
+          />
+        </Route>
 
-          {/* Dashboard route - không dùng Layout */}
-          <Route path="/dashboard" element={<DashboardRoute />} />
-        </Routes>
-      </BrowserRouter>
+        {/* Dashboard route - không dùng Layout */}
+        <Route path="/dashboard" element={<DashboardRoute />} />
+      </Routes>
 
       {/* Auth Modal */}
       <AuthModal
@@ -117,6 +130,17 @@ function App() {
         onAuthSuccess={handleAuthSuccess}
         defaultTab={authTab}
       />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <>
+      <Toaster richColors />
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
     </>
   );
 }

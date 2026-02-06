@@ -68,7 +68,7 @@ export default function Login({ onSwitchToRegister, onLoginSuccess, onClose }) {
         {onClose && (
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full text-xl"
+            className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full text-4xl border-2 border-red-200 hover:border-red-300 transition-all"
           >
             ×
           </button>
