@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../Layouts/DashboardLayout'
+import { LayoutDashboard, Calendar, BookOpen, GraduationCap, Mail, Wallet, UserCircle } from 'lucide-react'
 
 export default function GiaSuDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('dashboard')
@@ -13,13 +14,13 @@ export default function GiaSuDashboard({ user, onLogout }) {
   }, [user])
 
   const menuItems = [
-    { id: 'dashboard', label: 'Tổng quan', icon: '📊' },
-    { id: 'schedule', label: 'Lịch dạy', icon: '📅' },
-    { id: 'classes', label: 'Lớp đang dạy', icon: '📚' },
-    { id: 'students', label: 'Học sinh', icon: '👨‍🎓' },
-    { id: 'requests', label: 'Yêu cầu mới', icon: '📩' },
-    { id: 'income', label: 'Thu nhập', icon: '💰' },
-    { id: 'profile', label: 'Hồ sơ', icon: '👤' },
+    { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+    { id: 'schedule', label: 'Lịch dạy', icon: Calendar },
+    { id: 'classes', label: 'Lớp đang dạy', icon: BookOpen },
+    { id: 'students', label: 'Học sinh', icon: GraduationCap },
+    { id: 'requests', label: 'Yêu cầu mới', icon: Mail },
+    { id: 'income', label: 'Thu nhập', icon: Wallet },
+    { id: 'profile', label: 'Hồ sơ', icon: UserCircle },
   ]
 
   const getPageTitle = () => {
