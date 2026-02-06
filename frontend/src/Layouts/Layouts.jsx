@@ -1,13 +1,17 @@
 import Footer from "@/components/Footer";
 import Header from "@/components/Header/Header";
-import Homepage from "@/pages/HomePage";
 import React from "react";
 import { Outlet } from "react-router-dom";
 
-const Layouts = () => {
+const Layouts = ({ user, onLogin, onRegister, onLogout }) => {
   return (
     <div>
-      <Header />
+      <Header 
+        user={user} 
+        onLogin={onLogin} 
+        onRegister={onRegister} 
+        onLogout={onLogout} 
+      />
 
       <Outlet />
       <Footer />

@@ -96,6 +96,16 @@ button:focus-visible {
   font-family: corinthia;
 }
 
+/* Override browser autofill styles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: #111827 !important;
+  caret-color: #111827 !important;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
