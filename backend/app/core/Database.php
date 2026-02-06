@@ -45,6 +45,11 @@ class Database
         return self::$connection;
     }
 
+    public static function getInstance(): PDO
+    {
+        return self::getConnection();
+    }
+
     public static function query(string $sql, array $params = []): array
     {
         $stmt = self::getConnection()->prepare($sql);
