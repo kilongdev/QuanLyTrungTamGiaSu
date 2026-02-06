@@ -8,9 +8,19 @@ const defaultFormData = {
   password: '',
   confirmPassword: '',
   role: 'phu_huynh',
+  // Phụ huynh fields
   studentName: '',
   studentBirthday: '',
-  studentGrade: '1'
+  studentGrade: '1',
+  // Gia sư fields
+  birthday: '',
+  gender: '',
+  address: '',
+  degree: '',
+  introduction: '',
+  experience: '',
+  bankAccount: '',
+  bankName: ''
 }
 
 export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }) {
@@ -28,6 +38,10 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
   const [sendingOtp, setSendingOtp] = useState(false)
   const [error, setError] = useState('')
   const [countdown, setCountdown] = useState(0)
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState('')
+  const [certificateFiles, setCertificateFiles] = useState([])
+  const [certificatePreviews, setCertificatePreviews] = useState([])
 
   useEffect(() => {
     sessionStorage.setItem('registerForm', JSON.stringify(formData))
@@ -141,6 +155,18 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
           name: formData.studentName,
           birthday: formData.studentBirthday,
           grade: formData.studentGrade
+        } : null,
+        tutor: formData.role === 'gia_su' ? {
+          birthday: formData.birthday,
+          gender: formData.gender,
+          address: formData.address,
+          avatar: formData.avatar,
+          degree: formData.degree,
+          certificates: formData.certificates,
+          introduction: formData.introduction,
+          experience: formData.experience,
+          bankAccount: formData.bankAccount,
+          bankName: formData.bankName
         } : null
       })
 
@@ -184,7 +210,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
         {onClose && (
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-xl transition"
+            className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full text-red-400 hover:text-red-600 hover:bg-red-50 text-4xl border-2 border-red-200 hover:border-red-300 transition-all"
           >
             ×
           </button>
@@ -356,8 +382,8 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
                 </div>
               </div>
 
-              {/* Right Column - Student Info (only for phu_huynh) */}
-              {formData.role === 'phu_huynh' && (
+              {/* Right Column - Student Info (only for phu_huynh) OR Tutor Info (for gia_su) */}
+              {formData.role === 'phu_huynh' ? (
                 <div className="flex-1 space-y-3">
                   <h3 className="font-semibold text-gray-800 text-sm border-b pb-2">Thông tin học sinh</h3>
                   
@@ -401,7 +427,220 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
                     </select>
                   </div>
                 </div>
-              )}
+              ) : formData.role === 'gia_su' ? (
+                <div className="flex-1 space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                  <h3 className="font-semibold text-gray-800 text-sm border-b pb-2 sticky top-0 bg-white">Thông tin gia sư</h3>
+                  
+                  {/* Birthday */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Ngày sinh</label>
+                    <input
+                      type="date"
+                      name="birthday"
+                      value={formData.birthday}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
+                      required
+                    />
+                  </div>
+
+                  {/* Gender */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Giới tính</label>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
+                      required
+                    >
+                      <option value="">Chọn giới tính</option>
+                      <option value="male">Nam</option>
+                      <option value="female">Nữ</option>
+                      <option value="other">Khác</option>
+                    </select>
+                  </div>
+
+                  {/* Address */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Địa chỉ</label>
+                    <input
+                      type="text"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
+                      placeholder="123 Đường ABC, Quận X, TP.HCM"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
+                      required
+                    />
+                  </div>
+
+                  {/* Avatar File */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Ảnh đại diện</label>
+                    <div className="flex items-center gap-3">
+                      {avatarPreview ? (
+                        <div className="relative">
+                          <img src={avatarPreview} alt="Preview" className="w-20 h-20 rounded-full object-cover border-2 border-red-200" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAvatarFile(null)
+                              setAvatarPreview('')
+                            }}
+                            className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-md"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                      )}
+                      <label className="flex-1 cursor-pointer">
+                        <div className="px-4 py-2 bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-300 rounded-lg text-red-700 font-medium text-sm transition-all text-center">
+                          {avatarFile ? avatarFile.name : 'Chọn ảnh'}
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0]
+                            if (file) {
+                              setAvatarFile(file)
+                              setAvatarPreview(URL.createObjectURL(file))
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Degree */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Bằng cấp</label>
+                    <input
+                      type="text"
+                      name="degree"
+                      value={formData.degree}
+                      onChange={handleChange}
+                      placeholder="Cử nhân Toán học, Đại học ABC"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
+                      required
+                    />
+                  </div>
+
+                  {/* Certificates */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Chứng chỉ (tùy chọn)</label>
+                    <div className="space-y-2">
+                      <label className="cursor-pointer block">
+                        <div className="px-4 py-2 bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-300 rounded-lg text-red-700 font-medium text-sm transition-all text-center">
+                          + Thêm chứng chỉ
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files)
+                            if (files.length > 0) {
+                              setCertificateFiles(prev => [...prev, ...files])
+                              files.forEach(file => {
+                                setCertificatePreviews(prev => [...prev, URL.createObjectURL(file)])
+                              })
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                      {certificatePreviews.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {certificatePreviews.map((preview, index) => (
+                            <div key={index} className="relative group">
+                              <img 
+                                src={preview} 
+                                alt={`Chứng chỉ ${index + 1}`} 
+                                className="w-full h-24 object-cover rounded-lg border-2 border-gray-200 group-hover:border-red-200"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCertificateFiles(prev => prev.filter((_, i) => i !== index))
+                                  setCertificatePreviews(prev => prev.filter((_, i) => i !== index))
+                                }}
+                                className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-md opacity-0 group-hover:opacity-100"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Introduction */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Giới thiệu bản thân</label>
+                    <textarea
+                      name="introduction"
+                      value={formData.introduction}
+                      onChange={handleChange}
+                      placeholder="Giới thiệu về bản thân, phương pháp giảng dạy..."
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
+                      rows="3"
+                      required
+                    />
+                  </div>
+
+                  {/* Experience */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Kinh nghiệm</label>
+                    <textarea
+                      name="experience"
+                      value={formData.experience}
+                      onChange={handleChange}
+                      placeholder="Mô tả kinh nghiệm giảng dạy..."
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
+                      rows="2"
+                      required
+                    />
+                  </div>
+
+                  {/* Bank Account */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Số tài khoản ngân hàng</label>
+                    <input
+                      type="text"
+                      name="bankAccount"
+                      value={formData.bankAccount}
+                      onChange={handleChange}
+                      placeholder="0123456789"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
+                      required
+                    />
+                  </div>
+
+                  {/* Bank Name */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Tên ngân hàng</label>
+                    <input
+                      type="text"
+                      name="bankName"
+                      value={formData.bankName}
+                      onChange={handleChange}
+                      placeholder="Vietcombank"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-red-500 outline-none transition text-sm text-gray-900"
+                      required
+                    />
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {error && <p className="text-red-500 text-sm mt-3">{error}</p>}

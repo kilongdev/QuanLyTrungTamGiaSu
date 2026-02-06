@@ -73,7 +73,7 @@ const Header = ({ user, onLogin, onRegister, onLogout }) => {
           ) : (
             <button
               onClick={onLogin}
-              className="flex items-center gap-2 px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              className="flex items-center gap-2 px-5 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors font-medium"
             >
               <LogIn size={18} />
               Đăng nhập

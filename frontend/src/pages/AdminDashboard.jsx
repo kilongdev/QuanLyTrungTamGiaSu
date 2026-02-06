@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../Layouts/DashboardLayout'
+import { LayoutDashboard, GraduationCap, Users, UserRound, BookOpen, BookText, CreditCard, BarChart3 } from 'lucide-react'
 
 export default function AdminDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('dashboard')
@@ -13,13 +14,14 @@ export default function AdminDashboard({ user, onLogout }) {
   }, [user])
 
   const menuItems = [
-    { id: 'dashboard', label: 'Tổng quan', icon: '📊' },
-    { id: 'tutors', label: 'Quản lý Gia sư', icon: '👨‍🏫' },
-    { id: 'parents', label: 'Quản lý Phụ huynh', icon: '👨‍👩‍👧' },
-    { id: 'classes', label: 'Quản lý Lớp học', icon: '📚' },
-    { id: 'subjects', label: 'Môn học', icon: '📖' },
-    { id: 'payments', label: 'Thanh toán', icon: '💰' },
-    { id: 'reports', label: 'Báo cáo', icon: '📈' },
+    { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+    { id: 'tutors', label: 'Gia sư', icon: GraduationCap },
+    { id: 'parents', label: 'Phụ huynh', icon: Users },
+    { id: 'students', label: 'Học sinh', icon: UserRound },
+    { id: 'classes', label: 'Lớp học', icon: BookOpen },
+    { id: 'subjects', label: 'Môn học', icon: BookText },
+    { id: 'payments', label: 'Thanh toán', icon: CreditCard },
+    { id: 'reports', label: 'Báo cáo thống kê', icon: BarChart3 },
   ]
 
   const getPageTitle = () => {
@@ -32,17 +34,19 @@ export default function AdminDashboard({ user, onLogout }) {
       case 'dashboard':
         return <DashboardContent />
       case 'tutors':
-        return <PlaceholderContent title="Quản lý Gia sư" description="Duyệt, quản lý và theo dõi gia sư trong hệ thống" />
+        return <PlaceholderContent title="Gia sư" description="Quản lý và theo dõi gia sư trong hệ thống" />
       case 'parents':
-        return <PlaceholderContent title="Quản lý Phụ huynh" description="Quản lý thông tin phụ huynh và học sinh" />
+        return <PlaceholderContent title="Phụ huynh" description="Quản lý thông tin phụ huynh" />
+      case 'students':
+        return <PlaceholderContent title="Học sinh" description="Quản lý thông tin học sinh" />
       case 'classes':
-        return <PlaceholderContent title="Quản lý Lớp học" description="Quản lý các lớp học và ghép cặp gia sư - học sinh" />
+        return <PlaceholderContent title="Lớp học" description="Quản lý các lớp học và ghép cặp gia sư - học sinh" />
       case 'subjects':
         return <PlaceholderContent title="Môn học" description="Quản lý danh sách môn học" />
       case 'payments':
         return <PlaceholderContent title="Thanh toán" description="Quản lý thanh toán và hoa hồng" />
       case 'reports':
-        return <PlaceholderContent title="Báo cáo" description="Xem báo cáo và thống kê" />
+        return <PlaceholderContent title="Báo cáo thống kê" description="Xem báo cáo và thống kê" />
       default:
         return <DashboardContent />
     }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../Layouts/DashboardLayout'
+import { LayoutDashboard, Users, GraduationCap, Search, Calendar, CreditCard, UserCircle } from 'lucide-react'
 
 export default function PhuHuynhDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('dashboard')
@@ -13,13 +14,13 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
   }, [user])
 
   const menuItems = [
-    { id: 'dashboard', label: 'Tổng quan', icon: '📊' },
-    { id: 'children', label: 'Con của tôi', icon: '👨‍👩‍👧' },
-    { id: 'tutors', label: 'Gia sư của con', icon: '👨‍🏫' },
-    { id: 'find-tutor', label: 'Tìm gia sư', icon: '🔍' },
-    { id: 'schedule', label: 'Lịch học', icon: '📅' },
-    { id: 'payments', label: 'Thanh toán', icon: '💳' },
-    { id: 'profile', label: 'Hồ sơ', icon: '👤' },
+    { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+    { id: 'children', label: 'Con của tôi', icon: Users },
+    { id: 'tutors', label: 'Gia sư của con', icon: GraduationCap },
+    { id: 'find-tutor', label: 'Tìm gia sư', icon: Search },
+    { id: 'schedule', label: 'Lịch học', icon: Calendar },
+    { id: 'payments', label: 'Thanh toán', icon: CreditCard },
+    { id: 'profile', label: 'Hồ sơ', icon: UserCircle },
   ]
 
   const getPageTitle = () => {
