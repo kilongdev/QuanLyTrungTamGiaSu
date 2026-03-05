@@ -28,7 +28,7 @@ export const options = [
 ];
 export const classList = [
   {
-    code: "HA2505",
+    lop_hoc_id: "HA2501",
     requirement: {
       role: "Giáo viên tự do",
       gender: "Nữ",
@@ -58,7 +58,7 @@ export const classList = [
   },
 
   {
-    code: "HM2512",
+    lop_hoc_id: "HM2511",
     requirement: {
       role: "Sinh viên",
       gender: "Không yêu cầu",
@@ -89,7 +89,7 @@ export const classList = [
   },
 
   {
-    code: "HP2498",
+    lop_hoc_id: "HP2491",
     requirement: {
       role: "Giáo viên đứng lớp",
       gender: "Nam",
@@ -119,7 +119,7 @@ export const classList = [
   },
 
   {
-    code: "HL2530",
+    lop_hoc_id: "HL2531",
     requirement: {
       role: "Gia sư",
       gender: "Không yêu cầu",
@@ -148,7 +148,7 @@ export const classList = [
     note: "Ôn luyện thi đại học",
   },
   {
-    code: "HA2505",
+    lop_hoc_id: "HA2505",
     requirement: {
       role: "Giáo viên tự do",
       gender: "Nữ",
@@ -178,7 +178,7 @@ export const classList = [
   },
 
   {
-    code: "HM2512",
+    lop_hoc_id: "HM2512",
     requirement: {
       role: "Sinh viên",
       gender: "Không yêu cầu",
@@ -209,7 +209,7 @@ export const classList = [
   },
 
   {
-    code: "HP2498",
+    lop_hoc_id: "HP2498",
     requirement: {
       role: "Giáo viên đứng lớp",
       gender: "Nam",
@@ -239,7 +239,7 @@ export const classList = [
   },
 
   {
-    code: "HL2530",
+    lop_hoc_id: "HL2530",
     requirement: {
       role: "Gia sư",
       gender: "Không yêu cầu",
@@ -266,5 +266,672 @@ export const classList = [
       gender: "Nam + Nữ",
     },
     note: "Ôn luyện thi đại học",
+  },
+  {
+    lop_hoc_id: "HA2502",
+    requirement: {
+      role: "Sinh viên",
+      gender: "Nam",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2500",
+    requirement: {
+      role: "Giáo viên",
+      gender: "Nữ",
+    },
+    subject: "Toán",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2509",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nam",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2507",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Toán",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "abc",
+  },
+  {
+    lop_hoc_id: "HA2508",
+    requirement: {
+      role: "Giáo viên",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "asafasfa",
+  },
+  {
+    lop_hoc_id: "HA2504",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nam",
+    },
+    subject: "Ielts",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "mmksajsakh",
+  },
+  {
+    lop_hoc_id: "HA2901",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2101",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2201",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2301",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2401",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2601",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2701",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2801",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2901",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA3501",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA4501",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA5501",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA2601",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA7501",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA8501",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA9501",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
+  },
+  {
+    lop_hoc_id: "HA3101",
+    requirement: {
+      role: "Giáo viên tự do",
+      gender: "Nữ",
+    },
+    subject: "Tiếng Anh",
+    grade: "Lớp 10",
+    location: {
+      address: "đường số 3",
+      ward: "P.9",
+      district: "Q. Gò Vấp",
+      city: "TP. Hồ Chí Minh",
+    },
+    schedule: {
+      sessionsPerWeek: 2,
+      durationPerSession: "1h30",
+      availableTime: [
+        { day: "Thứ 2", time: "19:00 - 20:30" },
+        { day: "Thứ 4", time: "19:00 - 20:30" },
+      ],
+    },
+    fee: "250k/buổi",
+    student: {
+      quantity: 1,
+      gender: "Nữ",
+    },
+    note: "",
   },
 ];

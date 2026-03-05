@@ -1,84 +1,134 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import { Filter, Search, SendIcon } from "lucide-react";
+import {
+  Blocks,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Search,
+  SendIcon,
+} from "lucide-react";
 import { Input } from "./ui/input";
+import { cn } from "@/lib/utils";
+import { getAvailableClasses } from "@/service/classService";
 
-const AvailableClastList = ({ options, classList }) => {
-  const [filters, setFilters] = useState({});
+const AvailableClastList = ({ classList }) => {
+  //lọc
+  // const [filters, setFilters] = useState({});
+  // const [searchCode, setSearchCode] = useState("");
+
+  // const [filterClassList, setFilterClassList] = useState(classList);
+
+  // console.log("filters: ", filters);
+
+  // // console.log("searchCode: ", searchCode);
+
+  // // console.log("filterClassList: ", filterClassList);
+
+  // // pagination
+  // const [classes, setClasses] = useState([]);
+  // const [total, setTotal] = useState(0);
+  // const [currentPage, setCurrentPage] = useState(1);
+  // const itemPerPage = 10;
+  // const totalPages = Math.ceil(total / itemPerPage);
+
+  // useEffect(() => {
+  //   fetchClasses();
+  // }, [currentPage]);
+
+  // const fetchClasses = async () => {
+  //   try {
+  //     const res = await getAvailableClasses({
+  //       page: currentPage,
+  //       limit: itemPerPage,
+  //     });
+  //     setClasses(res.data);
+  //     setTotal(res.total);
+  //   } catch (error) {
+  //     console.error("Lỗi khi phân trang!");
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   if (!searchCode) {
+  //     setFilterClassList(classList);
+  //   }
+  // }, [searchCode, classList]);
+
+  // // lọc theo MSL
+  // const filterByMSL = () => {
+  //   const result = classList.filter((item) =>
+  //     item.lop_hoc_id?.toLowerCase().includes(searchCode.toLowerCase()),
+  //   );
+  //   setFilters({});
+  //   setFilterClassList(result);
+  // };
+
+  // //lọc nâng cao
+  // const filterClassByOptions = () => {
+  //   const result = classList.filter((item) => {
+  //     return Object.keys(filters).every((key) => {
+  //       const value = filters[key];
+
+  //       if (!value) return true;
+
+  //       switch (key) {
+  //         case "gioitinh":
+  //           return item?.requirement?.gender === value;
+
+  //         case "tinhthanh":
+  //           return item?.location?.district === value;
+
+  //         case "lop":
+  //           return item?.grade === value;
+
+  //         case "giasu":
+  //           return item?.requirement?.role === value;
+
+  //         case "monhoc":
+  //           return item?.subject === value;
+
+  //         default:
+  //           return true;
+  //       }
+  //     });
+  //   });
+  //   setSearchCode("");
+  //   setFilterClassList(result);
+  // };
 
   return (
     <>
       <div className="flex flex-col items-center justify-center mb-8 mx-auto max-w-5xl px-4">
-        <div className="flex flex-col items-center mb-6 text-center">
-          <h2 className="font-corinthia text-red-500 text-5xl">Lớp hiện</h2>
-          <p className="text-4xl uppercase font-semibold">Có tìm gia sư</p>
-        </div>
-
-        {/* Filter */}
-        <div className="flex flex-col md:flex-row gap-2 justify-center items-center w-full">
-          <label className="font-bold md:w-[120px]">Tìm theo MSL:</label>
-
-          <Input
-            className="md:w-[460px] focus-visible:ring-blue-500 focus-visible:ring-2 rounded-3xl h-10"
-            placeholder="Mã số lớp"
-          />
-
-          <Button className="rounded-3xl bg-red-600 hover:bg-red-600 px-6 h-11 w-[260px]">
-            <Search />
-            <span className="font-semibold">Tìm</span>
-          </Button>
-        </div>
-        {/* filter options */}
-        <div>
-          <div className="my-5 grid grid-cols-2 sm:flex gap-4">
-            {/* gia su */}
-            {options.map((item) => (
-              <select
-                key={item.name}
-                name={item.name}
-                value={filters[item.name] || ""}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    [item.name]: e.target.value,
-                  })
-                }
-                id={item.name}
-                className="w-full h-10 px-3 py-1 border border-input bg-transparent text-base rounded-2xl shadow-sm focus-visible:outline-none focus-visible:ring-blue-500 focus-visible:ring-2"
-              >
-                <option value="">{item.label}</option>
-
-                {item.values.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            ))}
-
-            <Button className="flex w-full h-10 px-3 py-1 bg-white text-black text-3xl text-base rounded-2xl items-center justify-center ring-2 ring-red-600 hover:bg-white">
-              Bỏ lọc
-            </Button>
-            <Button className="flex w-full h-10 px-3 py-1 text-base rounded-2xl items-center justify-center ring-2 ring-red-600 bg-red-600 hover:bg-red-600 text-3xl">
-              <Filter />
-              <span>Lọc lựa chọn</span>
-            </Button>
+        {classList.length === 0 && (
+          <div className=" font-bold text-[18px] text-red-500 italic">
+            Không tìm thấy lớp hoặc lớp đã hết!
           </div>
-        </div>
+        )}
 
         {/* Card list */}
         <div className="mt-10 w-full">
           <div className="relative w-full">
-            <div className="relative grid md:grid-cols-1 lg:grid-cols-2 items-start gap-10 justify-self-center px-5 md:px-0 z-10">
+            <div
+              className={`relative grid gap-10 px-5 md:px-0 z-10 place-items-center ${
+                classList.length === 1
+                  ? "grid-cols-1"
+                  : "md:grid-cols-1 lg:grid-cols-2"
+              }`}
+            >
               {classList.map((item) => (
-                <div key={item.code} className="relative w-full max-w-[400px]">
+                <div
+                  key={item.lop_hoc_id}
+                  className="relative w-full max-w-[400px]"
+                >
                   <div className="absolute inset-0 bg-blue-200 max-w-[420px] -z-10 -skew-y-6 skew-x-6 rounded-xl" />
 
                   {/* card */}
                   <div className="bg-white relative w-full max-w-[400px] p-5 border border-[#ccc] rounded-xl shadow-md z-20 flex flex-col h-[420px]">
                     <div className="flex items-center justify-between mb-2">
                       <h2 className="font-bold text-2xl ">
-                        MSL: <span className="text-red-600">{item.code}</span>
+                        MSL:{" "}
+                        <span className="text-red-600">{item.lop_hoc_id}</span>
                       </h2>
                       <span className="text-sm px-3 py-1 rounded-full bg-red-100 text-red-600">
                         {item.fee}
@@ -92,7 +142,7 @@ const AvailableClastList = ({ options, classList }) => {
                       </li>
 
                       <li>
-                        <b>Dạy:</b> {item.subject} {item.grade}
+                        <b>Môn:</b> {item.subject} {item.grade}
                       </li>
 
                       <li>
