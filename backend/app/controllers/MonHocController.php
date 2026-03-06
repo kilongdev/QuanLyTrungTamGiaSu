@@ -1,16 +1,16 @@
 <?php
-require_once __DIR__ . '/../models/HocSinh.php';
+require_once __DIR__ . '/../models/MonHoc.php';
 
-class HocSinhController
+class MonHocController
 {
-    public static function index(): void
+    public static function getAll(): void
     {
         $page = (int)($_GET['page'] ?? 1);
         $limit = (int)($_GET['limit'] ?? 10);
         $offset = ($page - 1) * $limit;
         $search = $_GET['search'] ?? '';
 
-        $result = HocSinh::getAll($search, $limit, $offset);
+        $result = MonHoc::getAll($search, $limit, $offset);
 
         echo json_encode([
             'status' => 'success',
@@ -24,48 +24,46 @@ class HocSinhController
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    public static function show(string $id): void
+    public static function getById(string $id): void
     {
-        $hocSinh = HocSinh::findById($id);
+        $monHoc = MonHoc::findById($id);
 
-        if (!$hocSinh) {
+        if (!$monHoc) {
             http_response_code(404);
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Không tìm thấy học sinh'
+                'message' => 'Không tìm thấy môn học'
             ], JSON_UNESCAPED_UNICODE);
             return;
         }
 
-        $hocSinh['lop_hoc'] = HocSinh::getLopHoc($id);
-
         echo json_encode([
             'status' => 'success',
-            'data' => $hocSinh
+            'data' => $monHoc
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    public static function store(): void
+    public static function create(): void
     {
         $input = json_decode(file_get_contents('php://input'), true);
 
-        if (empty($input['ho_ten'])) {
+        if (empty($input['ten_mon_hoc'])) {
             http_response_code(400);
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Vui lòng điền tên học sinh'
+                'message' => 'Tên môn học là bắt buộc'
             ], JSON_UNESCAPED_UNICODE);
             return;
         }
 
         try {
-            $id = HocSinh::create($input);
+            $id = MonHoc::create($input);
 
             http_response_code(201);
             echo json_encode([
                 'status' => 'success',
-                'message' => 'Tạo học sinh thành công',
-                'data' => ['hoc_sinh_id' => $id]
+                'message' => 'Tạo môn học thành công',
+                'data' => ['mon_hoc_id' => $id]
             ], JSON_UNESCAPED_UNICODE);
 
         } catch (Exception $e) {
@@ -82,13 +80,13 @@ class HocSinhController
         $input = json_decode(file_get_contents('php://input'), true);
 
         try {
-            $updated = HocSinh::update($id, $input);
+            $updated = MonHoc::update($id, $input);
 
             if (!$updated) {
                 http_response_code(400);
                 echo json_encode([
                     'status' => 'error',
-                    'message' => 'Không có dữ liệu để cập nhật'
+                    'message' => 'Không có dữ liệu để cập nhật hoặc môn học không tồn tại'
                 ], JSON_UNESCAPED_UNICODE);
                 return;
             }
@@ -107,23 +105,23 @@ class HocSinhController
         }
     }
 
-    public static function destroy(string $id): void
+    public static function delete(string $id): void
     {
         try {
-            $affected = HocSinh::delete($id);
+            $affected = MonHoc::delete($id);
             
             if ($affected === 0) {
                 http_response_code(404);
                 echo json_encode([
                     'status' => 'error',
-                    'message' => 'Không tìm thấy học sinh'
+                    'message' => 'Không tìm thấy môn học'
                 ], JSON_UNESCAPED_UNICODE);
                 return;
             }
 
             echo json_encode([
                 'status' => 'success',
-                'message' => 'Xóa học sinh thành công'
+                'message' => 'Xóa môn học thành công'
             ], JSON_UNESCAPED_UNICODE);
 
         } catch (Exception $e) {
@@ -133,15 +131,5 @@ class HocSinhController
                 'message' => 'Lỗi: ' . $e->getMessage()
             ], JSON_UNESCAPED_UNICODE);
         }
-    }
-
-    public static function getByPhuHuynh(string $id): void
-    {
-        $hocSinh = HocSinh::getByPhuHuynhId($id);
-
-        echo json_encode([
-            'status' => 'success',
-            'data' => $hocSinh
-        ], JSON_UNESCAPED_UNICODE);
     }
 }

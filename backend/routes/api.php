@@ -44,3 +44,17 @@ Router::post('/danhgia/save', [new DanhGiaController(), 'save']);
 Router::get('/danhgia/giasu/{gia_su_id}', [new DanhGiaController(), 'getByGiaSu']);
 Router::get('/danhgia/trungbinh/{gia_su_id}', [new DanhGiaController(), 'getAverageScore']);
 Router::delete('/danhgia/delete/{id}', [new DanhGiaController(), 'delete']);
+
+require_once __DIR__ . '/../app/controllers/MonHocController.php';
+Router::get('/monhoc', ['MonHocController', 'getAll']);
+Router::get('/monhoc/{id}', ['MonHocController', 'getById']);
+Router::post('/monhoc/create', ['MonHocController', 'create']);
+Router::put('/monhoc/update/{id}', ['MonHocController', 'update']);
+Router::delete('/monhoc/delete/{id}', ['MonHocController', 'delete']);
+
+require_once __DIR__ . '/../app/controllers/GiaSuMonHocController.php';
+Router::get('/giasumonhoc', ['GiaSuMonHocController', 'getAll']);
+Router::get('/giasumonhoc/{id}', ['GiaSuMonHocController', 'getById']);
+Router::post('/giasumonhoc/create', ['GiaSuMonHocController', 'create']);
+Router::put('/giasumonhoc/update/{id}', ['GiaSuMonHocController', 'update']);
+Router::delete('/giasumonhoc/delete/{id}', ['GiaSuMonHocController', 'delete']);
