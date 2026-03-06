@@ -1,106 +1,46 @@
 <?php
+Router::post('/auth/login', ['AuthController', 'login']);
+Router::post('/auth/register', ['AuthController', 'register']);
+Router::get('/auth/me', ['AuthController', 'me']);
+Router::post('/auth/refresh', ['AuthController', 'refresh']);
+Router::post('/auth/logout', ['AuthController', 'logout']);
 
-declare(strict_types=1);
+Router::post('/otp/send', ['OTPController', 'sendEmail']);
+Router::post('/otp/verify', ['OTPController', 'verify']);
 
-require_once __DIR__ . '/../app/core/Database.php';
-require_once __DIR__ . '/../app/core/Model.php';
-require_once __DIR__ . '/../app/controllers/BaseController.php';
 
-require_once __DIR__ . '/../app/models/Admin.php';
-require_once __DIR__ . '/../app/models/GiaSu.php';
-require_once __DIR__ . '/../app/models/PhuHuynh.php';
-require_once __DIR__ . '/../app/models/HocSinh.php';
-require_once __DIR__ . '/../app/models/GiaSuMonHoc.php';
-require_once __DIR__ . '/../app/models/MonHoc.php';
+require_once __DIR__ . '/../app/controllers/LopHocController.php';
+Router::get('/lophoc', [new LopHocController(), 'index']);
+Router::post('/lophoc/create', [new LopHocController(), 'create']);
+Router::delete('/lophoc/delete/{id}', [new LopHocController(), 'delete']);
+Router::put('/lophoc/update/{id}', [new LopHocController(), 'update']);
+Router::get('/lophoc/{id}', [new LopHocController(), 'show']);
 
-require_once __DIR__ . '/../app/controllers/AdminController.php';
-require_once __DIR__ . '/../app/controllers/GiaSuController.php';
-require_once __DIR__ . '/../app/controllers/PhuHuynhController.php';
-require_once __DIR__ . '/../app/controllers/HocSinhController.php';
-require_once __DIR__ . '/../app/controllers/GiaSuMonHocController.php';
-require_once __DIR__ . '/../app/controllers/MonHocController.php';
+require_once __DIR__ . '/../app/controllers/DangKyLopController.php';
+Router::post('/dangkylop/create', [new DangKyLopController(), 'create']);
+Router::put('/dangkylop/status/{id}', [new DangKyLopController(), 'updateStatus']);
+Router::get('/dangkylop/lop/{lop_hoc_id}', [new DangKyLopController(), 'getByLop']);
 
-$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-$path = is_string($path) ? $path : '/';
 
-$scriptName = (string)($_SERVER['SCRIPT_NAME'] ?? '');
-$scriptDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
-if ($scriptDir !== '' && str_starts_with($path, $scriptDir)) {
-    $path = substr($path, strlen($scriptDir));
-    if ($path === false || $path === '') {
-        $path = '/';
-    }
-}
+require_once __DIR__ . '/../app/controllers/LichHocController.php';
+Router::post('/lichhoc/create', [new LichHocController(), 'create']);
+Router::get('/lichhoc/lop/{lop_hoc_id}', [new LichHocController(), 'getByLop']);
+Router::delete('/lichhoc/delete/{id}', [new LichHocController(), 'delete']);
 
-if (str_starts_with($path, '/index.php')) {
-    $path = substr($path, strlen('/index.php'));
-    if ($path === false || $path === '') {
-        $path = '/';
-    }
-}
+require_once __DIR__ . '/../app/controllers/DiemDanhController.php';
+Router::post('/diemdanh/save', [new DiemDanhController(), 'saveDanhSach']);
+Router::get('/diemdanh/lich/{lich_hoc_id}', [new DiemDanhController(), 'getByLich']);
 
-$path = preg_replace('#^/api#', '', $path);
-$path = trim((string)$path, '/');
-$parts = $path === '' ? [] : explode('/', $path);
 
-$resource = $parts[0] ?? '';
-$id = isset($parts[1]) && ctype_digit($parts[1]) ? (int)$parts[1] : null;
-$method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+require_once __DIR__ . '/../app/controllers/YeuCauController.php';
+Router::post('/yeucau/create', [new YeuCauController(), 'create']);
+Router::get('/yeucau', [new YeuCauController(), 'getAll']);
+Router::get('/yeucau/nguoitao/{nguoi_tao_id}/{loai_nguoi_tao}', [new YeuCauController(), 'getByNguoiTao']);
+Router::put('/yeucau/status/{id}', [new YeuCauController(), 'updateStatus']);
+Router::delete('/yeucau/delete/{id}', [new YeuCauController(), 'delete']);
 
-$resource = str_replace('-', '_', $resource);
-
-$controller = match ($resource) {
-    'admin', 'admins' => new AdminController(),
-    'gia_su', 'gia_sus' => new GiaSuController(),
-    'phu_huynh', 'phu_huynhs' => new PhuHuynhController(),
-    'hoc_sinh', 'hoc_sinhs' => new HocSinhController(),
-    'gia_su_mon_hoc', 'gia_su_mon_hocs' => new GiaSuMonHocController(),
-    'mon_hoc', 'mon_hocs' => new MonHocController(),
-    default => null,
-};
-
-if ($controller === null) {
-    http_response_code(404);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success' => false, 'message' => 'Unknown resource'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-try {
-    if ($id === null) {
-        if ($method === 'GET') {
-            $controller->index();
-            exit;
-        }
-        if ($method === 'POST') {
-            $controller->store();
-            exit;
-        }
-
-        http_response_code(405);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['success' => false, 'message' => 'Method not allowed'], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    if ($method === 'GET') {
-        $controller->show($id);
-        exit;
-    }
-    if ($method === 'PUT' || $method === 'PATCH') {
-        $controller->update($id);
-        exit;
-    }
-    if ($method === 'DELETE') {
-        $controller->destroy($id);
-        exit;
-    }
-
-    http_response_code(405);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success' => false, 'message' => 'Method not allowed'], JSON_UNESCAPED_UNICODE);
-} catch (Throwable $e) {
-    http_response_code(500);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success' => false, 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
-}
+require_once __DIR__ . '/../app/controllers/DanhGiaController.php';
+Router::post('/danhgia/save', [new DanhGiaController(), 'save']);
+Router::get('/danhgia/giasu/{gia_su_id}', [new DanhGiaController(), 'getByGiaSu']);
+Router::get('/danhgia/trungbinh/{gia_su_id}', [new DanhGiaController(), 'getAverageScore']);
+Router::delete('/danhgia/delete/{id}', [new DanhGiaController(), 'delete']);

@@ -10,6 +10,7 @@ build/
 .env
 .env.local
 .env.*.local
+backend/.env
 
 # IDE
 .idea/
@@ -27,3 +28,6 @@ npm-debug.log*
 
 # Cache
 .cache/
+
+
+backend/config

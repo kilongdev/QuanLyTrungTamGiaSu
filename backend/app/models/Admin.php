@@ -1,26 +1,40 @@
 <?php
 
-declare(strict_types=1);
-
-final class Admin extends Model
+class Admin
 {
-    protected function table(): string
+    public static function findByPhone(string $phone): ?array
     {
-        return 'admin';
+        return Database::queryOne(
+            "SELECT admin_id as id, ho_ten as name, email, so_dien_thoai as phone, 
+                    mat_khau as password, 'admin' as role 
+             FROM admin WHERE so_dien_thoai = ?",
+            [$phone]
+        );
     }
 
-    protected function primaryKey(): string
+    public static function findByEmail(string $email): ?array
     {
-        return 'admin_id';
+        return Database::queryOne(
+            "SELECT admin_id FROM admin WHERE email = ?",
+            [$email]
+        );
     }
 
-    protected function fillable(): array
+    public static function findByEmailForLogin(string $email): ?array
     {
-        return [
-            'ho_ten',
-            'email',
-            'mat_khau',
-            'so_dien_thoai',
-        ];
+        return Database::queryOne(
+            "SELECT admin_id as id, ho_ten as name, email, so_dien_thoai as phone, 
+                    mat_khau as password, 'admin' as role 
+             FROM admin WHERE email = ?",
+            [$email]
+        );
+    }
+
+    public static function getDetails(int $userId): ?array
+    {
+        return Database::queryOne(
+            "SELECT admin_id, ho_ten, email FROM admin WHERE admin_id = ?",
+            [$userId]
+        );
     }
 }

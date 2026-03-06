@@ -1,77 +1,138 @@
 <?php
+require_once __DIR__ . '/../models/PhuHuynh.php';
+require_once __DIR__ . '/../models/HocSinh.php';
 
-declare(strict_types=1);
-
-final class PhuHuynhController extends BaseController
+class PhuHuynhController
 {
-    private PhuHuynh $model;
-
-    public function __construct()
+    public static function index(): void
     {
-        $this->model = new PhuHuynh();
+        $page = (int)($_GET['page'] ?? 1);
+        $limit = (int)($_GET['limit'] ?? 10);
+        $offset = ($page - 1) * $limit;
+        $search = $_GET['search'] ?? '';
+
+        $result = PhuHuynh::getAll($search, $limit, $offset);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => $result['data'],
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $result['total'],
+                'total_pages' => ceil($result['total'] / $limit)
+            ]
+        ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function index(): void
+    public static function show(string $id): void
     {
-        $this->json(['success' => true, 'data' => $this->model->all()]);
-    }
+        $phuHuynh = PhuHuynh::findById($id);
 
-    public function show(int $id): void
-    {
-        $row = $this->model->find($id);
-        if ($row === null) {
-            $this->notFound('Phụ huynh không tồn tại');
+        if (!$phuHuynh) {
+            http_response_code(404);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Không tìm thấy phụ huynh'
+            ], JSON_UNESCAPED_UNICODE);
             return;
         }
 
-        $this->json(['success' => true, 'data' => $row]);
+        $phuHuynh['hoc_sinh'] = HocSinh::getByPhuHuynhId($id);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => $phuHuynh
+        ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function store(): void
+    public static function store(): void
     {
-        $data = $this->inputJson();
-        $missing = $this->requireFields($data, ['ho_ten', 'email', 'mat_khau']);
-        if ($missing !== null) {
-            $this->badRequest($missing);
-            return;
-        }
+        $input = json_decode(file_get_contents('php://input'), true);
 
-        try {
-            $id = $this->model->create($data);
-            $this->json(['success' => true, 'data' => $this->model->find($id)], 201);
-        } catch (Throwable $e) {
-            $this->serverError($e->getMessage());
-        }
-    }
-
-    public function update(int $id): void
-    {
-        $data = $this->inputJson();
-        if ($this->model->find($id) === null) {
-            $this->notFound('Phụ huynh không tồn tại');
-            return;
-        }
-
-        try {
-            $this->model->update($id, $data);
-            $this->json(['success' => true, 'data' => $this->model->find($id)]);
-        } catch (Throwable $e) {
-            $this->serverError($e->getMessage());
-        }
-    }
-
-    public function destroy(int $id): void
-    {
-        if ($this->model->find($id) === null) {
-            $this->notFound('Phụ huynh không tồn tại');
+        if (empty($input['ho_ten']) || empty($input['email']) || empty($input['mat_khau'])) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Vui lòng điền đầy đủ thông tin'
+            ], JSON_UNESCAPED_UNICODE);
             return;
         }
 
         try {
-            $this->model->delete($id);
-            $this->json(['success' => true, 'message' => 'Đã xóa']);
-        } catch (Throwable $e) {
-            $this->serverError($e->getMessage());
+            $id = PhuHuynh::create($input);
+
+            http_response_code(201);
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Tạo phụ huynh thành công',
+                'data' => ['phu_huynh_id' => $id]
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public static function update(string $id): void
+    {
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        try {
+            $updated = PhuHuynh::update($id, $input);
+
+            if (!$updated) {
+                http_response_code(400);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không có dữ liệu để cập nhật'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Cập nhật thành công'
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public static function destroy(string $id): void
+    {
+        try {
+            $affected = PhuHuynh::delete($id);
+            
+            if ($affected === 0) {
+                http_response_code(404);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không tìm thấy phụ huynh'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Xóa phụ huynh thành công'
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
         }
     }
 }

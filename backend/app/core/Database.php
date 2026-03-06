@@ -1,33 +1,99 @@
 <?php
-
-declare(strict_types=1);
-
-final class Database
+class Database
 {
-    private static ?\PDO $pdo = null;
+    private static $host = 'localhost';
+    private static $dbName = 'quanlytrungtamgiasu';
+    private static $username = 'root';
+    private static $password = '';
+    private static $charset = 'utf8mb4';
+    private static $connection = null;
 
-    public static function pdo(): \PDO
+    public static function getConnection(): PDO
     {
-        if (self::$pdo instanceof \PDO) {
-            return self::$pdo;
+        if (self::$connection === null) {
+            try {
+                $dsn = "mysql:host=" . self::$host . 
+                       ";dbname=" . self::$dbName . 
+                       ";charset=" . self::$charset;
+
+                $options = [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
+                ];
+
+                self::$connection = new PDO(
+                    $dsn,
+                    self::$username,
+                    self::$password,
+                    $options
+                );
+
+            } catch (PDOException $e) {
+                error_log("Database Connection Error: " . $e->getMessage());
+                
+                http_response_code(500);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không thể kết nối database'
+                ], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
         }
 
-        $config = require __DIR__ . '/../../config/database.php';
+        return self::$connection;
+    }
 
-        $host = $config['host'] ?? '127.0.0.1';
-        $port = (int)($config['port'] ?? 3306);
-        $db = $config['database'] ?? '';
-        $charset = $config['charset'] ?? 'utf8mb4';
-        $user = $config['username'] ?? '';
-        $pass = $config['password'] ?? '';
+    public static function getInstance(): PDO
+    {
+        return self::getConnection();
+    }
 
-        $dsn = "mysql:host={$host};port={$port};dbname={$db};charset={$charset}";
+    public static function query(string $sql, array $params = []): array
+    {
+        $stmt = self::getConnection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
 
-        self::$pdo = new \PDO($dsn, $user, $pass, [
-            \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-        ]);
+    public static function queryOne(string $sql, array $params = []): ?array
+    {
+        $stmt = self::getConnection()->prepare($sql);
+        $stmt->execute($params);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
 
-        return self::$pdo;
+    public static function execute(string $sql, array $params = []): int
+    {
+        $stmt = self::getConnection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->rowCount();
+    }
+
+    public static function lastInsertId(): string
+    {
+        return self::getConnection()->lastInsertId();
+    }
+
+    public static function beginTransaction(): void
+    {
+        self::getConnection()->beginTransaction();
+    }
+
+    public static function commit(): void
+    {
+        self::getConnection()->commit();
+    }
+
+    public static function rollback(): void
+    {
+        self::getConnection()->rollBack();
+    }
+
+    public static function close(): void
+    {
+        self::$connection = null;
     }
 }

@@ -1,77 +1,147 @@
 <?php
+require_once __DIR__ . '/../models/HocSinh.php';
 
-declare(strict_types=1);
-
-final class HocSinhController extends BaseController
+class HocSinhController
 {
-    private HocSinh $model;
-
-    public function __construct()
+    public static function index(): void
     {
-        $this->model = new HocSinh();
+        $page = (int)($_GET['page'] ?? 1);
+        $limit = (int)($_GET['limit'] ?? 10);
+        $offset = ($page - 1) * $limit;
+        $search = $_GET['search'] ?? '';
+
+        $result = HocSinh::getAll($search, $limit, $offset);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => $result['data'],
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $result['total'],
+                'total_pages' => ceil($result['total'] / $limit)
+            ]
+        ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function index(): void
+    public static function show(string $id): void
     {
-        $this->json(['success' => true, 'data' => $this->model->all()]);
-    }
+        $hocSinh = HocSinh::findById($id);
 
-    public function show(int $id): void
-    {
-        $row = $this->model->find($id);
-        if ($row === null) {
-            $this->notFound('Học sinh không tồn tại');
+        if (!$hocSinh) {
+            http_response_code(404);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Không tìm thấy học sinh'
+            ], JSON_UNESCAPED_UNICODE);
             return;
         }
 
-        $this->json(['success' => true, 'data' => $row]);
+        $hocSinh['lop_hoc'] = HocSinh::getLopHoc($id);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => $hocSinh
+        ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function store(): void
+    public static function store(): void
     {
-        $data = $this->inputJson();
-        $missing = $this->requireFields($data, ['phu_huynh_id', 'ho_ten']);
-        if ($missing !== null) {
-            $this->badRequest($missing);
-            return;
-        }
+        $input = json_decode(file_get_contents('php://input'), true);
 
-        try {
-            $id = $this->model->create($data);
-            $this->json(['success' => true, 'data' => $this->model->find($id)], 201);
-        } catch (Throwable $e) {
-            $this->serverError($e->getMessage());
-        }
-    }
-
-    public function update(int $id): void
-    {
-        $data = $this->inputJson();
-        if ($this->model->find($id) === null) {
-            $this->notFound('Học sinh không tồn tại');
-            return;
-        }
-
-        try {
-            $this->model->update($id, $data);
-            $this->json(['success' => true, 'data' => $this->model->find($id)]);
-        } catch (Throwable $e) {
-            $this->serverError($e->getMessage());
-        }
-    }
-
-    public function destroy(int $id): void
-    {
-        if ($this->model->find($id) === null) {
-            $this->notFound('Học sinh không tồn tại');
+        if (empty($input['ho_ten'])) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Vui lòng điền tên học sinh'
+            ], JSON_UNESCAPED_UNICODE);
             return;
         }
 
         try {
-            $this->model->delete($id);
-            $this->json(['success' => true, 'message' => 'Đã xóa']);
-        } catch (Throwable $e) {
-            $this->serverError($e->getMessage());
+            $id = HocSinh::create($input);
+
+            http_response_code(201);
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Tạo học sinh thành công',
+                'data' => ['hoc_sinh_id' => $id]
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
         }
+    }
+
+    public static function update(string $id): void
+    {
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        try {
+            $updated = HocSinh::update($id, $input);
+
+            if (!$updated) {
+                http_response_code(400);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không có dữ liệu để cập nhật'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Cập nhật thành công'
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public static function destroy(string $id): void
+    {
+        try {
+            $affected = HocSinh::delete($id);
+            
+            if ($affected === 0) {
+                http_response_code(404);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không tìm thấy học sinh'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Xóa học sinh thành công'
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public static function getByPhuHuynh(string $id): void
+    {
+        $hocSinh = HocSinh::getByPhuHuynhId($id);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => $hocSinh
+        ], JSON_UNESCAPED_UNICODE);
     }
 }
