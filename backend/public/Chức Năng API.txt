@@ -1,0 +1,15 @@
+1. Lấy danh sách học phí của các lớp
+2. Lấy chi tiết học phí của 1 lớp
+3. Tạo hóa đơn học phí mới 
+4. Cập nhật trạng thái đóng tiền
+5. Lấy danh sách bảng lương của gia sư
+6. Lấy lương của 1 gia sư
+7. Tạo/tính lương cho gia sư
+8. 
+10. Xem báo cáo doanh thu 1 tháng
+11. Lấy thông báo của tôi
+12. Gởi thông báo
+13. Đánh dấu là đã đọc
+14. Lấy nội dung cuộc hội thoại
+15. Gởi tin nhắn
+16. Xem tin nhắn - API này cần check lại xem viết chưa
