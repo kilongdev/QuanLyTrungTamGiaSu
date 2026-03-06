@@ -1,77 +1,135 @@
 <?php
+require_once __DIR__ . '/../models/MonHoc.php';
 
-declare(strict_types=1);
-
-final class MonHocController extends BaseController
+class MonHocController
 {
-    private MonHoc $model;
-
-    public function __construct()
+    public static function getAll(): void
     {
-        $this->model = new MonHoc();
+        $page = (int)($_GET['page'] ?? 1);
+        $limit = (int)($_GET['limit'] ?? 10);
+        $offset = ($page - 1) * $limit;
+        $search = $_GET['search'] ?? '';
+
+        $result = MonHoc::getAll($search, $limit, $offset);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => $result['data'],
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $result['total'],
+                'total_pages' => ceil($result['total'] / $limit)
+            ]
+        ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function index(): void
+    public static function getById(string $id): void
     {
-        $this->json(['success' => true, 'data' => $this->model->all()]);
-    }
+        $monHoc = MonHoc::findById($id);
 
-    public function show(int $id): void
-    {
-        $row = $this->model->find($id);
-        if ($row === null) {
-            $this->notFound('Môn học không tồn tại');
+        if (!$monHoc) {
+            http_response_code(404);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Không tìm thấy môn học'
+            ], JSON_UNESCAPED_UNICODE);
             return;
         }
 
-        $this->json(['success' => true, 'data' => $row]);
+        echo json_encode([
+            'status' => 'success',
+            'data' => $monHoc
+        ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function store(): void
+    public static function create(): void
     {
-        $data = $this->inputJson();
-        $missing = $this->requireFields($data, ['ten_mon_hoc']);
-        if ($missing !== null) {
-            $this->badRequest($missing);
-            return;
-        }
+        $input = json_decode(file_get_contents('php://input'), true);
 
-        try {
-            $id = $this->model->create($data);
-            $this->json(['success' => true, 'data' => $this->model->find($id)], 201);
-        } catch (Throwable $e) {
-            $this->serverError($e->getMessage());
-        }
-    }
-
-    public function update(int $id): void
-    {
-        $data = $this->inputJson();
-        if ($this->model->find($id) === null) {
-            $this->notFound('Môn học không tồn tại');
-            return;
-        }
-
-        try {
-            $this->model->update($id, $data);
-            $this->json(['success' => true, 'data' => $this->model->find($id)]);
-        } catch (Throwable $e) {
-            $this->serverError($e->getMessage());
-        }
-    }
-
-    public function destroy(int $id): void
-    {
-        if ($this->model->find($id) === null) {
-            $this->notFound('Môn học không tồn tại');
+        if (empty($input['ten_mon_hoc'])) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Tên môn học là bắt buộc'
+            ], JSON_UNESCAPED_UNICODE);
             return;
         }
 
         try {
-            $this->model->delete($id);
-            $this->json(['success' => true, 'message' => 'Đã xóa']);
-        } catch (Throwable $e) {
-            $this->serverError($e->getMessage());
+            $id = MonHoc::create($input);
+
+            http_response_code(201);
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Tạo môn học thành công',
+                'data' => ['mon_hoc_id' => $id]
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public static function update(string $id): void
+    {
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        try {
+            $updated = MonHoc::update($id, $input);
+
+            if (!$updated) {
+                http_response_code(400);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không có dữ liệu để cập nhật hoặc môn học không tồn tại'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Cập nhật thành công'
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public static function delete(string $id): void
+    {
+        try {
+            $affected = MonHoc::delete($id);
+            
+            if ($affected === 0) {
+                http_response_code(404);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không tìm thấy môn học'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Xóa môn học thành công'
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
         }
     }
 }
