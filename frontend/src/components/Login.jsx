@@ -1,67 +1,68 @@
-import { useState, useEffect } from 'react'
-import { authAPI } from '../api/authApi'
+import { useState, useEffect } from "react";
+import { authAPI } from "../api/authApi";
 
 export default function Login({ onSwitchToRegister, onLoginSuccess, onClose }) {
   const [formData, setFormData] = useState(() => {
-    const saved = sessionStorage.getItem('loginForm')
-    return saved ? JSON.parse(saved) : { identifier: '', password: '' }
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+    const saved = sessionStorage.getItem("loginForm");
+    return saved ? JSON.parse(saved) : { identifier: "", password: "" };
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    sessionStorage.setItem('loginForm', JSON.stringify(formData))
-  }, [formData])
+    sessionStorage.setItem("loginForm", JSON.stringify(formData));
+  }, [formData]);
 
-  const clearFormData = () => sessionStorage.removeItem('loginForm')
+  const clearFormData = () => sessionStorage.removeItem("loginForm");
 
-  const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-  const isPhone = (value) => /^(0|\+84)[0-9]{9,10}$/.test(value.replace(/\s/g, ''))
+  const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  const isPhone = (value) =>
+    /^(0|\+84)[0-9]{9,10}$/.test(value.replace(/\s/g, ""));
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-    setError('')
-  }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError("");
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    const identifier = formData.identifier.trim()
-    
+    const identifier = formData.identifier.trim();
+
     if (!isEmail(identifier) && !isPhone(identifier)) {
-      setError('Vui lòng nhập email hoặc số điện thoại hợp lệ')
-      setLoading(false)
-      return
+      setError("Vui lòng nhập email hoặc số điện thoại hợp lệ");
+      setLoading(false);
+      return;
     }
 
-    const loginData = { password: formData.password }
+    const loginData = { password: formData.password };
     if (isEmail(identifier)) {
-      loginData.email = identifier
+      loginData.email = identifier;
     } else {
-      loginData.phone = identifier.replace(/\s/g, '')
+      loginData.phone = identifier.replace(/\s/g, "");
     }
 
     try {
-      const data = await authAPI.login(loginData)
-      if (data.status === 'success') {
-        clearFormData()
-        localStorage.setItem('token', data.data.token)
-        localStorage.setItem('user', JSON.stringify(data.data.user))
-        onLoginSuccess?.(data.data)
+      const data = await authAPI.login(loginData);
+      if (data.status === "success") {
+        clearFormData();
+        localStorage.setItem("token", data.data.token);
+        localStorage.setItem("user", JSON.stringify(data.data.user));
+        onLoginSuccess?.(data.data);
       } else {
-        setError(data.message || 'Đăng nhập thất bại')
+        setError(data.message || "Đăng nhập thất bại");
       }
     } catch (err) {
-      setError(err.message || 'Không thể kết nối đến server')
+      setError(err.message || "Không thể kết nối đến server");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
 
       <div className="relative bg-white rounded-xl shadow-lg w-full max-w-sm p-6">
@@ -79,7 +80,9 @@ export default function Login({ onSwitchToRegister, onLoginSuccess, onClose }) {
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">Email hoặc Số điện thoại</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Email hoặc Số điện thoại
+            </label>
             <input
               type="text"
               name="identifier"
@@ -92,7 +95,9 @@ export default function Login({ onSwitchToRegister, onLoginSuccess, onClose }) {
           </div>
 
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">Mật khẩu</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Mật khẩu
+            </label>
             <input
               type="password"
               name="password"
@@ -107,7 +112,9 @@ export default function Login({ onSwitchToRegister, onLoginSuccess, onClose }) {
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
           <div className="text-right">
-            <a href="#" className="text-red-600 hover:underline text-sm">Quên mật khẩu?</a>
+            <a href="#" className="text-red-600 hover:underline text-sm">
+              Quên mật khẩu?
+            </a>
           </div>
 
           <button
@@ -115,17 +122,20 @@ export default function Login({ onSwitchToRegister, onLoginSuccess, onClose }) {
             disabled={loading}
             className="w-full py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 disabled:opacity-60 text-sm"
           >
-            {loading ? 'Đang xử lý...' : 'Đăng nhập'}
+            {loading ? "Đang xử lý..." : "Đăng nhập"}
           </button>
         </form>
 
         <p className="text-center text-gray-500 text-sm mt-5">
-          Chưa có tài khoản?{' '}
-          <button onClick={onSwitchToRegister} className="text-red-600 font-medium hover:underline">
+          Chưa có tài khoản?{" "}
+          <button
+            onClick={onSwitchToRegister}
+            className="text-red-600 font-medium hover:underline"
+          >
             Đăng ký
           </button>
         </p>
       </div>
     </div>
-  )
+  );
 }

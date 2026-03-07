@@ -13,7 +13,6 @@ const Layouts = ({ user, onLogin, onRegister, onLogout }) => {
         onLogout={onLogout}
       />
 
-      <Header />
       <div className="pt-[125px]" />
       <Outlet />
       <Footer />

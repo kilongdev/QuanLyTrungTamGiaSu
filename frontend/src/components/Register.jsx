@@ -204,7 +204,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50">
       <div className="relative bg-white rounded-xl shadow-xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         {onClose && (
