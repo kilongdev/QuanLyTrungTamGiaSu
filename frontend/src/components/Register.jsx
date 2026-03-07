@@ -90,9 +90,6 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
         setOtpToken(data.data.token)
         setStep(2)
         startCountdown()
-        if (data.data.dev_otp) {
-          setOtp(data.data.dev_otp)
-        }
       } else {
         setError(data.message || 'Không thể gửi OTP')
       }

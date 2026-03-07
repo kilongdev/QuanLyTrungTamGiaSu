@@ -22,13 +22,20 @@ class OTPController
             $result = OTPService::generate($email);
             $sent = OTPService::sendEmail($email, $result['otp']);
             
-            // Luôn trả về thành công, hiển thị OTP trong dev mode
+            if (!$sent) {
+                http_response_code(500);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không thể gửi email. Vui lòng kiểm tra lại địa chỉ email hoặc thử lại sau.'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            
             echo json_encode([
                 'status' => 'success',
-                'message' => $sent ? 'Đã gửi mã OTP đến email của bạn' : 'Mã OTP (dev mode): ' . $result['otp'],
+                'message' => 'Đã gửi mã OTP đến email của bạn',
                 'data' => [
-                    'token' => $result['token'],
-                    'dev_otp' => $sent ? null : $result['otp']
+                    'token' => $result['token']
                 ]
             ], JSON_UNESCAPED_UNICODE);
         } catch (Exception $e) {

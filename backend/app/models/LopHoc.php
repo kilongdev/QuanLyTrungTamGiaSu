@@ -5,13 +5,17 @@ class LopHoc {
     
     public static function create($data) {
         $sql = "INSERT INTO lop_hoc 
-                (gia_su_id, mon_hoc_id, khoi_lop, gia_toan_khoa, so_buoi_hoc, gia_moi_buoi, so_luong_toi_da, loai_chi_tra, gia_tri_chi_tra, chu_ky_thanh_toan, trang_thai) 
+                (mon_hoc_id, ten_lop, mo_ta, lich_hoc, hoc_phi, gia_su_id, khoi_lop, gia_toan_khoa, so_buoi_hoc, gia_moi_buoi, so_luong_toi_da, loai_chi_tra, gia_tri_chi_tra, chu_ky_thanh_toan, trang_thai) 
                 VALUES 
-                (:gia_su_id, :mon_hoc_id, :khoi_lop, :gia_toan_khoa, :so_buoi_hoc, :gia_moi_buoi, :so_luong_toi_da, :loai_chi_tra, :gia_tri_chi_tra, :chu_ky_thanh_toan, :trang_thai)";
+                (:mon_hoc_id, :ten_lop, :mo_ta, :lich_hoc, :hoc_phi, :gia_su_id, :khoi_lop, :gia_toan_khoa, :so_buoi_hoc, :gia_moi_buoi, :so_luong_toi_da, :loai_chi_tra, :gia_tri_chi_tra, :chu_ky_thanh_toan, :trang_thai)";
         
         $params = [
-            ':gia_su_id' => $data['gia_su_id'] ?? null,
             ':mon_hoc_id' => $data['mon_hoc_id'],
+            ':ten_lop' => $data['ten_lop'] ?? null,
+            ':mo_ta' => $data['mo_ta'] ?? null,
+            ':lich_hoc' => $data['lich_hoc'] ?? null,
+            ':hoc_phi' => $data['hoc_phi'] ?? null,
+            ':gia_su_id' => $data['gia_su_id'] ?? null,
             ':khoi_lop' => $data['khoi_lop'] ?? null,
             ':gia_toan_khoa' => $data['gia_toan_khoa'] ?? null,
             ':so_buoi_hoc' => $data['so_buoi_hoc'] ?? null,
@@ -33,8 +37,12 @@ class LopHoc {
 
     public static function update($id, $data) {
         $sql = "UPDATE lop_hoc SET 
+                mon_hoc_id = :mon_hoc_id,
+                ten_lop = :ten_lop,
+                mo_ta = :mo_ta,
+                lich_hoc = :lich_hoc,
+                hoc_phi = :hoc_phi,
                 gia_su_id = :gia_su_id, 
-                mon_hoc_id = :mon_hoc_id, 
                 khoi_lop = :khoi_lop, 
                 gia_toan_khoa = :gia_toan_khoa, 
                 so_buoi_hoc = :so_buoi_hoc, 
@@ -48,8 +56,12 @@ class LopHoc {
                 
         $params = [
             ':id' => $id,
-            ':gia_su_id' => $data['gia_su_id'] ?? null,
             ':mon_hoc_id' => $data['mon_hoc_id'],
+            ':ten_lop' => $data['ten_lop'] ?? null,
+            ':mo_ta' => $data['mo_ta'] ?? null,
+            ':lich_hoc' => $data['lich_hoc'] ?? null,
+            ':hoc_phi' => $data['hoc_phi'] ?? null,
+            ':gia_su_id' => $data['gia_su_id'] ?? null,
             ':khoi_lop' => $data['khoi_lop'] ?? null,
             ':gia_toan_khoa' => $data['gia_toan_khoa'] ?? null,
             ':so_buoi_hoc' => $data['so_buoi_hoc'] ?? null,
