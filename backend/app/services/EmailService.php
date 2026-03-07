@@ -3,14 +3,21 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
+require_once __DIR__ . '/../core/Env.php';
+
 class EmailService
 {
-    private static $smtpHost = 'smtp.gmail.com';
-    private static $smtpPort = 587;
-    private static $smtpUsername = 'n.kimlong205@gmail.com';
-    private static $smtpPassword = 'xtsr aaox xbmc xias';
-    private static $fromEmail = 'n.kimlong205@gmail.com';
-    private static $fromName = 'Trung Tâm Gia Sư';
+    private static function getConfig()
+    {
+        return [
+            'host' => Env::get('SMTP_HOST', 'smtp.gmail.com'),
+            'port' => Env::get('SMTP_PORT', 587),
+            'username' => Env::get('SMTP_USERNAME', 'n.kimlong205@gmail.com'),
+            'password' => Env::get('SMTP_PASSWORD', 'xtsr aaox xbmc xias'),
+            'fromEmail' => Env::get('SMTP_FROM_EMAIL', 'n.kimlong205@gmail.com'),
+            'fromName' => Env::get('SMTP_FROM_NAME', 'Trung Tâm Gia Sư'),
+        ];
+    }
 
     public static function sendOTP(string $toEmail, string $otp, string $type = 'register'): bool
     {
@@ -30,19 +37,25 @@ class EmailService
         
         require_once $autoloadPath;
 
+        $config = self::getConfig();
         $mail = new PHPMailer(true);
 
         try {
             $mail->isSMTP();
-            $mail->Host = self::$smtpHost;
+            $mail->Host = $config['host'];
             $mail->SMTPAuth = true;
-            $mail->Username = self::$smtpUsername;
-            $mail->Password = self::$smtpPassword;
+            $mail->Username = $config['username'];
+            $mail->Password = $config['password'];
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = self::$smtpPort;
+            $mail->Port = $config['port'];
             $mail->CharSet = 'UTF-8';
 
-            $mail->setFrom(self::$fromEmail, self::$fromName);
+            // Enable debug in development mode
+            if (Env::isDevelopment()) {
+                $mail->SMTPDebug = SMTP::DEBUG_OFF; // Change to DEBUG_SERVER for verbose logs
+            }
+
+            $mail->setFrom($config['fromEmail'], $config['fromName']);
             $mail->addAddress($to);
 
             $mail->isHTML(true);

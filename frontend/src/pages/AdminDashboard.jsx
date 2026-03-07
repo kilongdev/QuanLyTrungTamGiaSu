@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../Layouts/DashboardLayout'
 import { LayoutDashboard, GraduationCap, Users, UserRound, BookOpen, BookText, CreditCard, BarChart3 } from 'lucide-react'
+import LopHocManagement from '../components/LopHocManagement'
 
 export default function AdminDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('dashboard')
@@ -40,7 +41,7 @@ export default function AdminDashboard({ user, onLogout }) {
       case 'students':
         return <PlaceholderContent title="Học sinh" description="Quản lý thông tin học sinh" />
       case 'classes':
-        return <PlaceholderContent title="Lớp học" description="Quản lý các lớp học và ghép cặp gia sư - học sinh" />
+        return <LopHocManagement />
       case 'subjects':
         return <PlaceholderContent title="Môn học" description="Quản lý danh sách môn học" />
       case 'payments':
