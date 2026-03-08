@@ -91,7 +91,7 @@ class PhuHuynh
 
     public static function update(string $id, array $data): bool
     {
-        $allowedFields = ['ho_ten', 'so_dien_thoai', 'dia_chi'];
+        $allowedFields = ['ho_ten', 'so_dien_thoai', 'dia_chi', 'email'];
         $fields = [];
         $params = [];
 
