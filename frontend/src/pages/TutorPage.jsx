@@ -1,27 +1,40 @@
-import { getTutor } from "@/service/tutorService";
 import React, { useEffect, useState } from "react";
+import { giaSuAPI } from "@/api/giaSuApi";
 
 const Tutorpage = () => {
   const [tutors, setTutors] = useState([]);
+
   useEffect(() => {
-    const fetchTutor = async () => {
+    const fetchTutors = async () => {
       try {
-        const res = await getTutor();
-        setTutors(res.data.data);
+        const res = await giaSuAPI.getAll();
+
+        setTutors(res.data || []);
       } catch (error) {
-        console.log(error);
+        console.log("Lỗi khi lấy danh sách gia sư:", error);
       }
     };
 
-    fetchTutor();
+    fetchTutors();
   }, []);
+
   return (
-    <div>
-      <div className="bg-red-500 w-full h-60">
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Danh sách gia sư</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {tutors.map((tutor) => (
-          <div className="flex gap-4">
-            <p>{tutor.ho_ten}</p>
-            <p>{tutor.email}</p>
+          <div
+            key={tutor.id}
+            className="border p-4 rounded-lg shadow hover:shadow-lg transition"
+          >
+            <p className="font-bold text-lg">{tutor.ho_ten}</p>
+
+            <p>Email: {tutor.email}</p>
+
+            <p>SĐT: {tutor.so_dien_thoai}</p>
+
+            <p>Địa chỉ: {tutor.dia_chi}</p>
           </div>
         ))}
       </div>

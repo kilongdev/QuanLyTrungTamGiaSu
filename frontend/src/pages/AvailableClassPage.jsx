@@ -2,7 +2,7 @@ import AvailableClastList from "@/components/AvailableClassList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { getAvailableClasses, getFilterOptions } from "@/service/classService";
+import { lopHocAPI } from "@/api/lophocApi";
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,10 +17,12 @@ import {
   UserPen,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 const AvailableClassPage = () => {
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState([]);
+
   const [options, setOptions] = useState([]);
   const [filters, setFilters] = useState({});
 
@@ -31,51 +33,95 @@ const AvailableClassPage = () => {
   const itemPerPage = 10;
   const totalPages = Math.ceil(total / itemPerPage);
 
-  console.log("classes: ", classes);
-
-  useEffect(() => {
-    Promise.all([getAvailableClasses(), getFilterOptions()])
-      .then(([classRes, optionRes]) => {
-        setClasses(classRes.data);
-        setOptions(optionRes.data);
-        setTotal(classRes.total);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    fetchClasses();
-  }, [currentPage]);
-
-  useEffect(() => {
-    if (!searchCode) {
-      fetchClasses();
-    }
-  }, [searchCode]);
-
-  const fetchClasses = async () => {
+  // Lấy lớp học
+  const getClasses = async (
+    overrideFilters = null,
+    overrideSearchCode = null,
+  ) => {
     try {
-      const res = await getAvailableClasses({
-        page: currentPage,
-        limit: itemPerPage,
-        searchCode,
-        ...filters,
+      const classRes = await lopHocAPI.getAll();
+
+      let data = classRes.data || classRes || [];
+
+      const subjects = new Set();
+      const grades = new Set();
+      data.forEach((item) => {
+        if (item.ten_mon_hoc) subjects.add(item.ten_mon_hoc);
+        if (item.khoi_lop) grades.add(item.khoi_lop);
       });
-      setClasses(res.data);
-      setTotal(res.total);
+
+      const dynamicOptions = [
+        {
+          name: "monhoc",
+          label: "Môn học",
+          values: Array.from(subjects).sort(),
+        },
+        {
+          name: "lop",
+          label: "Khối lớp",
+          values: Array.from(grades).sort(),
+        },
+      ];
+
+      setOptions(dynamicOptions);
+
+      // Use override values if provided, otherwise use state
+      const currentFilters =
+        overrideFilters !== null ? overrideFilters : filters;
+      const currentSearchCode =
+        overrideSearchCode !== null ? overrideSearchCode : searchCode;
+
+      // SEARCH theo MSL
+      if (currentSearchCode) {
+        data = data.filter((item) =>
+          String(item.lop_hoc_id)
+            .toLowerCase()
+            .includes(currentSearchCode.toLowerCase()),
+        );
+      }
+
+      // FILTER
+      data = data.filter((item) => {
+        if (currentFilters.lop && item?.khoi_lop !== currentFilters.lop)
+          return false;
+
+        if (
+          currentFilters.monhoc &&
+          item?.ten_mon_hoc !== currentFilters.monhoc
+        )
+          return false;
+
+        return true;
+      });
+
+      const start = (currentPage - 1) * itemPerPage;
+      const end = start + itemPerPage;
+
+      setClasses(data.slice(start, end));
+      setTotal(data.length);
     } catch (error) {
-      console.error("Lỗi khi phân trang!");
+      console.error("Lấy danh sách lớp học thất bại!", error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    getClasses();
+  }, [currentPage]);
+
+  useEffect(() => {
+    getClasses();
+  }, []);
+
   const handleSearch = () => {
     setCurrentPage(1);
-    fetchClasses();
+    getClasses();
   };
 
   const handleFilter = () => {
     setCurrentPage(1);
-    fetchClasses();
+    getClasses();
   };
 
   const getPagination = (currentPage, totalPages) => {
@@ -238,6 +284,7 @@ const AvailableClassPage = () => {
         />
 
         <Button
+          type="button"
           className="rounded-3xl bg-red-600 hover:bg-red-600 px-6 h-11 w-[260px]"
           onClick={handleSearch}
         >
@@ -274,14 +321,19 @@ const AvailableClassPage = () => {
           ))}
 
           <Button
+            type="button"
             onClick={() => {
-              (setFilters({}), setSearchCode(""), fetchClasses());
+              setFilters({});
+              setSearchCode("");
+              setCurrentPage(1);
+              getClasses({}, "");
             }}
             className="flex w-full h-10 px-3 py-1 bg-white text-black text-3xl text-base rounded-2xl items-center justify-center ring-2 ring-red-600 hover:bg-white"
           >
             Bỏ lọc
           </Button>
           <Button
+            type="button"
             onClick={handleFilter}
             className="flex w-full h-10 px-3 py-1 text-base rounded-2xl items-center justify-center ring-2 ring-red-600 bg-red-600 hover:bg-red-600 text-3xl"
           >
@@ -347,10 +399,6 @@ const AvailableClassPage = () => {
           </button>
         </div>
       )}
-
-      {/* form đăng ký dạy */}
-
-      <form action=""></form>
     </>
   );
 };

@@ -78,7 +78,6 @@ const Banner = () => {
               variant="ghost"
               className="relative w-fit my-4 mx-auto flex items-center overflow-hidden h-11 rounded-[999px] bg-red-600 text-white border border-red-600 shadow-accent-foreground before:absolute before:inset-0 before:bg-white before:scale-x-0 before:origin-left before:transition-transform before:duration-300 before:z-0
             hover:before:scale-x-100 hover:text-red-600 hover:border-white shadow-[2px_2px_0_rgba(239,68,68,0.9)]  "
-              // onClick={}
             >
               <Link to={"/dang-ky-hoc-thu"} className="relative z-10">
                 <span className="relative z-10">Học thử miễn phí</span>
