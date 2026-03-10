@@ -1,13 +1,9 @@
 <?php
-/**
- * Phụ Huynh (Parent) Routes
- * Quản lý phụ huynh
- */
-
 require_once __DIR__ . '/../controllers/PhuHuynhController.php';
 
-Router::get('/phuhuynh', ['PhuHuynhController', 'index']);
-Router::get('/phuhuynh/{id}', ['PhuHuynhController', 'show']);
-Router::post('/phuhuynh/create', ['PhuHuynhController', 'store']);
-Router::put('/phuhuynh/update/{id}', ['PhuHuynhController', 'update']);
-Router::delete('/phuhuynh/delete/{id}', ['PhuHuynhController', 'destroy']);
+// Định nghĩa các route cho Phụ Huynh
+Router::get('/phuhuynh', 'PhuHuynhController::index');
+Router::get('/phuhuynh/{id}', 'PhuHuynhController::show');
+Router::post('/phuhuynh', 'PhuHuynhController::store');
+Router::put('/phuhuynh/{id}', 'PhuHuynhController::update');
+Router::delete('/phuhuynh/{id}', 'PhuHuynhController::destroy');

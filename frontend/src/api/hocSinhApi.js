@@ -1,8 +1,9 @@
 /**
- * API cho quản lý gia sư
+ * API cho quản lý Học Sinh
  */
 
-const API_URL = 'http://localhost:8080/QuanLyTrungTamGiaSu/backend/public';
+// Sử dụng biến môi trường từ Vite hoặc fallback về localhost
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/QuanLyTrungTamGiaSu/backend/public';
 
 /**
  * Gửi request đến API
@@ -39,53 +40,56 @@ async function request(endpoint, options = {}) {
 }
 
 /**
- * Gia sư API
+ * Học Sinh API
  */
-export const giaSuAPI = {
+export const hocSinhAPI = {
     /**
-     * Lấy danh sách tất cả gia sư
+     * Lấy danh sách tất cả học sinh
+     * @param {object} params - { page, limit, search }
      */
-    getAll: () => 
-        request('/giasu', {
+    getAll: ({ page = 1, limit = 10, search = '' }) => {
+        const query = new URLSearchParams({ page, limit, search }).toString();
+        return request(`/hocsinh?${query}`, {
             method: 'GET',
-        }),
+        });
+    },
 
     /**
-     * Lấy chi tiết gia sư theo ID
-     * @param {number} id - ID gia sư
+     * Lấy chi tiết học sinh theo ID
+     * @param {number|string} id - ID học sinh
      */
     getById: (id) => 
-        request(`/giasu/${id}`, {
+        request(`/hocsinh/${id}`, {
             method: 'GET',
         }),
 
     /**
-     * Tạo gia sư mới
-     * @param {Object} data - Dữ liệu gia sư
+     * Tạo học sinh mới
+     * @param {Object} data - Dữ liệu học sinh
      */
     create: (data) => 
-        request('/giasu/create', {
+        request('/hocsinh/create', {
             method: 'POST',
             body: JSON.stringify(data),
         }),
 
     /**
-     * Cập nhật gia sư
-     * @param {number} id - ID gia sư
+     * Cập nhật học sinh
+     * @param {number|string} id - ID học sinh
      * @param {Object} data - Dữ liệu cần cập nhật
      */
     update: (id, data) => 
-        request(`/giasu/update/${id}`, {
+        request(`/hocsinh/update/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data),
         }),
 
     /**
-     * Xóa gia sư
-     * @param {number} id - ID gia sư
+     * Xóa học sinh
+     * @param {number|string} id - ID học sinh
      */
     delete: (id) => 
-        request(`/giasu/delete/${id}`, {
+        request(`/hocsinh/delete/${id}`, {
             method: 'DELETE',
         }),
 };

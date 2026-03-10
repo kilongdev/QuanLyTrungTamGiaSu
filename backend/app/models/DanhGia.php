@@ -43,4 +43,15 @@ class DanhGia {
         $sql = "DELETE FROM danh_gia WHERE danh_gia_id = :id";
         return Database::execute($sql, [':id' => $id]);
     }
+
+    /**
+     * Kiểm tra xem một phụ huynh đã có đánh giá nào chưa
+     */
+    public static function hasRatingsByPhuHuynh(string $phuHuynhId): bool
+    {
+        $result = Database::queryOne(
+            "SELECT COUNT(*) as count FROM danh_gia WHERE phu_huynh_id = ?", [$phuHuynhId]
+        );
+        return ($result['count'] ?? 0) > 0;
+    }
 }
