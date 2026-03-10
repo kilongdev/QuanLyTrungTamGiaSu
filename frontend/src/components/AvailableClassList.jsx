@@ -1,102 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
-import {
-  Blocks,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  Search,
-  SendIcon,
-} from "lucide-react";
-import { Input } from "./ui/input";
-import { cn } from "@/lib/utils";
-import { getAvailableClasses } from "@/service/classService";
+import { SendIcon } from "lucide-react";
 
 const AvailableClastList = ({ classList }) => {
-  //lọc
-  // const [filters, setFilters] = useState({});
-  // const [searchCode, setSearchCode] = useState("");
-
-  // const [filterClassList, setFilterClassList] = useState(classList);
-
-  // console.log("filters: ", filters);
-
-  // // console.log("searchCode: ", searchCode);
-
-  // // console.log("filterClassList: ", filterClassList);
-
-  // // pagination
-  // const [classes, setClasses] = useState([]);
-  // const [total, setTotal] = useState(0);
-  // const [currentPage, setCurrentPage] = useState(1);
-  // const itemPerPage = 10;
-  // const totalPages = Math.ceil(total / itemPerPage);
-
-  // useEffect(() => {
-  //   fetchClasses();
-  // }, [currentPage]);
-
-  // const fetchClasses = async () => {
-  //   try {
-  //     const res = await getAvailableClasses({
-  //       page: currentPage,
-  //       limit: itemPerPage,
-  //     });
-  //     setClasses(res.data);
-  //     setTotal(res.total);
-  //   } catch (error) {
-  //     console.error("Lỗi khi phân trang!");
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (!searchCode) {
-  //     setFilterClassList(classList);
-  //   }
-  // }, [searchCode, classList]);
-
-  // // lọc theo MSL
-  // const filterByMSL = () => {
-  //   const result = classList.filter((item) =>
-  //     item.lop_hoc_id?.toLowerCase().includes(searchCode.toLowerCase()),
-  //   );
-  //   setFilters({});
-  //   setFilterClassList(result);
-  // };
-
-  // //lọc nâng cao
-  // const filterClassByOptions = () => {
-  //   const result = classList.filter((item) => {
-  //     return Object.keys(filters).every((key) => {
-  //       const value = filters[key];
-
-  //       if (!value) return true;
-
-  //       switch (key) {
-  //         case "gioitinh":
-  //           return item?.requirement?.gender === value;
-
-  //         case "tinhthanh":
-  //           return item?.location?.district === value;
-
-  //         case "lop":
-  //           return item?.grade === value;
-
-  //         case "giasu":
-  //           return item?.requirement?.role === value;
-
-  //         case "monhoc":
-  //           return item?.subject === value;
-
-  //         default:
-  //           return true;
-  //       }
-  //     });
-  //   });
-  //   setSearchCode("");
-  //   setFilterClassList(result);
-  // };
-
   return (
     <>
       <div className="flex flex-col items-center justify-center mb-8 mx-auto max-w-5xl px-4">
@@ -131,60 +38,57 @@ const AvailableClastList = ({ classList }) => {
                         <span className="text-red-600">{item.lop_hoc_id}</span>
                       </h2>
                       <span className="text-sm px-3 py-1 rounded-full bg-red-100 text-red-600">
-                        {item.fee}
+                        {Number(item.gia_moi_buoi).toLocaleString("vi-VN")}đ
                       </span>
                     </div>
 
                     <ul className="space-y-1 text-[15px] list-disc marker:text-blue-600">
                       <li>
-                        <b>Yêu cầu:</b> {item.requirement.role} –{" "}
-                        {item.requirement.gender}
+                        <b>Gia sư:</b> {item.ten_gia_su || "Chưa có"} {" - "}
+                        {item.bang_cap}
                       </li>
 
                       <li>
-                        <b>Môn:</b> {item.subject} {item.grade}
+                        <b>Môn học:</b> {item.ten_mon_hoc}
                       </li>
 
                       <li>
-                        <b>Khu vực:</b> {item.location.address},{" "}
-                        {item.location.ward}, {item.location.district}
+                        <b>Khối lớp:</b> {item.khoi_lop}
                       </li>
 
                       <li>
-                        <b>Buổi / tuần:</b> {item.schedule.sessionsPerWeek} buổi
-                        ({item.schedule.durationPerSession}/buổi)
+                        <b>Số buổi học:</b> {item.so_buoi_hoc} buổi
                       </li>
 
                       <li>
-                        <b>Thời gian:</b>
-                        <ul className="ml-5 list-disc">
-                          {item.schedule.availableTime.map((t, i) => (
-                            <li key={i}>
-                              {t.day}: {t.time}
-                            </li>
-                          ))}
-                        </ul>
+                        <b>Số lượng tối đa:</b> {item.so_luong_toi_da}
                       </li>
 
                       <li>
-                        <b>Học viên:</b> {item.student.quantity} -{" "}
-                        {item.student.gender}
+                        <b>Số lượng hiện tại:</b> {item.so_luong_hien_tai}
                       </li>
 
-                      {item.note && (
-                        <li>
-                          <b>Ghi chú:</b> {item.note}
-                        </li>
-                      )}
+                      <li>
+                        <b>Học phí:</b>{" "}
+                        {Number(item.gia_toan_khoa).toLocaleString("vi-VN")}đ
+                      </li>
+                      {/* 
+                      <li>
+                        <b>Trạng thái:</b> {item.trang_thai}
+                      </li> */}
                     </ul>
-
                     <div className="mt-auto pt-2">
-                      <Button className="w-full h-10 rounded-full bg-red-600 text-white hover:bg-red-700">
-                        Đăng ký dạy
-                        <span>
-                          <SendIcon size={22} />
-                        </span>
-                      </Button>
+                      <Link
+                        to={`/dang-ky-hoc-thu?source=available&MSL=${item.lop_hoc_id}`}
+                        className="relative z-10"
+                      >
+                        <Button className="w-full h-10 rounded-full bg-red-600 text-white hover:bg-red-700">
+                          Đăng ký học
+                          <span>
+                            <SendIcon size={22} />
+                          </span>
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </div>

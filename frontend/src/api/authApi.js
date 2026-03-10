@@ -4,7 +4,6 @@
 
 const API_URL = "http://localhost:5001/QuanLyTrungTamGiaSu/backend/public";
 
-// const API_URL = "http://localhost:5001/api;";
 
 /**
  * Gửi request đến API
