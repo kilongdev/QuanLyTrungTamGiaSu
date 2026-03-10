@@ -15,6 +15,7 @@ export default function LopHocManagement() {
   const [showSettings, setShowSettings] = useState(null)
   const [formData, setFormData] = useState({
     mon_hoc_id: '',
+    ten_lop: '',
     gia_su_id: '',
     khoi_lop: '',
     gia_toan_khoa: '',
@@ -23,7 +24,8 @@ export default function LopHocManagement() {
     so_luong_toi_da: '1',
     loai_chi_tra: 'phan_tram',
     gia_tri_chi_tra: '',
-    trang_thai: 'sap_mo'
+    trang_thai: 'sap_mo',
+    ngay_ket_thuc: ''
   })
 
   useEffect(() => {
@@ -93,6 +95,7 @@ export default function LopHocManagement() {
     setEditingId(lopHoc.lop_hoc_id)
     setFormData({
       mon_hoc_id: lopHoc.mon_hoc_id || '',
+      ten_lop: lopHoc.ten_lop || '',
       gia_su_id: lopHoc.gia_su_id || '',
       khoi_lop: lopHoc.khoi_lop || '',
       gia_toan_khoa: lopHoc.gia_toan_khoa || '',
@@ -101,7 +104,8 @@ export default function LopHocManagement() {
       so_luong_toi_da: lopHoc.so_luong_toi_da || '1',
       loai_chi_tra: lopHoc.loai_chi_tra || 'phan_tram',
       gia_tri_chi_tra: lopHoc.gia_tri_chi_tra || '',
-      trang_thai: lopHoc.trang_thai || 'sap_mo'
+      trang_thai: lopHoc.trang_thai || 'sap_mo',
+      ngay_ket_thuc: lopHoc.ngay_ket_thuc ? lopHoc.ngay_ket_thuc.split(' ')[0] : ''
     })
     setShowModal(true)
   }
@@ -124,6 +128,7 @@ export default function LopHocManagement() {
   const resetForm = () => {
     setFormData({
       mon_hoc_id: '',
+      ten_lop: '',
       gia_su_id: '',
       khoi_lop: '',
       gia_toan_khoa: '',
@@ -132,7 +137,8 @@ export default function LopHocManagement() {
       gia_tri_chi_tra: '',
       gia_moi_buoi: '',
       so_luong_toi_da: '1',
-      trang_thai: 'sap_mo'
+      trang_thai: 'sap_mo',
+      ngay_ket_thuc: ''
     })
     setEditingId(null)
   }
@@ -174,6 +180,7 @@ export default function LopHocManagement() {
 
   const filteredLopHocs = lopHocs.filter(lh => 
     lh.khoi_lop?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (lh.ten_lop || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     getMonHocName(lh.mon_hoc_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
     lh.lop_hoc_id?.toString().includes(searchTerm)
   )
@@ -270,9 +277,9 @@ export default function LopHocManagement() {
 
               {/* Card Content */}
               <div className="p-3">
-                {/* Title - Khối lớp */}
+                {/* Title - Tên lớp hoặc fallback */}
                 <h3 className="font-semibold text-gray-800 text-base mb-1 pr-6 line-clamp-2">
-                  Lớp {lopHoc.khoi_lop || 'N/A'} - {getMonHocName(lopHoc.mon_hoc_id)}
+                  {lopHoc.ten_lop || `Lớp ${lopHoc.khoi_lop || 'N/A'} - ${getMonHocName(lopHoc.mon_hoc_id)}`}
                 </h3>
 
                 {/* Giáo viên */}
@@ -328,8 +335,8 @@ export default function LopHocManagement() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-5 py-3 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-800">
                 {editingId ? 'Chỉnh sửa lớp học' : 'Thêm lớp học mới'}
               </h3>
@@ -344,7 +351,7 @@ export default function LopHocManagement() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-5 space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Môn học <span className="text-red-500">*</span>
@@ -352,7 +359,7 @@ export default function LopHocManagement() {
                 <select
                   value={formData.mon_hoc_id}
                   onChange={(e) => setFormData({ ...formData, mon_hoc_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">-- Chọn môn học --</option>
@@ -364,17 +371,32 @@ export default function LopHocManagement() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Khối lớp
-                </label>
-                <input
-                  type="text"
-                  value={formData.khoi_lop}
-                  onChange={(e) => setFormData({ ...formData, khoi_lop: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ví dụ: 6, 7, 8, 9..."
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tên lớp
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.ten_lop}
+                    onChange={(e) => setFormData({ ...formData, ten_lop: e.target.value })}
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Tự động nếu để trống"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Khối lớp
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.khoi_lop}
+                    onChange={(e) => setFormData({ ...formData, khoi_lop: e.target.value })}
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ví dụ: 6, 7, 8..."
+                  />
+                </div>
               </div>
 
               <div>
@@ -384,7 +406,7 @@ export default function LopHocManagement() {
                 <select
                   value={formData.gia_su_id}
                   onChange={(e) => setFormData({ ...formData, gia_su_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">-- Chọn giáo viên --</option>
                   {giaSus.map((gs) => (
@@ -395,18 +417,34 @@ export default function LopHocManagement() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Học phí toàn khóa (VNĐ)
-                </label>
-                <input
-                  type="number"
-                  value={formData.gia_toan_khoa}
-                  onChange={(e) => setFormData({ ...formData, gia_toan_khoa: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="3000000"
-                  min="0"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Học phí toàn khóa (VNĐ)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.gia_toan_khoa}
+                    onChange={(e) => setFormData({ ...formData, gia_toan_khoa: e.target.value })}
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="3000000"
+                    min="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sĩ số tối đa
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.so_luong_toi_da}
+                    onChange={(e) => setFormData({ ...formData, so_luong_toi_da: e.target.value })}
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="1"
+                    min="1"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -418,7 +456,7 @@ export default function LopHocManagement() {
                     type="number"
                     value={formData.so_buoi_hoc}
                     onChange={(e) => setFormData({ ...formData, so_buoi_hoc: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="20"
                     min="0"
                   />
@@ -432,31 +470,17 @@ export default function LopHocManagement() {
                     type="number"
                     value={formData.gia_moi_buoi}
                     onChange={(e) => setFormData({ ...formData, gia_moi_buoi: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="150000"
                     min="0"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sĩ số tối đa
-                </label>
-                <input
-                  type="number"
-                  value={formData.so_luong_toi_da}
-                  onChange={(e) => setFormData({ ...formData, so_luong_toi_da: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="1"
-                  min="1"
-                />
-              </div>
-
-              <div className="border-t border-gray-200 pt-4">
-                <h4 className="font-semibold text-gray-800 text-sm mb-3">Chia phí gia sư</h4>
+              <div className="border-t border-gray-200 pt-3 mt-2">
+                <h4 className="font-semibold text-gray-800 text-sm mb-2">Chia phí gia sư</h4>
                 
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Loại chi trả
@@ -464,7 +488,7 @@ export default function LopHocManagement() {
                     <select
                       value={formData.loai_chi_tra}
                       onChange={(e) => setFormData({ ...formData, loai_chi_tra: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="phan_tram">Phần trăm (%)</option>
                       <option value="tien_cu_the">Tiền cụ thể</option>
@@ -479,7 +503,7 @@ export default function LopHocManagement() {
                       type="number"
                       value={formData.gia_tri_chi_tra}
                       onChange={(e) => setFormData({ ...formData, gia_tri_chi_tra: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder={formData.loai_chi_tra === 'phan_tram' ? '70' : '1500000'}
                       min="0"
                       step={formData.loai_chi_tra === 'phan_tram' ? '1' : '1000'}
@@ -489,36 +513,50 @@ export default function LopHocManagement() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Trạng thái
-                </label>
-                <select
-                  value={formData.trang_thai}
-                  onChange={(e) => setFormData({ ...formData, trang_thai: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="sap_mo">Sắp mở</option>
-                  <option value="dang_hoc">Đang học</option>
-                  <option value="ket_thuc">Kết thúc</option>
-                  <option value="dong">Đóng</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Trạng thái
+                  </label>
+                  <select
+                    value={formData.trang_thai}
+                    onChange={(e) => setFormData({ ...formData, trang_thai: e.target.value })}
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="sap_mo">Sắp mở</option>
+                    <option value="dang_hoc">Đang học</option>
+                    <option value="ket_thuc">Kết thúc</option>
+                    <option value="dong">Đóng</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ngày kết thúc
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.ngay_ket_thuc}
+                    onChange={(e) => setFormData({ ...formData, ngay_ket_thuc: e.target.value })}
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-3 border-t border-gray-100 mt-3">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false)
                     resetForm()
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex-1 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   {editingId ? 'Cập nhật' : 'Thêm mới'}
                 </button>
