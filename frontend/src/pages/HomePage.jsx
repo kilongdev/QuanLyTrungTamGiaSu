@@ -3,21 +3,21 @@ import { Button } from "@/components/ui/button";
 import { AnimatePresence, animations, motion, transform } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
-import AvailableClastList from "@/components/AvailableClassList";
-import { getAvailableClasses, getFilterOptions } from "@/service/classService";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import RegisterForm from "@/components/ContactForm";
 import { dataStudyProgram, descriptions } from "@/data/homepageData";
+import AvailableClastList from "@/components/AvailableClassList";
+import { lopHocAPI } from "@/api/lophocApi";
 
 const Homepage = () => {
   const [active, setActive] = useState(0);
   const activeProgram = dataStudyProgram.find((item) => item.id === active);
   console.log(activeProgram);
 
-  const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState([]);
-  const [options, setOptions] = useState([]);
+
+  const [loading, setLoading] = useState(true);
 
   // scroll
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -49,12 +49,19 @@ const Homepage = () => {
   };
 
   useEffect(() => {
-    Promise.all([getAvailableClasses(), getFilterOptions()])
-      .then(([classRes, optionRes]) => {
-        setClasses(classRes.data);
-        setOptions(optionRes.data);
-      })
-      .finally(() => setLoading(false));
+    const getClasses = async () => {
+      try {
+        setLoading(true);
+
+        const res = await lopHocAPI.getAll();
+        setClasses(res.data);
+      } catch (error) {
+        console.error("Lấy danh sách lớp học thất bại!", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    getClasses();
   }, []);
 
   if (loading) return <p>Loading...</p>;
@@ -166,17 +173,19 @@ const Homepage = () => {
         </section>
       </section>
       {/* Lớp hiện có cần tìm gia sư */}
-      <AvailableClastList options={options} classList={classes.slice(0, 6)} />
-      <Button
-        variant="ghost"
-        className="relative w-fit mx-auto my-7 flex items-center overflow-hidden h-11 rounded-[999px] bg-red-600 text-white border border-red-600 shadow-accent-foreground before:absolute before:inset-0 before:bg-white before:scale-x-0 before:origin-left before:transition-transform before:duration-300 before:z-0
+      <AvailableClastList classList={classes.slice(0, 6)} />
+      {classes.length !== 0 && (
+        <Button
+          variant="ghost"
+          className="relative w-fit mx-auto my-7 flex items-center overflow-hidden h-11 rounded-[999px] bg-red-600 text-white border border-red-600 shadow-accent-foreground before:absolute before:inset-0 before:bg-white before:scale-x-0 before:origin-left before:transition-transform before:duration-300 before:z-0
             hover:before:scale-x-100 hover:text-red-600 hover:border-white shadow-[2px_2px_0_rgba(239,68,68,0.9)]  "
-      >
-        <Link to={"/lop-hien-co"} className="relative z-10">
-          Xem thêm
-        </Link>
-        <ArrowRight className="relative z-10" />
-      </Button>
+        >
+          <Link to={"/lop-hien-co"} className="relative z-10">
+            Xem thêm
+          </Link>
+          <ArrowRight className="relative z-10" />
+        </Button>
+      )}
 
       {/* Đánh giá trung tâm */}
       <div className="flex flex-col justify-center items-center bg-amber-100/45 md:w-full">

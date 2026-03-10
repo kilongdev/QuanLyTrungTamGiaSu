@@ -1,20 +1,27 @@
 import { cn } from "@/lib/utils";
 import React from "react";
 import NavItem from "./Header/NavItem";
-import { LogIn, UserPlus, LogOut, User, LayoutDashboard, X } from "lucide-react";
+import {
+  LogIn,
+  UserPlus,
+  LogOut,
+  User,
+  LayoutDashboard,
+  X,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Sidebar = ({ open, onClose, user, onLogin, onRegister, onLogout }) => {
   const handleLogoutClick = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    localStorage.removeItem('admin_active_item')
-    localStorage.removeItem('giasu_active_item')
-    localStorage.removeItem('phuhuynh_active_item')
-    sessionStorage.removeItem('auth_session_active')
-    onLogout?.()
-    onClose()
-  }
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("admin_active_item");
+    localStorage.removeItem("giasu_active_item");
+    localStorage.removeItem("phuhuynh_active_item");
+    sessionStorage.removeItem("auth_session_active");
+    onLogout?.();
+    onClose();
+  };
 
   return (
     <>
@@ -36,7 +43,10 @@ const Sidebar = ({ open, onClose, user, onLogin, onRegister, onLogout }) => {
       >
         {/* Close button */}
         <div className="flex justify-end p-4">
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
             <X size={24} />
           </button>
         </div>
@@ -50,6 +60,13 @@ const Sidebar = ({ open, onClose, user, onLogin, onRegister, onLogout }) => {
               </div>
               <div>
                 <p className="font-medium text-gray-800">{user.name}</p>
+                <p className="text-xs text-gray-500 capitalize">
+                  {user.role === "phu_huynh"
+                    ? "Phụ huynh"
+                    : user.role === "gia_su"
+                      ? "Gia sư"
+                      : user.role}
+                </p>
               </div>
             </div>
           </div>
@@ -66,7 +83,7 @@ const Sidebar = ({ open, onClose, user, onLogin, onRegister, onLogout }) => {
             Học phí gia sư
           </NavItem>
           <NavItem to={"/lop-hien-co"} onClick={onClose} hasDropdown>
-            Lớp hiện có cần gia sư
+            Lớp học hiện có
           </NavItem>
           <NavItem to={"/lien-he"} onClick={onClose} hasDropdown>
             Liên hệ

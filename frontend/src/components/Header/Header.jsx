@@ -62,7 +62,7 @@ const Header = ({ user, onLogin, onRegister, onLogout }) => {
             to="/lop-hien-co"
             // matchPrefix="/lop-hien-co/*" hasDropdown
           >
-            Lớp hiện có cần gia sư
+            Lớp học hiện có
           </NavItem>
 
           <NavItem to="/lien-he">Liên hệ</NavItem>
