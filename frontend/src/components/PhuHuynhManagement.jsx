@@ -437,7 +437,7 @@ export default function PhuHuynhManagement() {
 
       {/* Detail Modal */}
       {detailModal.open && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-96 overflow-y-auto">
             {detailModal.loading ? (
               <div className="flex items-center justify-center h-64">
@@ -526,7 +526,7 @@ export default function PhuHuynhManagement() {
 
       {/* Add Modal */}
       {addModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
             <div className="p-6 flex justify-between items-center border-b">
               <h3 className="text-lg font-bold text-gray-800">Thêm phụ huynh mới</h3>
@@ -611,7 +611,7 @@ export default function PhuHuynhManagement() {
 
       {/* Edit Modal */}
       {editModal.open && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
             <div className="p-6 flex justify-between items-center border-b">
               <h3 className="text-lg font-bold text-gray-800">Chỉnh sửa thông tin phụ huynh</h3>
