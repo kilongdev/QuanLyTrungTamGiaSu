@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th3 07, 2026 lúc 03:30 AM
+-- Thời gian đã tạo: Th3 10, 2026 lúc 10:22 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.2.12
 
@@ -408,8 +408,8 @@ CREATE TABLE `lop_hoc` (
   `gia_tri_chi_tra` decimal(10,2) DEFAULT NULL,
   `chu_ky_thanh_toan` varchar(20) DEFAULT 'theo_thang',
   `trang_thai` enum('sap_mo','dang_hoc','ket_thuc','dong') DEFAULT 'sap_mo',
-  `ngay_tao` datetime DEFAULT current_timestamp(),
-  `ngay_ket_thuc` datetime DEFAULT NULL
+  `ngay_tao` date DEFAULT current_timestamp(),
+  `ngay_ket_thuc` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -417,16 +417,17 @@ CREATE TABLE `lop_hoc` (
 --
 
 INSERT INTO `lop_hoc` (`lop_hoc_id`, `gia_su_id`, `mon_hoc_id`, `ten_lop`, `khoi_lop`, `gia_toan_khoa`, `so_buoi_hoc`, `gia_moi_buoi`, `so_luong_toi_da`, `so_luong_hien_tai`, `loai_chi_tra`, `gia_tri_chi_tra`, `chu_ky_thanh_toan`, `trang_thai`, `ngay_tao`, `ngay_ket_thuc`) VALUES
-(1, 1, 1, NULL, '6', 3000000.00, 20, 150000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27 15:33:32', NULL),
-(2, 2, 2, NULL, '7', 3200000.00, 20, 160000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27 15:33:32', NULL),
-(3, 3, 3, NULL, '8', 3500000.00, 20, 175000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27 15:33:32', NULL),
-(4, 4, 4, NULL, '9', 3600000.00, 20, 180000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27 15:33:32', NULL),
-(5, 5, 5, NULL, '6', 2800000.00, 20, 140000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27 15:33:32', NULL),
-(6, 6, 6, NULL, '7', 3000000.00, 20, 150000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27 15:33:32', NULL),
-(7, 7, 7, NULL, '8', 4000000.00, 20, 200000.00, 1, 0, 'phan_tram', 80.00, 'theo_thang', 'dang_hoc', '2026-01-27 15:33:32', NULL),
-(8, 8, 8, NULL, '9', 3800000.00, 20, 190000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27 15:33:32', NULL),
-(9, 9, 9, NULL, '6', 2900000.00, 20, 145000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27 15:33:32', NULL),
-(10, 10, 10, NULL, '7', 3100000.00, 20, 155000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27 15:33:32', NULL);
+(1, 1, 1, NULL, '6', 3000000.00, 20, 150000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
+(2, 2, 2, NULL, '7', 3200000.00, 20, 160000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
+(3, 3, 3, NULL, '8', 3500000.00, 20, 175000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
+(4, 4, 4, NULL, '9', 3600000.00, 20, 180000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
+(5, 5, 5, NULL, '6', 2800000.00, 20, 140000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
+(6, 6, 6, NULL, '7', 3000000.00, 20, 150000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
+(7, 7, 7, NULL, '8', 4000000.00, 20, 200000.00, 1, 0, 'phan_tram', 80.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
+(8, 8, 8, 'Địa - Lop 9', '9', 3800000.00, 20, 190000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27', '2026-04-21'),
+(9, 9, 9, NULL, '6', 2900000.00, 20, 145000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
+(10, 10, 10, NULL, '7', 3100000.00, 20, 155000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
+(11, 1, 2, 'Văn - Lop 6', '6', 300000.00, 20, 15000.00, 1, 0, 'tien_cu_the', 100000.00, 'theo_thang', 'dang_hoc', '2026-03-10', NULL);
 
 -- --------------------------------------------------------
 
@@ -873,7 +874,7 @@ ALTER TABLE `lich_hoc`
 -- AUTO_INCREMENT cho bảng `lop_hoc`
 --
 ALTER TABLE `lop_hoc`
-  MODIFY `lop_hoc_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `lop_hoc_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT cho bảng `luong_gia_su`
