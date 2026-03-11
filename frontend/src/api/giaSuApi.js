@@ -2,7 +2,7 @@
  * API cho quản lý gia sư
  */
 
-const API_URL = 'http://localhost:8080/QuanLyTrungTamGiaSu/backend/public';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
 
 /**
  * Gửi request đến API
@@ -44,11 +44,12 @@ async function request(endpoint, options = {}) {
 export const giaSuAPI = {
     /**
      * Lấy danh sách tất cả gia sư
+     * @param {Object} params - Tham số phân trang và tìm kiếm
      */
-    getAll: () => 
-        request('/giasu', {
-            method: 'GET',
-        }),
+    getAll: ({ page = 1, limit = 10, search = '' } = {}) => {
+        const query = new URLSearchParams({ page, limit, search }).toString();
+        return request(`/giasu?${query}`);
+    },
 
     /**
      * Lấy chi tiết gia sư theo ID
