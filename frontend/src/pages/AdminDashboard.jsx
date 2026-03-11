@@ -8,6 +8,7 @@ import DashboardLayout from '../Layouts/DashboardLayout';
 import LopHocManagement from '../components/LopHocManagement';
 import PhuHuynhManagement from '../components/PhuHuynhManagement';
 import HocSinhManagement from '../components/HocSinhManagement';
+import GiaSuManagement from '../components/GiaSuManagement';
 import DashboardOverview from '../components/DashboardOverview';
 
 // Giả sử đây là component trang Dashboard chính của bạn
@@ -52,6 +53,8 @@ export default function AdminDashboard() {
         return <HocSinhManagement />; // <-- Hiển thị component khi menu được chọn
       case 'phuhuynh':
         return <PhuHuynhManagement />;
+      case 'giasu':
+        return <GiaSuManagement />;
       case 'lophoc':
         return <LopHocManagement />;
       // Thêm các case khác cho các mục menu còn lại
