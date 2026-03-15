@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../Layouts/DashboardLayout'
-import { LayoutDashboard, Users, GraduationCap, Search, Calendar, CreditCard, UserCircle } from 'lucide-react'
+import { LayoutDashboard, Users, GraduationCap, Search, Calendar, CreditCard, UserCircle, ClipboardList } from 'lucide-react'
+import YeuCauManagement from '../components/YeuCauManagement'
+import LichHocManagement from '../components/LichHocManagement'
 
 export default function PhuHuynhDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('dashboard')
@@ -19,6 +21,7 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
     { id: 'tutors', label: 'Gia sư của con', icon: GraduationCap },
     { id: 'find-tutor', label: 'Tìm gia sư', icon: Search },
     { id: 'schedule', label: 'Lịch học', icon: Calendar },
+    { id: 'requests', label: 'Yêu cầu hỗ trợ', icon: ClipboardList },
     { id: 'payments', label: 'Thanh toán', icon: CreditCard },
     { id: 'profile', label: 'Hồ sơ', icon: UserCircle },
   ]
@@ -39,8 +42,10 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
       case 'find-tutor':
         return <FindTutorContent />
       case 'schedule':
-        return <PlaceholderContent title="Lịch học" description="Xem lịch học của con" />
-      case 'payments':
+        return <LichHocManagement user={user} />
+      case 'requests': 
+        return <YeuCauManagement user={user} />
+        case 'payments':
         return <PlaceholderContent title="Thanh toán" description="Quản lý thanh toán học phí" />
       case 'profile':
         return <PlaceholderContent title="Hồ sơ" description="Cập nhật thông tin cá nhân" />

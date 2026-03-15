@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../Layouts/DashboardLayout'
-import { LayoutDashboard, Calendar, BookOpen, GraduationCap, Mail, Wallet, UserCircle } from 'lucide-react'
+import { LayoutDashboard, Calendar, BookOpen, GraduationCap, Mail, Wallet, UserCircle, Users, ClipboardList } from 'lucide-react'
+import YeuCauManagement from '../components/YeuCauManagement'
+import LichHocManagement from '../components/LichHocManagement'
 
 export default function GiaSuDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('dashboard')
@@ -19,6 +21,7 @@ export default function GiaSuDashboard({ user, onLogout }) {
     { id: 'classes', label: 'Lớp đang dạy', icon: BookOpen },
     { id: 'students', label: 'Học sinh', icon: GraduationCap },
     { id: 'requests', label: 'Yêu cầu mới', icon: Mail },
+    { id: 'manage-requests', label: 'Yêu cầu của tôi', icon: ClipboardList },
     { id: 'income', label: 'Thu nhập', icon: Wallet },
     { id: 'profile', label: 'Hồ sơ', icon: UserCircle },
   ]
@@ -33,13 +36,15 @@ export default function GiaSuDashboard({ user, onLogout }) {
       case 'dashboard':
         return <DashboardContent />
       case 'schedule':
-        return <ScheduleContent />
+        return <LichHocManagement user={user} />
       case 'classes':
         return <PlaceholderContent title="Lớp đang dạy" description="Xem và quản lý các lớp bạn đang dạy" />
       case 'students':
         return <PlaceholderContent title="Học sinh" description="Thông tin học sinh của bạn" />
       case 'requests':
         return <PlaceholderContent title="Yêu cầu mới" description="Các yêu cầu dạy mới từ phụ huynh" />
+      case 'manage-requests':
+        return <YeuCauManagement user={user} /> 
       case 'income':
         return <PlaceholderContent title="Thu nhập" description="Theo dõi thu nhập và thanh toán" />
       case 'profile':

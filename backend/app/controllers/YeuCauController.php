@@ -52,6 +52,30 @@ class YeuCauController {
         }
     }
 
+    public function update($id) {
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        if (empty($data['phan_loai']) || empty($data['tieu_de']) || empty($data['noi_dung'])) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Vui lòng nhập đầy đủ phân loại, tiêu đề và nội dung!"]);
+            return;
+        }
+
+        try {
+            $result = YeuCau::update($id, $data);
+            
+            if ($result) {
+                echo json_encode(["status" => "success", "message" => "Đã cập nhật nội dung yêu cầu thành công!"]);
+            } else {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Không thể cập nhật! Yêu cầu này không tồn tại hoặc đã được Admin xử lý."]);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Lỗi hệ thống: " . $e->getMessage()]);
+        }
+    }
+
     public function delete($id) {
         try {
             YeuCau::delete($id);

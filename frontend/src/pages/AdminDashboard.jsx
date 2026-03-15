@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../Layouts/DashboardLayout'
-import { LayoutDashboard, GraduationCap, Users, UserRound, BookOpen, BookText, CreditCard, BarChart3 } from 'lucide-react'
+import { LayoutDashboard, GraduationCap, Users, UserRound, BookOpen, BookText, CreditCard, BarChart3, ClipboardList, Calendar } from 'lucide-react'
 import LopHocManagement from '../components/LopHocManagement'
+import YeuCauManagement from '../components/YeuCauManagement'
+import LichHocManagement from '../components/LichHocManagement'
 
 export default function AdminDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('dashboard')
@@ -21,6 +23,8 @@ export default function AdminDashboard({ user, onLogout }) {
     { id: 'students', label: 'Học sinh', icon: UserRound },
     { id: 'classes', label: 'Lớp học', icon: BookOpen },
     { id: 'subjects', label: 'Môn học', icon: BookText },
+    { id: 'schedule', label: 'Quản lý Lịch học', icon: Calendar },
+    { id: 'requests', label: 'Yêu cầu', icon: ClipboardList },
     { id: 'payments', label: 'Thanh toán', icon: CreditCard },
     { id: 'reports', label: 'Báo cáo thống kê', icon: BarChart3 },
   ]
@@ -42,6 +46,10 @@ export default function AdminDashboard({ user, onLogout }) {
         return <PlaceholderContent title="Học sinh" description="Quản lý thông tin học sinh" />
       case 'classes':
         return <LopHocManagement />
+      case 'schedule':
+        return <LichHocManagement user={user} />
+      case 'requests':
+        return <YeuCauManagement user={user} />
       case 'subjects':
         return <PlaceholderContent title="Môn học" description="Quản lý danh sách môn học" />
       case 'payments':
