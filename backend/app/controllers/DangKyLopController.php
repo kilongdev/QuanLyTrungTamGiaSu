@@ -48,4 +48,14 @@ class DangKyLopController {
         $data = DangKyLop::getByLop($lop_hoc_id);
         echo json_encode(["status" => "success", "data" => $data]);
     }
+
+    public function getAll() {
+        $data = DangKyLop::getAll();
+        echo json_encode(["status" => "success", "data" => $data]);
+    }
+
+    public function getByPhuHuynh($phu_huynh_id) {
+        $data = DangKyLop::getByPhuHuynh($phu_huynh_id);
+        echo json_encode(["status" => "success", "data" => $data]);
+    }
 }

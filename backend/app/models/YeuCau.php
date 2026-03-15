@@ -54,6 +54,23 @@ class YeuCau {
         return Database::execute($sql, $params);
     }
 
+    public static function update($id, $data) {
+        $sql = "UPDATE yeu_cau 
+                SET phan_loai = :phan_loai, 
+                    tieu_de = :tieu_de, 
+                    noi_dung = :noi_dung 
+                WHERE yeu_cau_id = :id AND trang_thai = 'cho_duyet'";
+        
+        $params = [
+            ':id'        => $id,
+            ':phan_loai' => $data['phan_loai'],
+            ':tieu_de'   => $data['tieu_de'],
+            ':noi_dung'  => $data['noi_dung']
+        ];
+        
+        return Database::execute($sql, $params);
+    }
+
     public static function delete($id) {
         $sql = "DELETE FROM yeu_cau WHERE yeu_cau_id = :id";
         return Database::execute($sql, [':id' => $id]);

@@ -92,4 +92,13 @@ export const hocSinhAPI = {
         request(`/hocsinh/delete/${id}`, {
             method: 'DELETE',
         }),
+
+    /**
+     * Lấy danh sách học sinh (con) theo ID Phụ huynh
+     * @param {number|string} phuHuynhId - ID phụ huynh
+     */
+    getByPhuHuynh: (phuHuynhId) => 
+        request(`/hocsinh/phuhuynh/${phuHuynhId}`, {
+            method: 'GET',
+        }),
 };

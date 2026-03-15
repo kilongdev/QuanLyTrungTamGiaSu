@@ -1,28 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Users, BookOpen, GraduationCap, Briefcase, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, Briefcase, FileText, Calendar, ClipboardList, BookCheck } from 'lucide-react';
 
 import DashboardLayout from '../Layouts/DashboardLayout';
-
-// Import các component quản lý
+import DashboardOverview from '../components/DashboardOverview';
 import LopHocManagement from '../components/LopHocManagement';
 import PhuHuynhManagement from '../components/PhuHuynhManagement';
 import HocSinhManagement from '../components/HocSinhManagement';
 import GiaSuManagement from '../components/GiaSuManagement';
-import DashboardOverview from '../components/DashboardOverview';
+import LichHocManagement from '../components/LichHocManagement';
+import YeuCauManagement from '../components/YeuCauManagement';
+import DangKyLopManagement from '../components/DangKyLopManagement'; // Module đăng ký lớp tụi mình vừa làm
 
-// Giả sử đây là component trang Dashboard chính của bạn
 export default function AdminDashboard() {
   const [user, setUser] = useState(null);
-  const [activeItem, setActiveItem] = useState('dashboard'); // <-- Đặt 'dashboard' làm trang mặc định
+  const [activeItem, setActiveItem] = useState('dashboard');
   const navigate = useNavigate();
+
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser && storedUser.role === 'admin') {
+    const token = localStorage.getItem('token');
+    
+    if (storedUser && storedUser.role === 'admin' && token) {
       setUser(storedUser);
     } else {
-      // Nếu không phải admin, chuyển về trang chủ hoặc trang đăng nhập
+      // Nếu không phải admin hoặc mất token, đá văng ra ngoài
       navigate('/');
     }
   }, [navigate]);
@@ -34,32 +37,42 @@ export default function AdminDashboard() {
     navigate('/');
   };
 
-  // Định nghĩa các mục menu cho admin
   const menuItems = [
-    { id: 'dashboard', label: 'Tổng quan', icon: Home },
-    { id: 'hocsinh', label: 'Quản lý Học sinh', icon: GraduationCap }, // <-- Thêm mục menu mới
+    { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+    { id: 'dang_ky_lop', label: 'Duyệt Đơn Đăng Ký', icon: BookCheck }, // Gắn thêm ở đây
+    { id: 'schedule', label: 'Quản lý Lịch học', icon: Calendar },
+    { id: 'requests', label: 'Yêu cầu hỗ trợ', icon: ClipboardList },
+    { id: 'lophoc', label: 'Quản lý Lớp học', icon: BookOpen },
+    { id: 'hocsinh', label: 'Quản lý Học sinh', icon: GraduationCap },
     { id: 'phuhuynh', label: 'Quản lý Phụ huynh', icon: Users },
     { id: 'giasu', label: 'Quản lý Gia sư', icon: Briefcase },
-    { id: 'lophoc', label: 'Quản lý Lớp học', icon: BookOpen },
-    { id: 'baocao', label: 'Báo cáo', icon: FileText },
   ];
 
-  // Hàm để render component tương ứng với menu được chọn
+  const getPageTitle = () => {
+    const item = menuItems.find(m => m.id === activeItem);
+    return item ? item.label : 'Trang quản trị';
+  };
+
   const renderContent = () => {
     switch (activeItem) {
       case 'dashboard':
         return <DashboardOverview onNavigate={setActiveItem} />;
+      case 'dang_ky_lop':
+        return <DangKyLopManagement user={user} />;
+      case 'schedule':
+        return <LichHocManagement user={user} />;
+      case 'requests':
+        return <YeuCauManagement user={user} />;
+      case 'lophoc':
+        return <LopHocManagement />;
       case 'hocsinh':
-        return <HocSinhManagement />; // <-- Hiển thị component khi menu được chọn
+        return <HocSinhManagement />;
       case 'phuhuynh':
         return <PhuHuynhManagement />;
       case 'giasu':
         return <GiaSuManagement />;
-      case 'lophoc':
-        return <LopHocManagement />;
-      // Thêm các case khác cho các mục menu còn lại
-      // default:
-      //   return <DashboardOverview />;
+      default:
+        return <DashboardOverview onNavigate={setActiveItem} />;
     }
   };
 
@@ -69,8 +82,8 @@ export default function AdminDashboard() {
       onLogout={handleLogout}
       menuItems={menuItems}
       activeItem={activeItem}
-      onMenuClick={(id) => setActiveItem(id)}
-      pageTitle="Trang quản trị"
+      onMenuClick={setActiveItem}
+      pageTitle={getPageTitle()}
     >
       {renderContent()}
     </DashboardLayout>

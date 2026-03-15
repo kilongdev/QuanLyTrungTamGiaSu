@@ -4,7 +4,18 @@ require_once __DIR__ . '/../core/Database.php';
 class DiemDanh {
     
     public static function getByLichHoc($lich_hoc_id) {
-        $sql = "SELECT * FROM diem_danh WHERE lich_hoc_id = :lich_hoc_id";
+        $sql = "SELECT 
+                    hs.hoc_sinh_id, 
+                    hs.ho_ten as ten_hoc_sinh, 
+                    dd.diem_danh_id,
+                    dd.tinh_trang, 
+                    dd.ghi_chu
+                FROM lich_hoc lh
+                JOIN dang_ky_lop dkl ON lh.lop_hoc_id = dkl.lop_hoc_id AND dkl.trang_thai = 'da_duyet'
+                JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                LEFT JOIN diem_danh dd ON dd.lich_hoc_id = lh.lich_hoc_id AND dd.hoc_sinh_id = hs.hoc_sinh_id
+                WHERE lh.lich_hoc_id = :lich_hoc_id";
+                
         return Database::query($sql, [':lich_hoc_id' => $lich_hoc_id]);
     }
 
