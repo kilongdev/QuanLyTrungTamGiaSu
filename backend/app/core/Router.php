@@ -78,6 +78,11 @@ class Router
             }
         }
 
+        // Loại bỏ /api prefix nếu có
+        if (strpos($uri, '/api') === 0) {
+            $uri = substr($uri, 4); // Loại bỏ '/api'
+        }
+
         return $uri ?: '/';
     }
 

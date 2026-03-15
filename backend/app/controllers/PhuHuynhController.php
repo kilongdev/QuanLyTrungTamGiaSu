@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../models/PhuHuynh.php';
 require_once __DIR__ . '/../models/HocSinh.php';
+require_once __DIR__ . '/../models/DanhGia.php';
 
 class PhuHuynhController
 {
@@ -82,6 +83,19 @@ class PhuHuynhController
     {
         $input = json_decode(file_get_contents('php://input'), true);
 
+        // Kiểm tra email trùng lặp nếu có thay đổi
+        if (isset($input['email'])) {
+            $existing = PhuHuynh::findByEmail($input['email']);
+            if ($existing && $existing['phu_huynh_id'] != $id) {
+                http_response_code(400);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Email đã được sử dụng bởi tài khoản khác'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+        }
+
         try {
             $updated = PhuHuynh::update($id, $input);
 
@@ -111,6 +125,28 @@ class PhuHuynhController
     public static function destroy(string $id): void
     {
         try {
+            // Kiểm tra xem phụ huynh có học sinh không trước khi xóa
+            $children = HocSinh::getByPhuHuynhId($id);
+            if (!empty($children)) {
+                http_response_code(400);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không thể xóa phụ huynh vì đang có học sinh liên kết.'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            // Kiểm tra xem phụ huynh có đánh giá nào không
+            if (DanhGia::hasRatingsByPhuHuynh($id)) {
+                http_response_code(400);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không thể xóa phụ huynh vì đã có đánh giá gia sư liên quan.'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+
             $affected = PhuHuynh::delete($id);
             
             if ($affected === 0) {

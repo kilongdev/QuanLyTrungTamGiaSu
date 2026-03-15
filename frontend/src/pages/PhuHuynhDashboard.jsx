@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../Layouts/DashboardLayout'
-import { LayoutDashboard, Users, GraduationCap, Search, Calendar, CreditCard, UserCircle, ClipboardList } from 'lucide-react'
+import { LayoutDashboard, Users, GraduationCap, Search, Calendar, CreditCard, UserCircle, ClipboardList, BookOpen } from 'lucide-react' // Đã thêm BookOpen
 import YeuCauManagement from '../components/YeuCauManagement'
 import LichHocManagement from '../components/LichHocManagement'
+import DangKyLopManagement from '../components/DangKyLopManagement' 
 
 export default function PhuHuynhDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('dashboard')
@@ -20,6 +21,7 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
     { id: 'children', label: 'Con của tôi', icon: Users },
     { id: 'tutors', label: 'Gia sư của con', icon: GraduationCap },
     { id: 'find-tutor', label: 'Tìm gia sư', icon: Search },
+    { id: 'dang-ky-lop', label: 'Tìm & Đăng Ký Lớp', icon: BookOpen },
     { id: 'schedule', label: 'Lịch học', icon: Calendar },
     { id: 'requests', label: 'Yêu cầu hỗ trợ', icon: ClipboardList },
     { id: 'payments', label: 'Thanh toán', icon: CreditCard },
@@ -41,11 +43,13 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
         return <TutorsContent />
       case 'find-tutor':
         return <FindTutorContent />
+      case 'dang-ky-lop': 
+        return <DangKyLopManagement user={user} />
       case 'schedule':
         return <LichHocManagement user={user} />
       case 'requests': 
         return <YeuCauManagement user={user} />
-        case 'payments':
+      case 'payments':
         return <PlaceholderContent title="Thanh toán" description="Quản lý thanh toán học phí" />
       case 'profile':
         return <PlaceholderContent title="Hồ sơ" description="Cập nhật thông tin cá nhân" />

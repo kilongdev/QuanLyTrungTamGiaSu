@@ -1,7 +1,8 @@
 /**
- * API cho quản lý lớp học
+ * API cho quản lý Học Sinh
  */
 
+// Sử dụng biến môi trường từ Vite hoặc fallback về localhost
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
 
 /**
@@ -11,13 +12,9 @@ async function request(endpoint, options = {}) {
     const token = localStorage.getItem('token');
     
     const headers = {
+        'Content-Type': 'application/json',
         ...options.headers,
     };
-
-    // Chỉ set Content-Type nếu không phải FormData
-    if (!(options.body instanceof FormData)) {
-        headers['Content-Type'] = 'application/json';
-    }
     
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -43,60 +40,65 @@ async function request(endpoint, options = {}) {
 }
 
 /**
- * Lớp học API
+ * Học Sinh API
  */
-export const lopHocAPI = {
+export const hocSinhAPI = {
     /**
-     * Lấy danh sách tất cả lớp học
+     * Lấy danh sách tất cả học sinh
+     * @param {object} params - { page, limit, search }
      */
-    getAll: () => 
-        request('/lophoc', {
+    getAll: ({ page = 1, limit = 10, search = '' }) => {
+        const query = new URLSearchParams({ page, limit, search }).toString();
+        return request(`/hocsinh?${query}`, {
             method: 'GET',
-        }),
+        });
+    },
 
     /**
-     * Lấy chi tiết lớp học theo ID
-     * @param {number} id - ID lớp học
+     * Lấy chi tiết học sinh theo ID
+     * @param {number|string} id - ID học sinh
      */
     getById: (id) => 
-        request(`/lophoc/${id}`, {
+        request(`/hocsinh/${id}`, {
             method: 'GET',
         }),
 
     /**
-     * Tạo lớp học mới
-     * @param {Object} data - Dữ liệu lớp học
-     * @param {number} data.mon_hoc_id - ID môn học (required)
-     * @param {number} data.gia_su_id - ID giáo viên (optional)
-     * @param {string} data.ten_lop - Tên lớp (optional)
-     * @param {string} data.mo_ta - Mô tả (optional)
-     * @param {string} data.lich_hoc - Lịch học (optional)
-     * @param {number} data.hoc_phi - Học phí (optional)
-     * @param {string} data.trang_thai - Trạng thái (optional)
+     * Tạo học sinh mới
+     * @param {Object} data - Dữ liệu học sinh
      */
     create: (data) => 
-        request('/lophoc/create', {
+        request('/hocsinh/create', {
             method: 'POST',
             body: JSON.stringify(data),
         }),
 
     /**
-     * Cập nhật lớp học
-     * @param {number} id - ID lớp học
+     * Cập nhật học sinh
+     * @param {number|string} id - ID học sinh
      * @param {Object} data - Dữ liệu cần cập nhật
      */
     update: (id, data) => 
-        request(`/lophoc/update/${id}`, {
+        request(`/hocsinh/update/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data),
         }),
 
     /**
-     * Xóa lớp học
-     * @param {number} id - ID lớp học
+     * Xóa học sinh
+     * @param {number|string} id - ID học sinh
      */
     delete: (id) => 
-        request(`/lophoc/delete/${id}`, {
+        request(`/hocsinh/delete/${id}`, {
             method: 'DELETE',
+        }),
+
+    /**
+     * Lấy danh sách học sinh (con) theo ID Phụ huynh
+     * @param {number|string} phuHuynhId - ID phụ huynh
+     */
+    getByPhuHuynh: (phuHuynhId) => 
+        request(`/hocsinh/phuhuynh/${phuHuynhId}`, {
+            method: 'GET',
         }),
 };

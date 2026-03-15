@@ -1,5 +1,5 @@
 /**
- * API cho quản lý môn học
+ * API cho quản lý Phụ Huynh
  */
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
@@ -39,53 +39,29 @@ async function request(endpoint, options = {}) {
 }
 
 /**
- * Môn học API
+ * Phụ Huynh API
  */
-export const monHocAPI = {
-    /**
-     * Lấy danh sách tất cả môn học
-     */
-    getAll: () => 
-        request('/monhoc', {
+export const phuHuynhAPI = {
+    getAll: ({ page = 1, limit = 10, search = '' }) => {
+        const query = new URLSearchParams({ page, limit, search }).toString();
+        return request(`/phuhuynh?${query}`);
+    },
+    getById: (id) =>
+        request(`/phuhuynh/${id}`, {
             method: 'GET',
         }),
-
-    /**
-     * Lấy chi tiết môn học theo ID
-     * @param {number} id - ID môn học
-     */
-    getById: (id) => 
-        request(`/monhoc/${id}`, {
-            method: 'GET',
-        }),
-
-    /**
-     * Tạo môn học mới
-     * @param {Object} data - Dữ liệu môn học
-     */
-    create: (data) => 
-        request('/monhoc/create', {
+    create: (data) =>
+        request('/phuhuynh/create', {
             method: 'POST',
             body: JSON.stringify(data),
         }),
-
-    /**
-     * Cập nhật môn học
-     * @param {number} id - ID môn học
-     * @param {Object} data - Dữ liệu cần cập nhật
-     */
-    update: (id, data) => 
-        request(`/monhoc/update/${id}`, {
+    update: (id, data) =>
+        request(`/phuhuynh/update/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data),
         }),
-
-    /**
-     * Xóa môn học
-     * @param {number} id - ID môn học
-     */
-    delete: (id) => 
-        request(`/monhoc/delete/${id}`, {
+    delete: (id) =>
+        request(`/phuhuynh/delete/${id}`, {
             method: 'DELETE',
         }),
 };
