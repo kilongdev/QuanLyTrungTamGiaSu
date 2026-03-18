@@ -1,31 +1,24 @@
 import { cn } from "@/lib/utils";
-import React from "react";
-import NavItem from "./Header/NavItem";
+import React, { useState } from "react";
 import {
   LogIn,
-  UserPlus,
   LogOut,
   User,
   LayoutDashboard,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const Sidebar = ({ open, onClose, user, onLogin, onRegister, onLogout }) => {
-  const handleLogoutClick = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("admin_active_item");
-    localStorage.removeItem("giasu_active_item");
-    localStorage.removeItem("phuhuynh_active_item");
-    sessionStorage.removeItem("auth_session_active");
-    onLogout?.();
-    onClose();
+const Sidebar = ({ open, onClose, user, onLogin, onLogout }) => {
+  const [openParent, setOpenParent] = useState(null);
+
+  const toggleMenu = (menu) => {
+    setOpenParent(openParent === menu ? null : menu);
   };
 
   return (
     <>
-      {/* overlay */}
       <div
         onClick={onClose}
         className={cn(
@@ -41,7 +34,6 @@ const Sidebar = ({ open, onClose, user, onLogin, onRegister, onLogout }) => {
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        {/* Close button */}
         <div className="flex justify-end p-4">
           <button
             onClick={onClose}
@@ -51,72 +43,71 @@ const Sidebar = ({ open, onClose, user, onLogin, onRegister, onLogout }) => {
           </button>
         </div>
 
-        {/* User info (if logged in) */}
-        {user && (
-          <div className="px-5 pb-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <User size={20} className="text-red-600" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">{user.name}</p>
-                <p className="text-xs text-gray-500 capitalize">
-                  {user.role === "phu_huynh"
-                    ? "Phụ huynh"
-                    : user.role === "gia_su"
-                      ? "Gia sư"
-                      : user.role}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <nav className="flex flex-col gap-4 font-medium py-5">
-          <NavItem to={"/"} onClick={onClose}>
+        <nav className="flex flex-col gap-3 px-5">
+          <Link to="/" onClick={onClose}>
             Trang chủ
-          </NavItem>
-          <NavItem to={"/dich-vu-gia-su"} onClick={onClose} hasDropdown>
-            Dịch vụ gia sư
-          </NavItem>
-          <NavItem to={"/hoc-phi-gia-su"} onClick={onClose} hasDropdown>
+          </Link>
+
+          <button
+            onClick={() => toggleMenu("ph")}
+            className="flex justify-between items-center"
+          >
+            Phụ huynh <ChevronDown size={18} />
+          </button>
+
+          {openParent === "ph" && (
+            <div className="flex flex-col pl-4 gap-2 text-gray-600">
+              <Link to="/dich-vu-gia-su" onClick={onClose}>
+                Dịch vụ gia sư
+              </Link>
+              <Link to="/hoc-phi-gia-su" onClick={onClose}>
+                Học phí gia sư
+              </Link>
+            </div>
+          )}
+          <Link to="/hoc-phi-gia-su" onClick={onClose}>
             Học phí gia sư
-          </NavItem>
-          <NavItem to={"/lop-hien-co"} onClick={onClose} hasDropdown>
+          </Link>
+
+          <Link to="/lop-hien-co" onClick={onClose}>
             Lớp học hiện có
-          </NavItem>
-          <NavItem to={"/lien-he"} onClick={onClose} hasDropdown>
+          </Link>
+
+          <Link to="/lien-he" onClick={onClose}>
             Liên hệ
-          </NavItem>
+          </Link>
         </nav>
 
-        {/* Auth buttons */}
-        <div className="px-5 pt-4 border-t border-gray-200">
+        {/* Auth */}
+        <div className="px-5 pt-4 border-t mt-6">
           {user ? (
-            <div className="flex flex-col gap-3">
+            <>
               <Link
                 to="/dashboard"
-                onClick={onClose}
-                className="flex items-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors justify-center"
+                className="flex items-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-lg justify-center"
               >
                 <LayoutDashboard size={18} />
                 Dashboard
               </Link>
+
               <button
-                onClick={handleLogoutClick}
-                className="flex items-center gap-2 px-4 py-3 text-red-600 border border-red-200 hover:bg-red-50 rounded-lg transition-colors justify-center"
+                onClick={() => {
+                  onLogout?.();
+                  onClose();
+                }}
+                className="flex items-center gap-2 px-4 py-3 text-red-600 justify-center"
               >
                 <LogOut size={18} />
                 Đăng xuất
               </button>
-            </div>
+            </>
           ) : (
             <button
               onClick={() => {
                 onLogin?.();
                 onClose();
               }}
-              className="flex items-center gap-2 w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors justify-center font-medium"
+              className="flex items-center gap-2 w-full px-4 py-3 bg-red-600 text-white rounded-lg justify-center"
             >
               <LogIn size={18} />
               Đăng nhập

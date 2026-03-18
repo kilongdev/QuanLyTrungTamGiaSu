@@ -26,10 +26,10 @@ const FeesPage = () => {
         <div className="absolute inset-0 bg-black/40" />
 
         <div className="relative z-10 h-full flex flex-col justify-center px-10 text-white">
-          <h1 className="text-3xl font-semibold mb-7">
+          {/* <h1 className="text-3xl font-semibold mb-7">
             Tìm gia sư dạy kèm tại nhà chất lượng.
-          </h1>
-
+          </h1> */}
+          {/* 
           <div className="flex gap-4">
             <button className="bg-red-500 px-6 py-3 rounded-[50px]">
               Gửi yêu cầu gọi lại tư vấn
@@ -37,7 +37,7 @@ const FeesPage = () => {
             <button className="bg-white text-red-500 px-6 py-3 rounded-[50px]">
               Xem học phí
             </button>
-          </div>
+          </div> */}
         </div>
         <div className="relative z-10">
           <div className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/3 md:translate-y-1/2 bg-blue-100 w-[90%] max-w-4xl rounded-2xl shadow-xl p-10 z-20 ">
