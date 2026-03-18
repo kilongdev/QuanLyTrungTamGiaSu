@@ -30,4 +30,4 @@ npm-debug.log*
 .cache/
 
 
-backend/config
+backend/configbackend/

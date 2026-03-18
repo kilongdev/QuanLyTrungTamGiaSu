@@ -5,7 +5,10 @@
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
+    "@react-google-maps/api": "^2.20.8",
     "@tailwindcss/vite": "^4.1.18",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^4.2.1",
     "tailwindcss": "^4.1.18"
   }
 }
