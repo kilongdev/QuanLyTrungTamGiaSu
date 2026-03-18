@@ -9,6 +9,8 @@ import RegisterForm from "@/components/ContactForm";
 import { dataStudyProgram, descriptions } from "@/data/homepageData";
 import AvailableClastList from "@/components/AvailableClassList";
 import { lopHocAPI } from "@/api/lophocApi";
+import GiaSuTieuBieu from "@/components/GiaSuTieuBieu";
+import { giaSuAPI } from "@/api/giaSuApi";
 
 const Homepage = () => {
   const [active, setActive] = useState(0);
@@ -18,6 +20,8 @@ const Homepage = () => {
   const [classes, setClasses] = useState([]);
 
   const [loading, setLoading] = useState(true);
+
+  const [tutors, setTutors] = useState([]);
 
   // scroll
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -63,6 +67,20 @@ const Homepage = () => {
     };
     getClasses();
   }, []);
+  useEffect(() => {
+    const getTutor = async () => {
+      try {
+        const res = await giaSuAPI.getAll();
+
+        setTutors(res.data);
+      } catch (error) {
+        console.error("Lỗi khi lấy thông tin gia sư!", error);
+      }
+    };
+
+    getTutor();
+  }, []);
+  console.log("tutors", tutors);
 
   if (loading) return <p>Loading...</p>;
 
@@ -72,19 +90,19 @@ const Homepage = () => {
       {/* Dịch vụ gia sư   */}
 
       <section className="relative flex flex-col justify-center items-center my-7 lg:max-w-6xl mx-auto">
-        <div className=" hidden lg:block absolute -z-10">
+        {/* <div className=" hidden lg:block absolute -z-10">
           <img
             src="https://giasuongmattroi.com/static/images/bg-text-2.svg"
             alt=""
           />
-        </div>
+        </div> */}
         <div className="flex flex-col items-center px-5 justify-center">
           <p className="font-corinthia text-5xl text-red-500">Các lớp học</p>
           <h2 className="font-semibold uppercase text-center text-4xl ">
             Chương trình học phù hợp
           </h2>
         </div>
-        <div className="hidden lg:flex items-center justify-center gap-6 mt-5 cursor-pointer ">
+        {/* <div className="hidden lg:flex items-center justify-center gap-6 mt-5 cursor-pointer ">
           {dataStudyProgram.map((item) => (
             <div
               key={item.id}
@@ -95,9 +113,9 @@ const Homepage = () => {
               <button className="rounded-full bg-blue-400 h-2.5 w-2.5 opacity-80"></button>
             </div>
           ))}
-        </div>
+        </div> */}
         {/* options for mobile */}
-        <div className="lg:hidden">
+        {/* <div className="lg:hidden">
           <select
             value={active}
             className="w-full h-10 px-3 py-1 my-5 border border-input bg-transparent text-base rounded-2xl shadow-sm focus-visible:outline-none focus-visible:ring-blue-500 focus-visible:ring-2"
@@ -107,9 +125,9 @@ const Homepage = () => {
               <option value={item.id}>{item.label} </option>
             ))}
           </select>
-        </div>
+        </div> */}
 
-        <section className="relative w-full my-3 px-5">
+        {/* <section className="relative w-full my-3 px-5">
           <div className="flex flex-col">
             <AnimatePresence mode="wait">
               <motion.div
@@ -120,7 +138,6 @@ const Homepage = () => {
                 transition={{ duration: 0.45, ease: "easeOut" }}
                 className="relative grid items-center gap-4 md:grid-cols-1 lg:grid-cols-2 justify-self-center px-5 md:px-0 z-10"
               >
-                {/* IMAGE */}
                 <motion.div
                   initial={{ scale: 0.95 }}
                   animate={{ scale: 1 }}
@@ -137,7 +154,6 @@ const Homepage = () => {
                   </div>
                 </motion.div>
 
-                {/* TEXT */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -170,7 +186,7 @@ const Homepage = () => {
               <ArrowRight className="relative z-10" />
             </Button>
           </div>
-        </section>
+        </section> */}
       </section>
       {/* Lớp hiện có cần tìm gia sư */}
       <AvailableClastList classList={classes.slice(0, 6)} />
@@ -186,6 +202,19 @@ const Homepage = () => {
           <ArrowRight className="relative z-10" />
         </Button>
       )}
+
+      {/* Gia sư tiêu biểu */}
+      <section className="relative flex flex-col justify-center items-center my-7 lg:max-w-6xl mx-auto">
+        <div className=" hidden lg:block absolute -z-10">
+          <img
+            src="https://giasuongmattroi.com/static/images/bg-text-2.svg"
+            alt=""
+          />
+        </div>
+        <div className="flex flex-col items-center px-5 justify-center">
+          <GiaSuTieuBieu tutor={tutors?.slice(0, 6) || []} />
+        </div>
+      </section>
 
       {/* Đánh giá trung tâm */}
       <div className="flex flex-col justify-center items-center bg-amber-100/45 md:w-full">

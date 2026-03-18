@@ -24,23 +24,23 @@ const data = [
 
 const Banner = () => {
   const sliderRef = useRef(null);
-  const indexRef = useRef(0);
+  // const indexRef = useRef(0);
 
-  useEffect(() => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-    if (window.innerWidth >= 1024) return;
-    const interval = setInterval(() => {
-      indexRef.current = (indexRef.current + 1) % data.length;
+  // useEffect(() => {
+  //   const slider = sliderRef.current;
+  //   if (!slider) return;
+  //   if (window.innerWidth >= 1024) return;
+  //   const interval = setInterval(() => {
+  //     indexRef.current = (indexRef.current + 1) % data.length;
 
-      slider.scrollTo({
-        left: indexRef.current * slider.clientWidth,
-        behavior: "smooth",
-      });
-    }, 3000); // 3s
+  //     slider.scrollTo({
+  //       left: indexRef.current * slider.clientWidth,
+  //       behavior: "smooth",
+  //     });
+  //   }, 3000); // 3s
 
-    return () => clearInterval(interval);
-  }, []);
+  //   return () => clearInterval(interval);
+  // }, []);
   return (
     <div className="w-full h-full">
       {/* banner */}
