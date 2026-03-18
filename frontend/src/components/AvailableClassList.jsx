@@ -20,7 +20,7 @@ const AvailableClastList = ({ classList }) => {
               className={`relative grid gap-10 px-5 md:px-0 z-10 place-items-center ${
                 classList.length === 1
                   ? "grid-cols-1"
-                  : "md:grid-cols-1 lg:grid-cols-2"
+                  : "md:grid-cols-2 lg:grid-cols-3"
               }`}
             >
               {classList.map((item) => (
@@ -38,7 +38,8 @@ const AvailableClastList = ({ classList }) => {
                         <span className="text-red-600">{item.lop_hoc_id}</span>
                       </h2>
                       <span className="text-sm px-3 py-1 rounded-full bg-red-100 text-red-600">
-                        {Number(item.gia_moi_buoi).toLocaleString("vi-VN")}đ
+                        {Number(item.gia_moi_buoi).toLocaleString("vi-VN")}đ /
+                        buổi
                       </span>
                     </div>
 
@@ -61,11 +62,11 @@ const AvailableClastList = ({ classList }) => {
                       </li>
 
                       <li>
-                        <b>Số lượng tối đa:</b> {item.so_luong_toi_da}
+                        <b>Số học viên tối đa:</b> {item.so_luong_toi_da}
                       </li>
 
                       <li>
-                        <b>Số lượng hiện tại:</b> {item.so_luong_hien_tai}
+                        <b>Số học viên hiện tại:</b> {item.so_luong_hien_tai}
                       </li>
 
                       <li>
