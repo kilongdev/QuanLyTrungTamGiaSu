@@ -7,7 +7,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
 const { execSync } = require('child_process');
 
 const backendDir = path.join(__dirname, '../backend');
@@ -27,83 +26,37 @@ if (!fs.existsSync(vendorDir)) {
   fs.mkdirSync(vendorDir, { recursive: true });
 }
 
-console.log('📥 Downloading PHPMailer v6.9.1...');
-
-const zipPath = path.join(backendDir, 'phpmailer.zip');
-const file = fs.createWriteStream(zipPath);
-
-https.get('https://github.com/PHPMailer/PHPMailer/archive/refs/tags/v6.9.1.zip', (response) => {
-  response.pipe(file);
-
-  file.on('finish', () => {
-    file.close();
-    console.log('✅ Downloaded PHPMailer');
-
-    try {
-      // Extract zip file
-      console.log('📦 Extracting PHPMailer...');
-      const AdmZip = require('adm-zip');
-      
-      if (!isModuleAvailable('adm-zip')) {
-        // Fallback: use system command
-        console.log('📦 Using system extraction...');
-        if (process.platform === 'win32') {
-          execSync(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${backendDir}' -Force"`, { 
-            stdio: 'inherit',
-            cwd: backendDir 
-          });
-          execSync(`powershell -Command "Move-Item -Path '${path.join(backendDir, 'PHPMailer-6.9.1')}' -Destination '${path.join(vendorDir, 'phpmailer-temp')}' -Force"`, { 
-            stdio: 'inherit' 
-          });
-        } else {
-          execSync(`cd ${backendDir} && unzip -q phpmailer.zip && mv PHPMailer-6.9.1 ${path.join(vendorDir, 'phpmailer-temp')}`);
-        }
-      } else {
-        const zip = new AdmZip(zipPath);
-        zip.extractAllTo(backendDir, true);
-        fs.renameSync(
-          path.join(backendDir, 'PHPMailer-6.9.1'),
-          path.join(vendorDir, 'phpmailer-temp')
-        );
-      }
-
-      // Create proper directory structure
-      if (!fs.existsSync(path.join(vendorDir, 'phpmailer'))) {
-        fs.mkdirSync(path.join(vendorDir, 'phpmailer'), { recursive: true });
-      }
-      fs.renameSync(
-        path.join(vendorDir, 'phpmailer-temp'),
-        phpmailerDir
-      );
-
-      // Clean up
-      fs.unlinkSync(zipPath);
-      console.log('✅ Extracted PHPMailer');
-
-      // Create autoloader if doesn't exist
-      const autoloadPath = path.join(vendorDir, 'autoload.php');
-      if (!fs.existsSync(autoloadPath)) {
-        createAutoloader(autoloadPath);
-      }
-
-      console.log('\n✨ PHPMailer setup completed successfully!\n');
-      console.log('Next steps:');
-      console.log('1. Update EmailService.php with your SMTP credentials');
-      console.log('2. Restart your web server');
-      console.log('3. Test OTP sending functionality\n');
-
-    } catch (err) {
-      console.error('❌ Error extracting PHPMailer:', err.message);
-      // Cleanup on error
-      if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
-      process.exit(1);
+// Try to use composer if available (recommended approach)
+try {
+  console.log('📦 Attempting to install PHPMailer via Composer...');
+  const composerPath = path.join(backendDir, 'composer.json');
+  if (fs.existsSync(composerPath)) {
+    execSync('composer require phpmailer/phpmailer', {
+      cwd: backendDir,
+      stdio: 'inherit'
+    });
+    console.log('✅ PHPMailer installed via Composer\n');
+    
+    // Create autoloader if doesn't exist
+    const autoloadPath = path.join(vendorDir, 'autoload.php');
+    if (!fs.existsSync(autoloadPath)) {
+      createAutoloader(autoloadPath);
     }
-  });
-}).on('error', (err) => {
-  console.error('❌ Download failed:', err.message);
-  fs.unlinkSync(zipPath);
-  process.exit(1);
-});
+    
+    console.log('✨ PHPMailer setup completed successfully!\n');
+    console.log('Next steps:');
+    console.log('1. Update EmailService.php with your SMTP credentials');
+    console.log('2. Restart your web server');
+    console.log('3. Test OTP sending functionality\n');
+    process.exit(0);
+  }
+} catch (err) {
+  console.log('ℹ️  Composer not available or failed, skipping automatic setup');
+  console.log('   You can install PHPMailer manually:');
+  console.log('   1. Install Composer: https://getcomposer.org');
+  console.log('   2. Run: composer require phpmailer/phpmailer\n');
+  process.exit(0);
+}
 
 /**
  * Create PHP autoloader for PHPMailer
@@ -138,16 +91,4 @@ spl_autoload_register(function ($class) {
 });
 `;
   fs.writeFileSync(filePath, content);
-}
-
-/**
- * Check if a module is available
- */
-function isModuleAvailable(name) {
-  try {
-    require.resolve(name);
-    return true;
-  } catch (e) {
-    return false;
-  }
 }

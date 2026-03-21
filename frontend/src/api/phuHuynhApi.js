@@ -51,17 +51,17 @@ export const phuHuynhAPI = {
             method: 'GET',
         }),
     create: (data) =>
-        request('/phuhuynh/create', {
+        request('/phuhuynh', {
             method: 'POST',
             body: JSON.stringify(data),
         }),
     update: (id, data) =>
-        request(`/phuhuynh/update/${id}`, {
+        request(`/phuhuynh/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data),
         }),
     delete: (id) =>
-        request(`/phuhuynh/delete/${id}`, {
+        request(`/phuhuynh/${id}`, {
             method: 'DELETE',
         }),
 };

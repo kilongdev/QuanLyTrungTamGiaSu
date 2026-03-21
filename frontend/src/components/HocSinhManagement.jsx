@@ -3,13 +3,18 @@ import { Trash2, Edit2, Eye, Search, Plus, GraduationCap, Users, Calendar, X, Us
 import { hocSinhAPI } from '@/api/hocSinhApi'; // Import API mới
 import { phuHuynhAPI } from '@/api/phuHuynhApi'; // Import API phụ huynh
 import { toast } from 'sonner';
+import { validateStudentForm } from '@/lib/validators';
+import DataPagination from '@/components/ui/DataPagination';
 
 export default function HocSinhManagement() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
+  const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState('all');
+  const [selectedParent, setSelectedParent] = useState('all');
 
   // State cho modal và form
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,10 +27,10 @@ export default function HocSinhManagement() {
   const [detailModal, setDetailModal] = useState({ isOpen: false, data: null, loading: false });
 
   // Gọi API lấy danh sách học sinh
-  const fetchStudents = async (page = 1, searchTerm = '') => {
+  const fetchStudents = async (page = 1, searchTerm = '', limit = pageSize) => {
     try {
       setLoading(true);
-      const response = await hocSinhAPI.getAll({ page, limit: 10, search: searchTerm });
+      const response = await hocSinhAPI.getAll({ page, limit, search: searchTerm });
       
       if (response.status === 'success') {
         setStudents(response.data);
@@ -57,7 +62,7 @@ export default function HocSinhManagement() {
 
   // Load dữ liệu khi component mount
   useEffect(() => {
-    fetchStudents(1, '');
+    fetchStudents(1, '', 10);
     fetchAllParents();
   }, []);
 
@@ -65,14 +70,29 @@ export default function HocSinhManagement() {
   const handleSearch = (e) => {
     const term = e.target.value;
     setSearch(term);
-    fetchStudents(1, term);
+    fetchStudents(1, term, pageSize);
   };
+
+  const gradeOptions = [...new Set(students.map((student) => String(student.khoi_lop || '').trim()).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+
+  const filteredStudents = students.filter((student) => {
+    const gradeMatch = selectedGrade === 'all' || String(student.khoi_lop || '') === selectedGrade;
+    const parentMatch = selectedParent === 'all' || String(student.phu_huynh_id || '') === selectedParent;
+    return gradeMatch && parentMatch;
+  });
+
+  const effectiveTotalPages = Math.max(1, Math.ceil((pagination.total || 0) / (pagination.limit || pageSize)));
 
   // Xử lý đổi trang
   const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= pagination.totalPages) {
+    if (newPage >= 1 && newPage <= effectiveTotalPages) {
       fetchStudents(newPage, search);
     }
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    fetchStudents(1, search, newSize);
   };
   
   // Các hàm xử lý thao tác (hiện tại chỉ là alert)
@@ -115,6 +135,12 @@ export default function HocSinhManagement() {
   // Xử lý submit form (Thêm/Sửa)
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    const validationMessage = validateStudentForm(formData);
+    if (validationMessage) {
+      toast.error(validationMessage);
+      return;
+    }
+
     setModalLoading(true);
     setError(null);
 
@@ -127,7 +153,7 @@ export default function HocSinhManagement() {
         toast.success(response.message || 'Thêm học sinh thành công!');
       }
       setIsModalOpen(false);
-      fetchStudents(pagination.page, search);
+      fetchStudents(pagination.page, search, pageSize);
     } catch (err) {
       const errorMessage = err.message || 'Đã có lỗi xảy ra.';
       setError(errorMessage);
@@ -153,7 +179,7 @@ export default function HocSinhManagement() {
       toast.success(response.message || 'Xóa học sinh thành công!');
       // Nếu trang hiện tại trống sau khi xóa, lùi về trang trước
       const newPage = students.length === 1 && pagination.page > 1 ? pagination.page - 1 : pagination.page;
-      fetchStudents(newPage, search);
+      fetchStudents(newPage, search, pageSize);
       setConfirmModal({ isOpen: false, student: null, loading: false });
     } catch (err) {
       toast.error(err.message || 'Lỗi khi xóa học sinh.');
@@ -168,96 +194,92 @@ export default function HocSinhManagement() {
     return date.toLocaleDateString('vi-VN');
   };
 
-  // Helper tạo màu avatar ngẫu nhiên dựa trên ID
-  const getAvatarColor = (id) => {
-    const colors = ['bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-green-500', 'bg-orange-500', 'bg-red-500', 'bg-indigo-500', 'bg-cyan-500'];
-    return colors[id % colors.length];
-  };
-
-  const getInitials = (name) => {
-    return name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'HS';
-  };
-
   if (loading && students.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
         <p className="text-gray-500 mt-4">Đang tải danh sách học sinh...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 pb-4 border-b border-gray-200">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <GraduationCap className="text-blue-600" size={28} />
-            Quản lý Học Sinh
-          </h2>
-          <p className="text-gray-500 text-sm mt-1">Quản lý hồ sơ và thông tin học tập của học sinh</p>
-        </div>
-        <button 
-          onClick={handleOpenAddModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition shadow-lg shadow-blue-200 font-medium"
-        >
-          <Plus size={18} />
-          Thêm học sinh
-        </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-5 shadow-lg relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="text-blue-100 text-sm font-medium mb-1">Tổng số học sinh</p>
-            <p className="text-3xl font-bold">{pagination.total}</p>
+    <div>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-5 border-b border-gray-200">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Quản lý Học Sinh</h2>
+            <p className="text-gray-500 text-sm mt-1">Quản lý hồ sơ và thông tin học tập của học sinh</p>
           </div>
-          <Users className="absolute right-4 bottom-4 text-white opacity-20" size={48} />
+          <button 
+            onClick={handleOpenAddModal}
+            className="bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white px-5 py-2.5 rounded-2xl flex items-center gap-2 transition shadow-md font-medium"
+          >
+            <Plus size={18} />
+            Thêm học sinh
+          </button>
         </div>
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-           <div>
-              <p className="text-gray-500 text-sm">Trang hiện tại</p>
-              <p className="text-2xl font-bold text-gray-800">{pagination.page} <span className="text-sm text-gray-400 font-normal">/ {pagination.totalPages}</span></p>
-           </div>
-           <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
-              <span className="font-bold">#</span>
-           </div>
-        </div>
-      </div>
 
-      {/* Search Bar */}
-      <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="🔍 Tìm kiếm theo tên học sinh..."
-            value={search}
-            onChange={handleSearch}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all"
-          />
-        </div>
-      </div>
+        {/* Advanced Search - unified block */}
+        <div className="p-5 border-b border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center rounded-xl border border-gray-200 bg-gray-50 overflow-hidden">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Tìm theo tên học sinh..."
+                value={search}
+                onChange={handleSearch}
+                className="w-full pl-10 pr-4 py-2.5 bg-transparent focus:outline-none"
+              />
+            </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg">
-          <p className="font-semibold">⚠️ Lỗi</p>
-          <p className="text-sm">{error}</p>
-        </div>
-      )}
+            <div className="h-px md:h-10 md:w-px bg-gray-200" />
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-        {students.length === 0 && !loading ? (
-          <div className="p-16 text-center">
-            <p className="text-gray-500 text-lg">📭 Không có dữ liệu học sinh</p>
-            <p className="text-gray-400 text-sm mt-2">Hãy thêm học sinh mới hoặc thay đổi bộ lọc tìm kiếm</p>
+            <select
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value)}
+              className="md:w-56 px-4 py-2.5 bg-transparent focus:outline-none"
+            >
+              <option value="all">Tất cả khối lớp</option>
+              {gradeOptions.map((grade) => (
+                <option key={grade} value={grade}>Khối {grade}</option>
+              ))}
+            </select>
+
+            <div className="h-px md:h-10 md:w-px bg-gray-200" />
+
+            <select
+              value={selectedParent}
+              onChange={(e) => setSelectedParent(e.target.value)}
+              className="md:w-64 px-4 py-2.5 bg-transparent focus:outline-none"
+            >
+              <option value="all">Tất cả phụ huynh</option>
+              {allParents.map((parent) => (
+                <option key={parent.phu_huynh_id} value={String(parent.phu_huynh_id)}>
+                  {parent.ho_ten}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {error && (
+            <div className="mt-4 bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg">
+              <p className="font-semibold">⚠️ Lỗi</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Table */}
+        {filteredStudents.length === 0 && !loading ? (
+          <div className="p-16 text-center border-b border-gray-200">
+            <p className="text-gray-600 text-lg font-medium">Không có dữ liệu học sinh</p>
+            <p className="text-gray-400 text-sm mt-2">Thử thay đổi từ khóa hoặc bộ lọc nâng cao</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto border-b border-gray-200">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -270,20 +292,15 @@ export default function HocSinhManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {students.map((student, index) => (
-                  <tr key={student.hoc_sinh_id} className="hover:bg-blue-50/50 transition-colors duration-200">
+                {filteredStudents.map((student, index) => (
+                  <tr key={student.hoc_sinh_id} className="hover:bg-red-50/40 transition-colors duration-200">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-500">{(pagination.page - 1) * pagination.limit + index + 1}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className={`${getAvatarColor(student.hoc_sinh_id)} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm`}>
-                          {getInitials(student.ho_ten)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{student.ho_ten}</p>
-                          <p className="text-xs text-gray-500">ID: {student.hoc_sinh_id}</p>
-                        </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{student.ho_ten}</p>
+                        <p className="text-xs text-gray-500">ID: {student.hoc_sinh_id}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -292,7 +309,7 @@ export default function HocSinhManagement() {
                         <span className="text-sm">{formatDate(student.ngay_sinh)}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap"><span className="inline-flex items-center justify-center bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full border border-blue-200">Khối {student.khoi_lop || 'N/A'}</span></td>
+                    <td className="px-6 py-4 whitespace-nowrap"><span className="inline-flex items-center justify-center bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full border border-red-200">Khối {student.khoi_lop || 'N/A'}</span></td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {student.phu_huynh_ten ? (
                         <div className="flex flex-col">
@@ -303,9 +320,9 @@ export default function HocSinhManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex justify-center gap-2">
-                        <button onClick={() => handleViewDetail(student.hoc_sinh_id)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Xem chi tiết"><Eye size={18} /></button>
-                        <button onClick={() => handleEdit(student)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Chỉnh sửa"><Edit2 size={18} /></button>
-                        <button onClick={() => handleDelete(student)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa"><Trash2 size={18} /></button>
+                        <button onClick={() => handleViewDetail(student.hoc_sinh_id)} className="p-2 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Xem chi tiết"><Eye size={18} /></button>
+                        <button onClick={() => handleEdit(student)} className="p-2 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Chỉnh sửa"><Edit2 size={18} /></button>
+                        <button onClick={() => handleDelete(student)} className="p-2 text-red-700 hover:bg-red-50 rounded-lg transition-colors" title="Xóa"><Trash2 size={18} /></button>
                       </div>
                     </td>
                   </tr>
@@ -314,25 +331,24 @@ export default function HocSinhManagement() {
             </table>
           </div>
         )}
-      </div>
 
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex justify-between items-center bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-          <p className="text-sm text-gray-600">Trang <span className="font-semibold">{pagination.page}</span> / {pagination.totalPages}</p>
-          <div className="flex gap-2">
-            <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Trước</button>
-            <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Sau</button>
-          </div>
-        </div>
-      )}
+        <DataPagination
+          page={pagination.page}
+          totalPages={effectiveTotalPages}
+          totalItems={pagination.total}
+          pageSize={pagination.limit || pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          itemLabel="học sinh"
+        />
+      </div>
 
       {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full transform transition-all">
-            <div className="p-6 flex justify-between items-center border-b">
-              <h3 className="text-lg font-bold text-gray-800">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all overflow-hidden border border-gray-200">
+            <div className="p-5 flex justify-between items-center border-b bg-white">
+              <h3 className="text-2xl font-bold text-gray-900">
                 {modalMode === 'edit' ? 'Chỉnh sửa thông tin học sinh' : 'Thêm học sinh mới'}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition">
@@ -350,7 +366,7 @@ export default function HocSinhManagement() {
                     type="text"
                     value={formData.ho_ten}
                     onChange={(e) => setFormData({ ...formData, ho_ten: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -364,7 +380,7 @@ export default function HocSinhManagement() {
                     type="date"
                     value={formData.ngay_sinh}
                     onChange={(e) => setFormData({ ...formData, ngay_sinh: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -377,7 +393,7 @@ export default function HocSinhManagement() {
                     type="text"
                     value={formData.khoi_lop}
                     onChange={(e) => setFormData({ ...formData, khoi_lop: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Ví dụ: 6, 7, 8..."
                   />
                 </div>
@@ -390,7 +406,7 @@ export default function HocSinhManagement() {
                   <select
                     value={formData.phu_huynh_id}
                     onChange={(e) => setFormData({ ...formData, phu_huynh_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     required
                   >
                     <option value="">-- Chọn phụ huynh --</option>
@@ -406,14 +422,14 @@ export default function HocSinhManagement() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition"
+                  className="px-4 py-2 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-100 transition"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={modalLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 bg-red-800 text-white rounded-xl font-medium hover:bg-red-900 transition disabled:opacity-50 flex items-center gap-2"
                 >
                   {modalLoading && (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -429,7 +445,7 @@ export default function HocSinhManagement() {
       {/* Confirmation Delete Modal */}
       {confirmModal.isOpen && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all overflow-hidden">
             <div className="p-6">
               <div className="flex items-start gap-4">
                 <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
@@ -475,80 +491,58 @@ export default function HocSinhManagement() {
 
       {/* Detail Modal */}
       {detailModal.isOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[85vh] flex flex-col border border-gray-200 overflow-hidden">
             {detailModal.loading ? (
               <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
               </div>
             ) : detailModal.data ? (
               <>
                 {/* Modal Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 flex justify-between items-start rounded-t-xl">
-                  <div className="flex items-center gap-4">
-                    <div className={`${getAvatarColor(detailModal.data.hoc_sinh_id)} w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl border-2 border-white/50`}>
-                      {getInitials(detailModal.data.ho_ten)}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold">{detailModal.data.ho_ten}</h3>
-                      <p className="text-blue-100">ID: {detailModal.data.hoc_sinh_id} • Khối: {detailModal.data.khoi_lop}</p>
-                    </div>
+                <div className="bg-blue-800 text-white p-5 flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold">{detailModal.data.ho_ten}</h3>
+                    <p className="text-blue-100 text-sm">ID: {detailModal.data.hoc_sinh_id} • Khối: {detailModal.data.khoi_lop || 'N/A'}</p>
                   </div>
                   <button 
                     onClick={() => setDetailModal({ isOpen: false, data: null, loading: false })}
-                    className="text-white/70 hover:bg-white/20 p-1 rounded-full transition"
+                    className="text-white/80 hover:bg-white/20 p-1 rounded-lg transition"
                   >
                     <X size={24} />
                   </button>
                 </div>
 
                 {/* Modal Content */}
-                <div className="p-6 space-y-6 overflow-y-auto">
-                  {/* Parent Info */}
-                  <div>
-                    <h4 className="text-lg font-bold text-gray-800 mb-3 border-b pb-2">Thông tin phụ huynh</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-                        <User size={18} className="text-gray-500" />
-                        <div>
-                          <p className="text-gray-500">Họ tên</p>
-                          <p className="font-semibold text-gray-900">{detailModal.data.phu_huynh_ten || 'Chưa cập nhật'}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-                        <Phone size={18} className="text-gray-500" />
-                        <div>
-                          <p className="text-gray-500">Số điện thoại</p>
-                          <p className="font-semibold text-gray-900">{detailModal.data.phu_huynh_sdt || 'Chưa cập nhật'}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg col-span-full">
-                        <Mail size={18} className="text-gray-500" />
-                        <div>
-                          <p className="text-gray-500">Email</p>
-                          <p className="font-semibold text-gray-900">{detailModal.data.phu_huynh_email || 'Chưa cập nhật'}</p>
-                        </div>
-                      </div>
+                <div className="p-5 space-y-5 overflow-y-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                      <p className="text-gray-500">Phụ huynh</p>
+                      <p className="font-semibold text-gray-900">{detailModal.data.phu_huynh_ten || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                      <p className="text-gray-500">Số điện thoại</p>
+                      <p className="font-semibold text-gray-900">{detailModal.data.phu_huynh_sdt || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 sm:col-span-2">
+                      <p className="text-gray-500">Email phụ huynh</p>
+                      <p className="font-semibold text-gray-900">{detailModal.data.phu_huynh_email || 'Chưa cập nhật'}</p>
                     </div>
                   </div>
 
-                  {/* Registered Classes */}
                   <div>
-                    <h4 className="text-lg font-bold text-gray-800 mb-3 border-b pb-2">📚 Lớp đã đăng ký</h4>
+                    <h4 className="text-base font-bold text-gray-900 mb-3">Lớp đã đăng ký</h4>
                     {detailModal.data.lop_hoc && detailModal.data.lop_hoc.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {detailModal.data.lop_hoc.map((lop) => (
-                          <div key={lop.lop_hoc_id} className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-                            <p className="font-semibold text-gray-900">{lop.ten_lop || `Lớp ${lop.khoi_lop}`}</p>
-                            <p className="text-sm text-gray-600">Gia sư: {lop.gia_su_ten || 'Chưa có'}</p>
-                            <p className="text-sm text-gray-600">Trạng thái: <span className="font-medium">{lop.trang_thai}</span></p>
+                          <div key={lop.lop_hoc_id} className="border border-gray-200 rounded-xl p-3 bg-white">
+                            <p className="font-semibold text-gray-900 text-sm">{lop.ten_lop || `Lớp ${lop.khoi_lop}`}</p>
+                            <p className="text-xs text-gray-600 mt-1">Gia sư: {lop.gia_su_ten || 'Chưa có'} • Trạng thái: {lop.trang_thai || 'N/A'}</p>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
-                        <p className="text-yellow-800 text-sm">ℹ️ Học sinh này chưa đăng ký lớp học nào.</p>
-                      </div>
+                      <div className="border border-gray-200 rounded-xl p-3 text-sm text-gray-500">Chưa có lớp học đăng ký.</div>
                     )}
                   </div>
                 </div>

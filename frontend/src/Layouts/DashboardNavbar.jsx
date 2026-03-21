@@ -1,14 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
-import { Menu, Bell, LogOut, X, Check, CheckCheck, Calendar, User, Tag } from 'lucide-react'
+import { Menu, Bell, LogOut, X, CheckCheck, Calendar, User, Tag, Lock, ChevronDown } from 'lucide-react'
 import { thongBaoAPI } from '@/api/thongbaoApi'
 
-export default function DashboardNavbar({ user, onLogout, pageTitle, sidebarCollapsed, onToggleSidebar }) {
+export default function DashboardNavbar({ user, onLogout, pageTitle, sidebarCollapsed, onToggleSidebar, onEditProfile, onChangePassword }) {
+  // Notification states
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [showDropdown, setShowDropdown] = useState(false)
   const [loading, setLoading] = useState(false)
   const [selectedNotification, setSelectedNotification] = useState(null)
   const dropdownRef = useRef(null)
+
+  // User menu state
+  const [showUserMenu, setShowUserMenu] = useState(false)
 
   // Lấy role type cho API
   const getUserType = () => {
@@ -30,7 +34,6 @@ export default function DashboardNavbar({ user, onLogout, pageTitle, sidebarColl
       
       if (response.success && response.data) {
         setNotifications(response.data)
-        // Đếm số chưa đọc
         const unread = response.data.filter(n => n.trang_thai === 'chua_doc').length
         setUnreadCount(unread)
       }
@@ -45,7 +48,6 @@ export default function DashboardNavbar({ user, onLogout, pageTitle, sidebarColl
   const handleMarkAsRead = async (notificationId) => {
     try {
       await thongBaoAPI.markAsRead(notificationId)
-      // Cập nhật UI
       setNotifications(prev => 
         prev.map(n => n.thong_bao_id === notificationId ? { ...n, trang_thai: 'da_doc' } : n)
       )
@@ -80,6 +82,22 @@ export default function DashboardNavbar({ user, onLogout, pageTitle, sidebarColl
     }
   }
 
+  // User menu handlers
+  const handleEditProfile = () => {
+    setShowUserMenu(false)
+    if (onEditProfile) onEditProfile()
+  }
+
+  const handleChangePassword = () => {
+    setShowUserMenu(false)
+    if (onChangePassword) onChangePassword()
+  }
+
+  const handleLogoutClick = () => {
+    setShowUserMenu(false)
+    onLogout()
+  }
+
   // Click outside để đóng dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -95,7 +113,6 @@ export default function DashboardNavbar({ user, onLogout, pageTitle, sidebarColl
   useEffect(() => {
     if (user?.id) {
       fetchNotifications()
-      // Polling mỗi 30 giây
       const interval = setInterval(fetchNotifications, 30000)
       return () => clearInterval(interval)
     }
@@ -113,7 +130,6 @@ export default function DashboardNavbar({ user, onLogout, pageTitle, sidebarColl
     if (diff < 604800) return `${Math.floor(diff / 86400)} ngày trước`
     return date.toLocaleDateString('vi-VN')
   }
-
   return (
     <header className="bg-gray-50 fixed top-0 left-0 right-0 z-50">
       <div className="h-16 flex items-center justify-between">
@@ -216,26 +232,55 @@ export default function DashboardNavbar({ user, onLogout, pageTitle, sidebarColl
             )}
           </div>
 
-          {/* User Info & Logout */}
-          <div className="flex items-center gap-3 pl-4 border-l border-gray-300">
+          {/* User Info & Dropdown Menu */}
+          <div className="flex items-center gap-3 pl-4 border-l border-gray-300 relative">
             <div className="text-right">
               <p className="font-semibold text-gray-800 text-sm">{user?.name}</p>
               <p className="text-xs text-gray-500">
                 {user?.role === 'phu_huynh' ? 'Phụ huynh' : user?.role === 'gia_su' ? 'Gia sư' : user?.role === 'admin' ? 'Quản trị viên' : user?.role}
               </p>
             </div>
+            
+            {/* User Menu Button */}
             <button
-              onClick={onLogout}
-              className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-1 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <LogOut className="w-4 h-4" />
-              Đăng xuất
+              <ChevronDown className="w-4 h-4" />
             </button>
+
+            {/* Dropdown Menu */}
+            {showUserMenu && (
+              <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+                <button
+                  onClick={handleEditProfile}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors text-sm whitespace-nowrap"
+                >
+                  <User className="w-4 h-4 flex-shrink-0" />
+                  Sửa thông tin cá nhân
+                </button>
+                <button
+                  onClick={handleChangePassword}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors text-sm whitespace-nowrap"
+                >
+                  <Lock className="w-4 h-4 flex-shrink-0" />
+                  Thay đổi mật khẩu
+                </button>
+                <div className="border-t border-gray-200 my-1"></div>
+                <button
+                  onClick={handleLogoutClick}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors text-sm whitespace-nowrap"
+                >
+                  <LogOut className="w-4 h-4 flex-shrink-0" />
+                  Đăng xuất
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Notification Detail Modal */}
+{/* Notification Detail Modal */}
       {selectedNotification && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={handleCloseDetail}>
           <div 
@@ -312,6 +357,14 @@ export default function DashboardNavbar({ user, onLogout, pageTitle, sidebarColl
             </div>
           </div>
         </div>
+      )}
+
+      {/* Click outside to close user menu */}
+      {showUserMenu && (
+        <div 
+          className="fixed inset-0 z-40"
+          onClick={() => setShowUserMenu(false)}
+        ></div>
       )}
     </header>
   )

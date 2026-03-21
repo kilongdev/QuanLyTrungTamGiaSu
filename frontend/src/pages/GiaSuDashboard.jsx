@@ -6,6 +6,7 @@ import LichHocManagement from '../components/LichHocManagement'
 
 export default function GiaSuDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('dashboard')
+  const [showEditProfile, setShowEditProfile] = useState(false)
 
   useEffect(() => {
     // Log token để kiểm tra
@@ -58,6 +59,8 @@ export default function GiaSuDashboard({ user, onLogout }) {
     <DashboardLayout
       user={user}
       onLogout={onLogout}
+      showEditProfile={showEditProfile}
+      setShowEditProfile={setShowEditProfile}
       menuItems={menuItems}
       activeItem={activeMenu}
       onMenuClick={setActiveMenu}

@@ -3,13 +3,18 @@ require_once __DIR__ . '/../core/Database.php';
 
 class LopHoc {
 
-    private static function buildTenLop($data) {
+    private static function buildTenLop($data, $excludeId = null) {
         $tenLop = isset($data['ten_lop']) ? trim((string)$data['ten_lop']) : '';
         if ($tenLop !== '') {
             return $tenLop;
         }
 
-        $tenMonHoc = 'Mon';
+        return self::buildAutoTenLop($data, $excludeId);
+    }
+
+    private static function buildAutoTenLop($data, $excludeId = null) {
+
+        $tenMonHoc = 'Môn';
         if (!empty($data['mon_hoc_id'])) {
             $monHoc = Database::query(
                 "SELECT ten_mon_hoc FROM mon_hoc WHERE mon_hoc_id = :id LIMIT 1",
@@ -23,7 +28,50 @@ class LopHoc {
         $khoiLop = isset($data['khoi_lop']) ? trim((string)$data['khoi_lop']) : '';
         $khoiLop = $khoiLop !== '' ? $khoiLop : '...';
 
-        return $tenMonHoc . ' - Lop ' . $khoiLop;
+        $baseName = $tenMonHoc . ' - Lớp ' . $khoiLop;
+        return self::buildUniqueAutoTenLop($baseName, $excludeId);
+    }
+
+    private static function buildUniqueAutoTenLop($baseName, $excludeId = null) {
+        $sql = "SELECT ten_lop FROM lop_hoc WHERE ten_lop LIKE :pattern";
+        $params = [':pattern' => $baseName . ' (%'];
+
+        if ($excludeId !== null) {
+            $sql .= " AND lop_hoc_id != :exclude_id";
+            $params[':exclude_id'] = $excludeId;
+        }
+
+        $existingRows = Database::query($sql, $params);
+        $usedSuffixes = [];
+        $escapedBase = preg_quote($baseName, '/');
+
+        foreach ($existingRows as $row) {
+            $name = isset($row['ten_lop']) ? (string)$row['ten_lop'] : '';
+            if (preg_match('/^' . $escapedBase . ' \(([A-Z]+)\)$/u', $name, $matches)) {
+                $usedSuffixes[$matches[1]] = true;
+            }
+        }
+
+        $index = 0;
+        while (true) {
+            $suffix = self::suffixByIndex($index);
+            if (!isset($usedSuffixes[$suffix])) {
+                return $baseName . ' (' . $suffix . ')';
+            }
+            $index++;
+        }
+    }
+
+    private static function suffixByIndex($index) {
+        $index = (int)$index;
+        $result = '';
+
+        do {
+            $result = chr(65 + ($index % 26)) . $result;
+            $index = intdiv($index, 26) - 1;
+        } while ($index >= 0);
+
+        return $result;
     }
 
     private static function normalizeNgayKetThuc($value) {
@@ -89,7 +137,7 @@ class LopHoc {
         $params = [
             ':id' => $id,
             ':mon_hoc_id' => $data['mon_hoc_id'],
-            ':ten_lop' => self::buildTenLop($data),
+            ':ten_lop' => self::buildTenLop($data, $id),
             ':gia_su_id' => $data['gia_su_id'] ?? null,
             ':khoi_lop' => $data['khoi_lop'] ?? null,
             ':gia_toan_khoa' => $data['gia_toan_khoa'] ?? null,
