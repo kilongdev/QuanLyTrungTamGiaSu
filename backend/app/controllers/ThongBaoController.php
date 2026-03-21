@@ -5,7 +5,7 @@ class ThongBaoController {
 
     public static function getMyNotifications() {
         $userId = $_GET['user_id'] ?? null;
-        $userType = $_GET['user_type'] ?? null;
+        $userType = $_GET['user_type'] ?? null; // admin, gia_su, phu_huynh
         
         if (!$userId || !$userType) {
             http_response_code(400);
