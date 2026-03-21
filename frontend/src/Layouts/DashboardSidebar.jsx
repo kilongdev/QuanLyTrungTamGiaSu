@@ -1,4 +1,4 @@
-import { Settings } from 'lucide-react'
+import { useState } from 'react'
 
 export default function DashboardSidebar({ menuItems, activeItem, onMenuClick, userRole, collapsed, hoverExpanded, onHoverEnter, onHoverLeave }) {
   const roleColors = {
@@ -43,17 +43,6 @@ export default function DashboardSidebar({ menuItems, activeItem, onMenuClick, u
           )
         })}
       </nav>
-
-      {/* Bottom section */}
-      <div className="p-4 border-t border-gray-200">
-        <button 
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-all ${isExpanded ? '' : 'justify-center'}`}
-          title={!isExpanded ? 'Cài đặt' : ''}
-        >
-          <Settings className="w-5 h-5 flex-shrink-0" />
-          {isExpanded && <span className="font-medium text-sm whitespace-nowrap">Cài đặt</span>}
-        </button>
-      </div>
     </aside>
   )
 }

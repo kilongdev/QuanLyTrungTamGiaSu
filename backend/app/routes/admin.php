@@ -14,3 +14,9 @@ Router::put('/admin/update/{id}', ['AdminController', 'update']);
 Router::delete('/admin/delete/{id}', ['AdminController', 'delete']);
 Router::post('/admin/login', ['AdminController', 'login']);
 
+// Profile management (for logged-in admins)
+Router::get('/profile', ['AdminController', 'getProfile']);
+Router::put('/profile/update', ['AdminController', 'updateProfile']);
+Router::post('/profile/change-password', ['AdminController', 'changePassword']);
+
+

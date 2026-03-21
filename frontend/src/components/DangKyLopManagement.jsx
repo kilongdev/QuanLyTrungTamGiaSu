@@ -3,6 +3,7 @@ import { BookOpen, UserCheck, XCircle, CheckCircle, Clock, AlertTriangle, FileTe
 import { dangKyAPI } from '../api/dangkyApi';
 import { lichHocAPI } from '../api/lichhocApi';
 import { hocSinhAPI } from '../api/hocSinhApi';
+import { validateRegistrationForm } from '@/lib/validators';
 
 export default function DangKyLopManagement({ user }) {
     const [dangKys, setDangKys] = useState([]);
@@ -81,6 +82,15 @@ export default function DangKyLopManagement({ user }) {
             return;
         }
 
+        const validationMessage = validateRegistrationForm({
+            hoc_sinh_id: selectedHocSinhId,
+            lop_hoc_id: selectedLop?.lop_hoc_id
+        });
+        if (validationMessage) {
+            setAlertModal({ show: true, message: validationMessage, type: 'error' });
+            return;
+        }
+
         try {
             await dangKyAPI.create({
                 hoc_sinh_id: selectedHocSinhId,
@@ -154,12 +164,6 @@ export default function DangKyLopManagement({ user }) {
     // 1. GIAO DIỆN QUẢN LÝ CHO ADMIN
   
     if (user?.role === 'admin') {
-        const stats = {
-            total: dangKys.length,
-            pending: dangKys.filter(dk => dk.trang_thai === 'cho_duyet').length,
-            approved: dangKys.filter(dk => dk.trang_thai === 'da_duyet').length,
-            cancelled: dangKys.filter(dk => dk.trang_thai === 'tu_choi' || dk.trang_thai === 'da_huy').length,
-        };
 
         const filteredAdminDangKys = dangKys.filter(dk => {
             if (adminFilter === 'all') return true;
@@ -168,31 +172,10 @@ export default function DangKyLopManagement({ user }) {
         });
 
         return (
-            <div className="space-y-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => setAdminFilter('all')}>
-                        <p className="text-gray-500 text-sm font-medium">Tổng số đơn</p>
-                        <p className="text-3xl font-bold text-blue-600 mt-1">{stats.total}</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl p-5 shadow-sm border border-amber-200 flex flex-col justify-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => setAdminFilter('cho_duyet')}>
-                        <p className="text-amber-700 text-sm font-bold">Chờ duyệt (Cần xử lý)</p>
-                        <p className="text-3xl font-bold text-amber-700 mt-1">{stats.pending}</p>
-                    </div>
-                    <div className="bg-emerald-50 rounded-2xl p-5 shadow-sm border border-emerald-100 flex flex-col justify-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => setAdminFilter('da_duyet')}>
-                        <p className="text-emerald-600 text-sm font-medium">Đã duyệt</p>
-                        <p className="text-3xl font-bold text-emerald-600 mt-1">{stats.approved}</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-2xl p-5 shadow-sm border border-gray-200 flex flex-col justify-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => setAdminFilter('cancelled')}>
-                        <p className="text-gray-500 text-sm font-medium">Từ chối / Hủy</p>
-                        <p className="text-3xl font-bold text-gray-500 mt-1">{stats.cancelled}</p>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-sm p-6 relative">
-                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 border-b pb-4 gap-4">
-                        <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                            <FileText className="text-blue-600"/> Danh Sách Đơn Đăng Ký
-                        </h3>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-5 border-b border-gray-200">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                        <h3 className="font-bold text-gray-900 text-xl">Duyệt Đơn Đăng Ký</h3>
                         <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-lg border border-gray-200">
                             <Filter size={16} className="text-gray-400 ml-2"/>
                             <select 
@@ -207,8 +190,9 @@ export default function DangKyLopManagement({ user }) {
                             </select>
                         </div>
                     </div>
-                    
-                    {loading ? <div className="text-center py-8 text-gray-500">Đang tải dữ liệu...</div> : (
+                </div>
+                
+                {loading ? <div className="text-center py-8 text-gray-500">Đang tải dữ liệu...</div> : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
@@ -225,10 +209,10 @@ export default function DangKyLopManagement({ user }) {
                                     {filteredAdminDangKys.length === 0 ? (
                                         <tr><td colSpan="6" className="text-center py-8 text-gray-500">Không có đơn đăng ký nào trong mục này.</td></tr>
                                     ) : filteredAdminDangKys.map((dk) => (
-                                        <tr key={dk.dang_ky_id} className={`border-b border-gray-100 hover:bg-gray-50 ${dk.trang_thai === 'cho_duyet' ? 'bg-amber-50/30' : ''}`}>
+                                        <tr key={dk.dang_ky_id} className={`border-b border-gray-100 hover:bg-red-50/40 ${dk.trang_thai === 'cho_duyet' ? 'bg-amber-50/20' : ''}`}>
                                             <td className="p-3 text-sm font-bold text-gray-700">#{dk.dang_ky_id}</td>
-                                            <td className="p-3 text-sm font-medium text-gray-800 flex items-center gap-2"><User size={14} className="text-blue-500"/>{dk.ten_hoc_sinh}</td>
-                                            <td className="p-3 text-sm text-blue-600 font-medium">
+                                            <td className="p-3 text-sm font-medium text-gray-800">{dk.ten_hoc_sinh}</td>
+                                            <td className="p-3 text-sm text-blue-700 font-medium">
                                                 {dk.ten_lop || `Lớp #${dk.lop_hoc_id}`}
                                                 {/* Backend sẽ truyền mh.ten_mon_hoc vào đây */}
                                                 {dk.ten_mon_hoc && <span className="block text-xs text-gray-500 font-normal mt-0.5">{dk.ten_mon_hoc}</span>}
@@ -238,8 +222,8 @@ export default function DangKyLopManagement({ user }) {
                                             <td className="p-3 text-center flex justify-center gap-2">
                                                 {dk.trang_thai === 'cho_duyet' && (
                                                     <>
-                                                        <button onClick={() => handleUpdateStatus(dk.dang_ky_id, 'da_duyet')} className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded hover:bg-emerald-700 transition-colors shadow-sm">Duyệt</button>
-                                                        <button onClick={() => handleUpdateStatus(dk.dang_ky_id, 'tu_choi')} className="px-3 py-1.5 bg-red-100 text-red-600 text-xs font-bold rounded hover:bg-red-200 transition-colors">Từ chối</button>
+                                                        <button onClick={() => handleUpdateStatus(dk.dang_ky_id, 'da_duyet')} className="px-3 py-1.5 bg-blue-700 text-white text-xs font-bold rounded hover:bg-blue-800 transition-colors shadow-sm">Duyệt</button>
+                                                        <button onClick={() => handleUpdateStatus(dk.dang_ky_id, 'tu_choi')} className="px-3 py-1.5 bg-red-100 text-red-700 text-xs font-bold rounded hover:bg-red-200 transition-colors">Từ chối</button>
                                                     </>
                                                 )}
                                                 {dk.trang_thai === 'da_duyet' && (
@@ -258,7 +242,6 @@ export default function DangKyLopManagement({ user }) {
                         </div>
                     )}
                     {renderPopups()}
-                </div>
             </div>
         );
     }

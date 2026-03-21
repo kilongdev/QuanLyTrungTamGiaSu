@@ -102,7 +102,13 @@ class Router
     {
         if (is_array($handler)) {
             [$class, $method] = $handler;
-            call_user_func_array([$class, $method], $params);
+            // Instantiate class nếu là class name string
+            if (is_string($class)) {
+                $instance = new $class();
+                call_user_func_array([$instance, $method], $params);
+            } else {
+                call_user_func_array([$class, $method], $params);
+            }
         } else {
             call_user_func_array($handler, $params);
         }
