@@ -2,46 +2,87 @@
 require_once __DIR__ . '/../models/ThongBaoModel.php';
 
 class ThongBaoController {
-    private $model;
 
-    public function __construct() {
-        $this->model = new ThongBaoModel();
-    }
-
-    public function getMyNotifications() {
+    public static function getMyNotifications() {
         $userId = $_GET['user_id'] ?? null;
         $userType = $_GET['user_type'] ?? null; // admin, gia_su, phu_huynh
         
         if (!$userId || !$userType) {
-             $this->sendResponse(false, 'Thiếu thông tin user_id hoặc user_type', null, 400);
-             return;
+            http_response_code(400);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Thiếu thông tin user_id hoặc user_type'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
         }
 
-        $data = $this->model->getByReceiver($userId, $userType);
-        $this->sendResponse(true, 'Danh sách thông báo', $data);
+        $model = new ThongBaoModel();
+        $data = $model->getByReceiver($userId, $userType);
+        
+        // Transform data: đổi da_doc thành trang_thai
+        $data = array_map(function($item) {
+            $item['trang_thai'] = $item['da_doc'] ? 'da_doc' : 'chua_doc';
+            return $item;
+        }, $data);
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Danh sách thông báo', 
+            'data' => $data
+        ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function send() {
+    public static function send() {
         $data = json_decode(file_get_contents('php://input'), true);
         if (!isset($data['nguoi_nhan_id']) || !isset($data['tieu_de'])) {
-             $this->sendResponse(false, 'Thiếu thông tin bắt buộc', null, 400);
-             return;
+            http_response_code(400);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Thiếu thông tin bắt buộc'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
         }
         
-        $this->model->create($data);
-        $this->sendResponse(true, 'Đã gửi thông báo');
+        $model = new ThongBaoModel();
+        $model->create($data);
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Đã gửi thông báo'
+        ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function markRead($id) {
-        $this->model->markAsRead($id);
-        $this->sendResponse(true, 'Đã đánh dấu đã đọc');
+    public static function markRead($id) {
+        $model = new ThongBaoModel();
+        $model->markAsRead($id);
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Đã đánh dấu đã đọc'
+        ], JSON_UNESCAPED_UNICODE);
     }
 
-    private function sendResponse($success, $message, $data = null, $code = 200) {
-        http_response_code($code);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['success' => $success, 'message' => $message, 'data' => $data], JSON_UNESCAPED_UNICODE);
-        exit;
+    public static function markAllRead() {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $userId = $data['user_id'] ?? null;
+        $userType = $data['user_type'] ?? null;
+        
+        if (!$userId || !$userType) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Thiếu thông tin user_id hoặc user_type'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        
+        $model = new ThongBaoModel();
+        $model->markAllAsRead($userId, $userType);
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Đã đánh dấu tất cả đã đọc'
+        ], JSON_UNESCAPED_UNICODE);
     }
 }
 ?>

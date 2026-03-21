@@ -33,5 +33,11 @@ class ThongBaoModel extends BaseModel {
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute([$id]);
     }
+
+    public function markAllAsRead($userId, $userType) {
+        $sql = "UPDATE {$this->table} SET da_doc = 1 WHERE nguoi_nhan_id = ? AND loai_nguoi_nhan = ? AND da_doc = 0";
+        $stmt = $this->conn->prepare($sql);
+        return $stmt->execute([$userId, $userType]);
+    }
 }
 ?>
