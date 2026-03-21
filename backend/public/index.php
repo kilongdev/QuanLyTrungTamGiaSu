@@ -9,43 +9,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once __DIR__ . '/../app/core/Database.php';
-require_once __DIR__ . '/../app/core/JWT.php';
-require_once __DIR__ . '/../app/core/Router.php';
+// Start output buffering to catch any unexpected output
+ob_start();
 
-require_once __DIR__ . '/../app/controllers/AuthController.php';
-require_once __DIR__ . '/../app/controllers/OTPController.php';
+try {
+    require_once __DIR__ . '/../app/core/Database.php';
+    require_once __DIR__ . '/../app/core/JWT.php';
+    require_once __DIR__ . '/../app/core/Router.php';
 
-require_once __DIR__ . '/../app/middleware/AuthMiddleware.php';
+    require_once __DIR__ . '/../app/controllers/AuthController.php';
+    require_once __DIR__ . '/../app/controllers/OTPController.php';
 
-// ===== AUTHENTICATION & OTP =====
-require_once __DIR__ . '/../app/routes/auth.php';
+    require_once __DIR__ . '/../app/middleware/AuthMiddleware.php';
 
-// ===== SYSTEM MANAGEMENT =====
-require_once __DIR__ . '/../app/routes/lophoc.php';
-require_once __DIR__ . '/../app/routes/monhoc.php';
-require_once __DIR__ . '/../app/routes/giasumonhoc.php';
-require_once __DIR__ . '/../app/routes/dangkylop.php';
-require_once __DIR__ . '/../app/routes/lichhoc.php';
-require_once __DIR__ . '/../app/routes/diemdanh.php';
-require_once __DIR__ . '/../app/routes/yeucau.php';
-require_once __DIR__ . '/../app/routes/danhgia.php';
+    // ===== AUTHENTICATION & OTP =====
+    require_once __DIR__ . '/../app/routes/auth.php';
 
-// ===== USER MANAGEMENT =====
-require_once __DIR__ . '/../app/routes/giasu.php';
-require_once __DIR__ . '/../app/routes/hocsinhroutes.php';
-require_once __DIR__ . '/../app/routes/phuhuynhroutes.php';
+    // ===== SYSTEM MANAGEMENT =====
+    require_once __DIR__ . '/../app/routes/lophoc.php';
+    require_once __DIR__ . '/../app/routes/monhoc.php';
+    require_once __DIR__ . '/../app/routes/giasumonhoc.php';
+    require_once __DIR__ . '/../app/routes/dangkylop.php';
+    require_once __DIR__ . '/../app/routes/lichhoc.php';
+    require_once __DIR__ . '/../app/routes/diemdanh.php';
+    require_once __DIR__ . '/../app/routes/yeucau.php';
+    require_once __DIR__ . '/../app/routes/danhgia.php';
 
-// ===== ADMIN MANAGEMENT =====
-require_once __DIR__ . '/../app/routes/admin.php';
+    // ===== USER MANAGEMENT =====
+    require_once __DIR__ . '/../app/routes/giasu.php';
+    require_once __DIR__ . '/../app/routes/hocsinhroutes.php';
+    require_once __DIR__ . '/../app/routes/phuhuynhroutes.php';
 
-// ===== COMMUNICATION =====
-require_once __DIR__ . '/../app/routes/thongbao.php';
-require_once __DIR__ . '/../app/routes/tinnhan.php';
+    // ===== ADMIN MANAGEMENT =====
+    require_once __DIR__ . '/../app/routes/admin.php';
 
-// ===== FINANCE =====
-require_once __DIR__ . '/../app/routes/hocphi.php';
-require_once __DIR__ . '/../app/routes/luonggiasu.php';
-require_once __DIR__ . '/../app/routes/doanhthu.php';
+    // ===== COMMUNICATION =====
+    require_once __DIR__ . '/../app/routes/thongbao.php';
+    require_once __DIR__ . '/../app/routes/tinnhan.php';
 
-Router::dispatch();
+    // ===== FINANCE =====
+    require_once __DIR__ . '/../app/routes/hocphi.php';
+    require_once __DIR__ . '/../app/routes/luonggiasu.php';
+    require_once __DIR__ . '/../app/routes/doanhthu.php';
+
+    // Clear any buffered output before dispatch
+    ob_end_clean();
+
+    // Dispatch the route
+    Router::dispatch();
+
+} catch (Exception $e) {
+    // Clear any buffered output
+    ob_end_clean();
+    
+    // Return error as JSON
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Lỗi server: ' . $e->getMessage(),
+        'error' => $e->getMessage()
+    ], JSON_UNESCAPED_UNICODE);
+    exit();
+}

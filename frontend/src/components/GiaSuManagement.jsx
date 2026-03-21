@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Trash2, Edit2, Eye, Search, Plus, X } from 'lucide-react'
 import { giaSuAPI } from '@/api/giaSuApi'
+import { validateTutorForm } from '@/lib/validators'
+import DataPagination from '@/components/ui/DataPagination'
+import { toast } from 'sonner'
 
 export default function GiaSuManagement() {
   const [tutors, setTutors] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 })
+  const [pageSize, setPageSize] = useState(10)
   const [search, setSearch] = useState('')
   const [detailModal, setDetailModal] = useState({ open: false, data: null, loading: false })
   // State cho modal chỉnh sửa
@@ -32,10 +36,10 @@ export default function GiaSuManagement() {
   })
 
   // Gọi API lấy danh sách gia sư
-  const fetchTutors = async (page = 1, searchTerm = '') => {
+  const fetchTutors = async (page = 1, searchTerm = '', limit = pageSize) => {
     try {
       setLoading(true)
-      const data = await giaSuAPI.getAll({ page, limit: 10, search: searchTerm })
+      const data = await giaSuAPI.getAll({ page, limit, search: searchTerm })
 
       if (data.status === 'success') {
         setTutors(data.data)
@@ -78,11 +82,16 @@ export default function GiaSuManagement() {
   // Xử lý submit form thêm mới
   const handleAddSubmit = async (e) => {
     e.preventDefault()
+    const validationMessage = validateTutorForm(addFormData, { requirePassword: true })
+    if (validationMessage) {
+      toast.warning(validationMessage)
+      return
+    }
     setModalLoading(true)
     try {
       const result = await giaSuAPI.create(addFormData)
       if (result.status === 'success') {
-        alert('Thêm gia sư thành công!')
+        toast.success('Thêm gia sư thành công!')
         setAddModal(false)
         setAddFormData({ 
           ho_ten: '', 
@@ -94,7 +103,7 @@ export default function GiaSuManagement() {
         })
         fetchTutors(1, search)
       } else { throw new Error(result.message || 'Thêm thất bại') }
-    } catch (err) { alert('Lỗi khi thêm: ' + err.message) } finally { setModalLoading(false) }
+    } catch (err) { toast.error('Lỗi khi thêm: ' + err.message) } finally { setModalLoading(false) }
   }
 
   // Xử lý click nút sửa
@@ -115,15 +124,21 @@ export default function GiaSuManagement() {
     e.preventDefault()
     if (!editModal.data) return
 
+    const validationMessage = validateTutorForm(editFormData)
+    if (validationMessage) {
+      toast.warning(validationMessage)
+      return
+    }
+
     setModalLoading(true)
     try {
       const result = await giaSuAPI.update(editModal.data.gia_su_id, editFormData)
       if (result.status === 'success') {
-        alert('Cập nhật thành công!')
+        toast.success('Cập nhật thành công!')
         setEditModal({ open: false, data: null })
         fetchTutors(pagination.page, search)
       } else { throw new Error(result.message || 'Cập nhật thất bại') }
-    } catch (err) { alert('Lỗi khi cập nhật: ' + err.message) } finally { setModalLoading(false) }
+    } catch (err) { toast.error('Lỗi khi cập nhật: ' + err.message) } finally { setModalLoading(false) }
   }
 
   // Xử lý click nút xóa
@@ -133,13 +148,13 @@ export default function GiaSuManagement() {
         setLoading(true)
         const result = await giaSuAPI.delete(tutor.gia_su_id)
         if (result.status === 'success') {
-          alert('Xóa gia sư thành công!')
+          toast.success('Xóa gia sư thành công!')
           fetchTutors(pagination.page, search)
         } else {
           throw new Error(result.message || 'Xóa thất bại')
         }
       } catch (err) {
-        alert('Lỗi khi xóa gia sư: ' + err.message)
+        toast.error('Lỗi khi xóa gia sư: ' + err.message)
       } finally {
         setLoading(false)
       }
@@ -148,22 +163,29 @@ export default function GiaSuManagement() {
 
   // Load dữ liệu khi component mount
   useEffect(() => {
-    fetchTutors(1, '')
+    fetchTutors(1, '', 10)
   }, [])
 
   // Xử lý tìm kiếm
   const handleSearch = (e) => {
     const term = e.target.value
     setSearch(term)
-    fetchTutors(1, term)
+    fetchTutors(1, term, pageSize)
   }
+
+  const effectiveTotalPages = Math.max(1, Math.ceil((pagination.total || 0) / (pagination.limit || pageSize)))
 
   // Xử lý đổi trang
   const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= pagination.totalPages) {
-      fetchTutors(newPage, search)
+    if (newPage >= 1 && newPage <= effectiveTotalPages) {
+      fetchTutors(newPage, search, pageSize)
       setPagination(prev => ({ ...prev, page: newPage }))
     }
+  }
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize)
+    fetchTutors(1, search, newSize)
   }
 
   // Xử lý view detail
@@ -201,75 +223,55 @@ export default function GiaSuManagement() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
         <p className="text-gray-500 mt-4">Đang tải danh sách gia sư...</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex justify-between items-center pb-2 border-b-2 border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-800">🎓 Quản lý Gia sư</h2>
-        <button 
-          onClick={() => setAddModal(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
-        >
-          <Plus size={18} />
-          Thêm gia sư
-        </button>
-      </div>
+    <div>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="flex justify-between items-center p-5 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900">Quản lý Gia sư</h2>
+          <button 
+            onClick={() => setAddModal(true)}
+            className="bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition"
+          >
+            <Plus size={18} />
+            Thêm gia sư
+          </button>
+        </div>
 
-      {/* Search Bar */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm p-4 border border-blue-100">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="🔍 Tìm kiếm theo tên hoặc email..."
-            value={search}
-            onChange={handleSearch}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-      </div>
+        <div className="p-5 border-b border-gray-200">
+          <div className="relative rounded-xl border border-gray-200 bg-gray-50 overflow-hidden">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo tên hoặc email..."
+              value={search}
+              onChange={handleSearch}
+              className="w-full pl-10 pr-4 py-2.5 bg-transparent focus:outline-none"
+            />
+          </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg">
-          <p className="font-semibold">⚠️ Lỗi</p>
-          <p className="text-sm">{error}</p>
+          {error && (
+            <div className="mt-4 bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg">
+              <p className="font-semibold">⚠️ Lỗi</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg p-4 shadow-md">
-          <p className="text-sm opacity-90">Tổng gia sư</p>
-          <p className="text-3xl font-bold">{pagination.total}</p>
-        </div>
-        <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-4 shadow-md">
-          <p className="text-sm opacity-90">Trang hiện tại</p>
-          <p className="text-3xl font-bold">{pagination.page}/{pagination.totalPages}</p>
-        </div>
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg p-4 shadow-md">
-          <p className="text-sm opacity-90">Hiển thị</p>
-          <p className="text-3xl font-bold">{tutors.length}</p>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
         {tutors.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-gray-500 text-lg">📭 Không có dữ liệu gia sư</p>
+          <div className="p-12 text-center border-b border-gray-200">
+            <p className="text-gray-600 text-lg font-medium">Không có dữ liệu gia sư</p>
             <p className="text-gray-400 text-sm mt-2">Hãy thêm gia sư mới hoặc thay đổi bộ lọc tìm kiếm</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto border-b border-gray-200">
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-gray-100 to-gray-50 border-b-2 border-gray-200">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">STT</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Gia sư</th>
@@ -282,21 +284,16 @@ export default function GiaSuManagement() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {tutors.map((tutor, index) => (
-                  <tr key={tutor.gia_su_id} className="hover:bg-blue-50 transition-colors duration-200">
+                  <tr key={tutor.gia_su_id} className="hover:bg-red-50/40 transition-colors duration-200">
                     <td className="px-6 py-4">
-                      <span className="text-sm font-medium text-gray-900 bg-gray-100 px-3 py-1 rounded-full">
+                      <span className="text-sm font-medium text-gray-900">
                         {(pagination.page - 1) * pagination.limit + index + 1}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`${getAvatarColor(tutor.gia_su_id)} text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-md`}>
-                          {getAvatarInitials(tutor.ho_ten)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{tutor.ho_ten}</p>
-                          <p className="text-xs text-gray-500">ID: {tutor.gia_su_id}</p>
-                        </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{tutor.ho_ten}</p>
+                        <p className="text-xs text-gray-500">ID: {tutor.gia_su_id}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -314,21 +311,21 @@ export default function GiaSuManagement() {
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
                         <button 
-                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200 tooltip"
+                          className="p-2 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 tooltip"
                           title="Xem chi tiết"
                           onClick={() => handleViewDetail(tutor.gia_su_id)}
                         >
                           <Eye size={18} />
                         </button>
                         <button 
-                          className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors duration-200 tooltip"
+                          className="p-2 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 tooltip"
                           title="Chỉnh sửa"
                           onClick={() => handleEdit(tutor)}
                         >
                           <Edit2 size={18} />
                         </button>
                         <button 
-                          className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200 tooltip"
+                          className="p-2 text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 tooltip"
                           title="Xóa"
                           onClick={() => handleDelete(tutor)}
                         >
@@ -342,57 +339,22 @@ export default function GiaSuManagement() {
             </table>
           </div>
         )}
-      </div>
 
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center bg-white rounded-xl shadow-md p-4 gap-4 border border-gray-200">
-          <p className="text-sm text-gray-600">
-            <span className="font-semibold">Trang {pagination.page}</span> / {pagination.totalPages} 
-            <span className="ml-2 text-gray-500">({tutors.length} trên {pagination.limit} kết quả)</span>
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-            >
-              ← Trước
-            </button>
-            <div className="flex items-center gap-2 px-3">
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                const pageNum = Math.max(1, pagination.page - 2) + i
-                if (pageNum > pagination.totalPages) return null
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                      pageNum === pagination.page
-                        ? 'bg-blue-600 text-white'
-                        : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                )
-              })}
-            </div>
-            <button
-              onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.page === pagination.totalPages}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-            >
-              Sau →
-            </button>
-          </div>
-        </div>
-      )}
+        <DataPagination
+          page={pagination.page}
+          totalPages={effectiveTotalPages}
+          totalItems={pagination.total}
+          pageSize={pagination.limit || pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          itemLabel="gia sư"
+        />
+      </div>
 
       {/* Detail Modal */}
       {detailModal.open && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-96 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto border border-gray-200">
             {detailModal.loading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -400,49 +362,43 @@ export default function GiaSuManagement() {
             ) : detailModal.data ? (
               <>
                 {/* Modal Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex justify-between items-start">
-                  <div className="flex items-center gap-4">
-                    <div className={`${getAvatarColor(detailModal.data.gia_su_id)} text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg`}>
-                      {getAvatarInitials(detailModal.data.ho_ten)}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold">{detailModal.data.ho_ten}</h3>
-                      <p className="text-blue-100">ID: {detailModal.data.gia_su_id}</p>
-                    </div>
+                <div className="bg-blue-800 text-white p-5 flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold">{detailModal.data.ho_ten}</h3>
+                    <p className="text-blue-100 text-sm">ID: {detailModal.data.gia_su_id}</p>
                   </div>
                   <button 
                     onClick={closeModal}
-                    className="text-white hover:bg-blue-600 p-1 rounded-lg transition"
+                    className="text-white hover:bg-white/20 p-1 rounded-lg transition"
                   >
                     <X size={24} />
                   </button>
                 </div>
 
                 {/* Modal Content */}
-                <div className="p-6 space-y-4">
-                  {/* Info */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
                       <p className="text-gray-600 text-sm">Email</p>
                       <p className="font-semibold text-gray-900">{detailModal.data.email}</p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
                       <p className="text-gray-600 text-sm">Điện thoại</p>
                       <p className="font-semibold text-gray-900">{detailModal.data.so_dien_thoai || 'Chưa cập nhật'}</p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
                       <p className="text-gray-600 text-sm">Bằng cấp</p>
                       <p className="font-semibold text-gray-900">{detailModal.data.bang_cap || 'Chưa cập nhật'}</p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
                       <p className="text-gray-600 text-sm">Kinh nghiệm</p>
                       <p className="font-semibold text-gray-900">{detailModal.data.kinh_nghiem || 'Chưa cập nhật'}</p>
                     </div>
-                    <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-300">
-                      <p className="text-blue-600 text-sm font-bold">Đánh giá trung bình</p>
-                      <p className="font-bold text-blue-900 text-2xl">{detailModal.data.diem_danh_gia_trung_binh || '0'} ⭐</p>
+                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-200">
+                      <p className="text-blue-700 text-sm">Đánh giá trung bình</p>
+                      <p className="font-bold text-blue-900 text-xl">{detailModal.data.diem_danh_gia_trung_binh || '0.00'}</p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
                       <p className="text-gray-600 text-sm">Trạng thái</p>
                       {getStatusBadge(detailModal.data.trang_thai)}
                     </div>
@@ -459,7 +415,7 @@ export default function GiaSuManagement() {
                   </button>
                   <button 
                     onClick={() => { closeModal(); handleEdit(detailModal.data); }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                    className="px-4 py-2 bg-red-800 text-white rounded-lg font-medium hover:bg-red-900 transition"
                   >
                     Chỉnh sửa
                   </button>
@@ -473,9 +429,9 @@ export default function GiaSuManagement() {
       {/* Add Modal */}
       {addModal && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
-            <div className="p-6 flex justify-between items-center border-b">
-              <h3 className="text-lg font-bold text-gray-800">Thêm gia sư mới</h3>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-gray-200 overflow-hidden">
+            <div className="p-5 flex justify-between items-center border-b bg-white">
+              <h3 className="text-2xl font-bold text-gray-900">Thêm gia sư mới</h3>
               <button onClick={() => setAddModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition">
                 <X size={24} />
               </button>
@@ -488,7 +444,7 @@ export default function GiaSuManagement() {
                     type="text"
                     value={addFormData.ho_ten}
                     onChange={(e) => setAddFormData({ ...addFormData, ho_ten: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -498,7 +454,7 @@ export default function GiaSuManagement() {
                     type="email"
                     value={addFormData.email}
                     onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -508,7 +464,7 @@ export default function GiaSuManagement() {
                     type="password"
                     value={addFormData.mat_khau}
                     onChange={(e) => setAddFormData({ ...addFormData, mat_khau: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -518,7 +474,7 @@ export default function GiaSuManagement() {
                     type="tel"
                     value={addFormData.so_dien_thoai}
                     onChange={(e) => setAddFormData({ ...addFormData, so_dien_thoai: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -527,7 +483,7 @@ export default function GiaSuManagement() {
                     type="text"
                     value={addFormData.bang_cap}
                     onChange={(e) => setAddFormData({ ...addFormData, bang_cap: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: Cử nhân, Thạc sĩ..."
                   />
                 </div>
@@ -537,7 +493,7 @@ export default function GiaSuManagement() {
                     type="text"
                     value={addFormData.kinh_nghiem}
                     onChange={(e) => setAddFormData({ ...addFormData, kinh_nghiem: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: 3 năm"
                   />
                 </div>
@@ -546,14 +502,14 @@ export default function GiaSuManagement() {
                 <button
                   type="button"
                   onClick={() => setAddModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition"
+                  className="px-4 py-2 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-100 transition"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={modalLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 bg-red-800 text-white rounded-xl font-medium hover:bg-red-900 transition disabled:opacity-50 flex items-center gap-2"
                 >
                   {modalLoading && (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -569,9 +525,9 @@ export default function GiaSuManagement() {
       {/* Edit Modal */}
       {editModal.open && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
-            <div className="p-6 flex justify-between items-center border-b">
-              <h3 className="text-lg font-bold text-gray-800">Chỉnh sửa thông tin gia sư</h3>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-gray-200 overflow-hidden">
+            <div className="p-5 flex justify-between items-center border-b bg-white">
+              <h3 className="text-2xl font-bold text-gray-900">Chỉnh sửa thông tin gia sư</h3>
               <button onClick={() => setEditModal({ open: false, data: null })} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition">
                 <X size={24} />
               </button>
@@ -584,7 +540,7 @@ export default function GiaSuManagement() {
                     type="text"
                     value={editFormData.ho_ten}
                     onChange={(e) => setEditFormData({ ...editFormData, ho_ten: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -594,7 +550,7 @@ export default function GiaSuManagement() {
                     type="email"
                     value={editFormData.email}
                     onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -604,7 +560,7 @@ export default function GiaSuManagement() {
                     type="tel"
                     value={editFormData.so_dien_thoai}
                     onChange={(e) => setEditFormData({ ...editFormData, so_dien_thoai: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -613,7 +569,7 @@ export default function GiaSuManagement() {
                     type="text"
                     value={editFormData.bang_cap}
                     onChange={(e) => setEditFormData({ ...editFormData, bang_cap: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -630,7 +586,7 @@ export default function GiaSuManagement() {
                   <select
                     value={editFormData.trang_thai}
                     onChange={(e) => setEditFormData({ ...editFormData, trang_thai: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="cho_duyet">Chờ duyệt</option>
                     <option value="da_duyet">Đã duyệt</option>
@@ -642,14 +598,14 @@ export default function GiaSuManagement() {
                 <button
                   type="button"
                   onClick={() => setEditModal({ open: false, data: null })}
-                  className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition"
+                  className="px-4 py-2 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-100 transition"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={modalLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 bg-red-800 text-white rounded-xl font-medium hover:bg-red-900 transition disabled:opacity-50 flex items-center gap-2"
                 >
                   {modalLoading && (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

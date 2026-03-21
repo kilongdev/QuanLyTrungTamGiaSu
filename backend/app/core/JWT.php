@@ -90,8 +90,18 @@ class JWT
 
     public static function getTokenFromHeader(): ?string
     {
-        $headers = getallheaders();
-        $authHeader = $headers['Authorization'] ?? '';
+        $authHeader = '';
+
+        // Try getallheaders() first (available in most server configs)
+        if (function_exists('getallheaders')) {
+            $headers = getallheaders();
+            $authHeader = $headers['Authorization'] ?? '';
+        }
+
+        // Fallback to $_SERVER if getallheaders() not available or Authorization not found
+        if (!$authHeader) {
+            $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        }
 
         if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
             return $matches[1];

@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { lopHocAPI } from '../api/lophocApi'
 import { monHocAPI } from '../api/monhocApi'
 import { giaSuAPI } from '../api/giaSuApi'
-import { Plus, Settings, X, Search, Trash2, Edit2 } from 'lucide-react'
+import { Plus, Settings, X, Search, Trash2, Edit2, BookOpen, Layers3 } from 'lucide-react'
+import { validateClassForm } from '@/lib/validators'
+import { toast } from 'sonner'
 
 export default function LopHocManagement() {
   const [lopHocs, setLopHocs] = useState([])
@@ -41,7 +43,7 @@ export default function LopHocManagement() {
       setLopHocs(response.data || [])
     } catch (error) {
       console.error('Lỗi khi tải danh sách lớp học:', error)
-      alert(error.message || 'Không thể tải danh sách lớp học')
+      toast.error(error.message || 'Không thể tải danh sách lớp học')
     } finally {
       setLoading(false)
     }
@@ -69,17 +71,30 @@ export default function LopHocManagement() {
     e.preventDefault()
     
     if (!formData.mon_hoc_id) {
-      alert('Vui lòng chọn môn học')
+      toast.warning('Vui lòng chọn môn học')
+      return
+    }
+
+    const payload = { ...formData }
+    if (!payload.ten_lop?.trim()) {
+      const autoName = generateAutoClassName(payload, editingId)
+      payload.ten_lop = autoName
+      setFormData((prev) => ({ ...prev, ten_lop: autoName }))
+    }
+
+    const validationMessage = validateClassForm(payload)
+    if (validationMessage) {
+      toast.warning(validationMessage)
       return
     }
 
     try {
       if (editingId) {
-        await lopHocAPI.update(editingId, formData)
-        alert('Cập nhật lớp học thành công!')
+        await lopHocAPI.update(editingId, payload)
+        toast.success('Cập nhật lớp học thành công!')
       } else {
-        await lopHocAPI.create(formData)
-        alert('Thêm lớp học thành công!')
+        await lopHocAPI.create(payload)
+        toast.success('Thêm lớp học thành công!')
       }
       
       setShowModal(false)
@@ -87,7 +102,7 @@ export default function LopHocManagement() {
       fetchLopHocs()
     } catch (error) {
       console.error('Lỗi khi lưu lớp học:', error)
-      alert(error.message || 'Có lỗi xảy ra khi lưu lớp học')
+      toast.error(error.message || 'Có lỗi xảy ra khi lưu lớp học')
     }
   }
 
@@ -117,11 +132,11 @@ export default function LopHocManagement() {
 
     try {
       await lopHocAPI.delete(id)
-      alert('Xóa lớp học thành công!')
+      toast.success('Xóa lớp học thành công!')
       fetchLopHocs()
     } catch (error) {
       console.error('Lỗi khi xóa lớp học:', error)
-      alert(error.message || 'Không thể xóa lớp học này')
+      toast.error(error.message || 'Không thể xóa lớp học này')
     }
   }
 
@@ -178,11 +193,70 @@ export default function LopHocManagement() {
     return colors[trangThai] || 'bg-gray-100 text-gray-700'
   }
 
+  const toAlphabetSuffix = (index) => {
+    let n = Number(index)
+    let result = ''
+    do {
+      result = String.fromCharCode(65 + (n % 26)) + result
+      n = Math.floor(n / 26) - 1
+    } while (n >= 0)
+    return result
+  }
+
+  const generateAutoClassName = (sourceData, excludedId = null) => {
+    const monHoc = monHocs.find((m) => String(m.mon_hoc_id) === String(sourceData.mon_hoc_id))
+    const tenMonHoc = monHoc?.ten_mon_hoc?.trim() || 'Môn'
+    const khoiLop = sourceData.khoi_lop?.toString().trim() || '...'
+    const baseName = `${tenMonHoc} - Lớp ${khoiLop}`
+
+    const usedSuffixes = new Set()
+    const escapedBase = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const pattern = new RegExp(`^${escapedBase} \\(([A-Z]+)\\)$`)
+
+    lopHocs.forEach((lop) => {
+      if (excludedId && String(lop.lop_hoc_id) === String(excludedId)) return
+      const tenLop = lop.ten_lop || ''
+      const match = tenLop.match(pattern)
+      if (match?.[1]) {
+        usedSuffixes.add(match[1])
+      }
+    })
+
+    let index = 0
+    while (true) {
+      const suffix = toAlphabetSuffix(index)
+      if (!usedSuffixes.has(suffix)) {
+        return `${baseName} (${suffix})`
+      }
+      index += 1
+    }
+  }
+
+  const handleAutoFillTenLopIfEmpty = () => {
+    if (!formData.mon_hoc_id) return
+    if (formData.ten_lop?.trim()) return
+    const autoName = generateAutoClassName(formData, editingId)
+    setFormData((prev) => ({ ...prev, ten_lop: autoName }))
+  }
+
   const filteredLopHocs = lopHocs.filter(lh => 
     lh.khoi_lop?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (lh.ten_lop || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     getMonHocName(lh.mon_hoc_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
     lh.lop_hoc_id?.toString().includes(searchTerm)
+  )
+
+  const groupedBySubject = filteredLopHocs.reduce((acc, lopHoc) => {
+    const subjectName = getMonHocName(lopHoc.mon_hoc_id)
+    if (!acc[subjectName]) {
+      acc[subjectName] = []
+    }
+    acc[subjectName].push(lopHoc)
+    return acc
+  }, {})
+
+  const subjectSections = Object.entries(groupedBySubject).sort(([subjectA], [subjectB]) =>
+    subjectA.localeCompare(subjectB, 'vi')
   )
 
   if (loading) {
@@ -194,143 +268,157 @@ export default function LopHocManagement() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-gray-800">Quản lý lớp học</h2>
-          <p className="text-sm text-gray-500">Tổng số: {lopHocs.length} lớp học</p>
+    <div>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-5 border-b border-gray-200">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Quản lý lớp học</h2>
+            <p className="text-gray-500 text-sm mt-1">Tổng số: {lopHocs.length} lớp học</p>
+          </div>
+          <button
+            onClick={handleOpenModal}
+            className="bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white px-5 py-2.5 rounded-2xl flex items-center gap-2 transition shadow-md font-medium"
+          >
+            <Plus size={18} />
+            Thêm lớp học
+          </button>
         </div>
-        <button
-          onClick={handleOpenModal}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={18} />
-          Thêm lớp học
-        </button>
-      </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <input
-          type="text"
-          placeholder="Tìm kiếm theo khối lớp, môn học hoặc ID..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      {/* Card Grid */}
-      {filteredLopHocs.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <p className="text-gray-500">
-            {searchTerm ? 'Không tìm thấy lớp học nào' : 'Chưa có lớp học nào'}
-          </p>
+        {/* Search */}
+        <div className="p-5 border-b border-gray-200">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Tìm theo khối lớp, môn học hoặc ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300"
+            />
+          </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {filteredLopHocs.map((lopHoc) => (
-            <div key={lopHoc.lop_hoc_id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow relative group">
-              {/* Settings Button */}
-              <div className="absolute top-2 right-2">
-                <div className="relative">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setShowSettings(showSettings === lopHoc.lop_hoc_id ? null : lopHoc.lop_hoc_id)
-                    }}
-                    className="p-1 text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                    title="Cài đặt"
-                  >
-                    <Settings size={16} />
-                  </button>
 
-                  {/* Dropdown Menu */}
-                  {showSettings === lopHoc.lop_hoc_id && (
-                    <div className="absolute top-8 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
-                      <button
-                        onClick={() => {
-                          handleEdit(lopHoc)
-                          setShowSettings(null)
-                        }}
-                        className="w-full text-left px-3 py-1.5 text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-2 border-b border-gray-100"
-                      >
-                        <Edit2 size={12} />
-                        Chỉnh sửa
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleDelete(lopHoc.lop_hoc_id)
-                          setShowSettings(null)
-                        }}
-                        className="w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
-                      >
-                        <Trash2 size={12} />
-                        Xóa
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Card Content */}
-              <div className="p-3">
-                {/* Title - Tên lớp hoặc fallback */}
-                <h3 className="font-semibold text-gray-800 text-base mb-1 pr-6 line-clamp-2">
-                  {lopHoc.ten_lop || `Lớp ${lopHoc.khoi_lop || 'N/A'} - ${getMonHocName(lopHoc.mon_hoc_id)}`}
-                </h3>
-
-                {/* Giáo viên */}
-                {lopHoc.gia_su_id && (
-                  <div className="text-sm text-gray-600 mb-1">
-                    GV: {getGiaSuName(lopHoc.gia_su_id)}
-                  </div>
-                )}
-
-                {/* Grid Info */}
-                <div className="space-y-1 mb-2">
-                  {/* Số buổi học */}
-                  {lopHoc.so_buoi_hoc && (
-                    <div className="text-sm text-gray-600">
-                      {lopHoc.so_buoi_hoc} buổi/khóa
-                    </div>
-                  )}
-
-                  {/* Học phí */}
-                  {lopHoc.gia_toan_khoa && (
-                    <div className="font-semibold text-gray-900 text-sm">
-                      {parseInt(lopHoc.gia_toan_khoa).toLocaleString('vi-VN')}đ/khóa
-                    </div>
-                  )}
-
-                  {/* Giá mỗi buổi */}
-                  {lopHoc.gia_moi_buoi && (
-                    <div className="text-sm text-gray-600">
-                      {parseInt(lopHoc.gia_moi_buoi).toLocaleString('vi-VN')}đ/buổi
-                    </div>
-                  )}
-
-                  {/* Sĩ số */}
-                  {lopHoc.so_luong_toi_da && (
-                    <div className="text-sm text-gray-600">
-                      Tối đa {lopHoc.so_luong_toi_da} học sinh
-                    </div>
-                  )}
-                </div>
-
-                {/* Status Badge */}
-                <div className="flex justify-center pt-2 border-t border-gray-100">
-                  <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${getTrangThaiColor(lopHoc.trang_thai)}`}>
-                    {getTrangThaiLabel(lopHoc.trang_thai)}
-                  </span>
-                </div>
-              </div>
+        {/* Grouped Content */}
+        <div className="p-5">
+          {filteredLopHocs.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-300 p-12 text-center">
+              <p className="text-gray-500">
+                {searchTerm ? 'Không tìm thấy lớp học nào' : 'Chưa có lớp học nào'}
+              </p>
             </div>
-          ))}
+          ) : (
+            <div className="space-y-8">
+              {subjectSections.map(([subjectName, classes]) => (
+                <section key={subjectName} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-lg bg-red-50 text-red-700 flex items-center justify-center">
+                        <BookOpen size={18} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-800">{subjectName}</h3>
+                        <p className="text-xs text-gray-500">{classes.length} lớp trong môn này</p>
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                      <Layers3 size={14} />
+                      Nhóm môn
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {classes.map((lopHoc) => (
+                      <div key={lopHoc.lop_hoc_id} className="rounded-xl border border-gray-200 bg-white hover:shadow-md transition-shadow relative overflow-visible">
+                        <div className="absolute top-2 right-2">
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setShowSettings(showSettings === lopHoc.lop_hoc_id ? null : lopHoc.lop_hoc_id)
+                              }}
+                              className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                              title="Cài đặt"
+                            >
+                              <Settings size={16} />
+                            </button>
+
+                            {showSettings === lopHoc.lop_hoc_id && (
+                              <div className="absolute top-9 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
+                                <button
+                                  onClick={() => {
+                                    handleEdit(lopHoc)
+                                    setShowSettings(null)
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-2 border-b border-gray-100"
+                                >
+                                  <Edit2 size={12} />
+                                  Chỉnh sửa
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handleDelete(lopHoc.lop_hoc_id)
+                                    setShowSettings(null)
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <Trash2 size={12} />
+                                  Xóa
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="p-4 space-y-3">
+                          <div className="pr-8">
+                            <h4 className="font-semibold text-gray-900 text-base line-clamp-2">
+                              {lopHoc.ten_lop || `Lớp ${lopHoc.khoi_lop || 'N/A'} - ${subjectName}`}
+                            </h4>
+                            <p className="text-sm text-gray-500 mt-0.5">Khối lớp: {lopHoc.khoi_lop || 'Chưa cập nhật'}</p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="bg-gray-50 rounded-lg px-3 py-2">
+                              <p className="text-gray-500 text-xs">Giáo viên</p>
+                              <p className="text-gray-800 font-medium truncate">{getGiaSuName(lopHoc.gia_su_id)}</p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg px-3 py-2">
+                              <p className="text-gray-500 text-xs">Số buổi</p>
+                              <p className="text-gray-800 font-medium">{lopHoc.so_buoi_hoc || 0} buổi</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1 text-sm">
+                            <p className="text-gray-800 font-semibold">
+                              {lopHoc.gia_toan_khoa
+                                ? `${parseInt(lopHoc.gia_toan_khoa).toLocaleString('vi-VN')}đ/khóa`
+                                : 'Chưa có học phí'}
+                            </p>
+                            <p className="text-gray-600">
+                              {lopHoc.gia_moi_buoi
+                                ? `${parseInt(lopHoc.gia_moi_buoi).toLocaleString('vi-VN')}đ/buổi`
+                                : 'Chưa có giá mỗi buổi'}
+                            </p>
+                            <p className="text-gray-600">Tối đa {lopHoc.so_luong_toi_da || 1} học sinh</p>
+                          </div>
+
+                          <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
+                            <span className="text-xs text-gray-400">ID: {lopHoc.lop_hoc_id}</span>
+                            <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full ${getTrangThaiColor(lopHoc.trang_thai)}`}>
+                              {getTrangThaiLabel(lopHoc.trang_thai)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Modal */}
       {showModal && (
@@ -380,6 +468,7 @@ export default function LopHocManagement() {
                     type="text"
                     value={formData.ten_lop}
                     onChange={(e) => setFormData({ ...formData, ten_lop: e.target.value })}
+                    onBlur={handleAutoFillTenLopIfEmpty}
                     className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Tự động nếu để trống"
                   />
