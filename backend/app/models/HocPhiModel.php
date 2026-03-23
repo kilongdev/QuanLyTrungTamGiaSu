@@ -5,6 +5,37 @@ class HocPhiModel extends BaseModel {
     protected $table = 'hoc_phi';
     protected $primaryKey = 'hoc_phi_id';
 
+    public function findAll() {
+        // Tự động cập nhật trạng thái quá hạn cho các học phí > 30 ngày
+        $this->conn->exec("
+            UPDATE hoc_phi 
+            SET trang_thai_thanh_toan = 'qua_han' 
+            WHERE trang_thai_thanh_toan = 'chua_thanh_toan' 
+            AND DATEDIFF(CURDATE(), ngay_tao) > 30
+        ");
+        
+        $sql = "SELECT hp.hoc_phi_id,
+                       hp.dang_ky_id,
+                       hp.so_tien,
+                       hp.so_buoi_da_hoc,
+                       hp.trang_thai_thanh_toan as trang_thai,
+                       hp.ngay_tao,
+                       hp.ngay_thanh_toan,
+                       DATE_FORMAT(hp.ngay_tao, '%m/%Y') as thang,
+                       hs.ho_ten as ten_hocsinh,
+                       lh.ten_lop,
+                       mh.ten_mon_hoc,
+                       ph.ho_ten as ten_phu_huynh
+                FROM {$this->table} hp
+                LEFT JOIN dang_ky_lop dkl ON hp.dang_ky_id = dkl.dang_ky_id
+                LEFT JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                LEFT JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
+                LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
+                LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
+                ORDER BY hp.ngay_tao DESC";
+        return $this->conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function create($data) {
         $sql = "INSERT INTO {$this->table} (dang_ky_id, so_tien, so_buoi_da_hoc, trang_thai_thanh_toan, ngay_tao) 
                 VALUES (:dang_ky_id, :so_tien, :so_buoi_da_hoc, :trang_thai, NOW())";

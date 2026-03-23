@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Search } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, X, AlertTriangle, DollarSign, User, Calendar, Bell } from 'lucide-react'
 import DataPagination from '@/components/ui/DataPagination'
+import { hocPhiAPI } from '@/api/hocPhiApi'
+import { dangKyLopAPI } from '@/api/dangKyLopApi'
+import { toast } from 'sonner'
 
 export default function HocPhiManagement({ user }) {
   const [hocPhiData, setHocPhiData] = useState([])
@@ -11,24 +14,68 @@ export default function HocPhiManagement({ user }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
 
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalMode, setModalMode] = useState('add')
+  const [currentHocPhi, setCurrentHocPhi] = useState(null)
+  const [formData, setFormData] = useState({ dang_ky_id: '', so_tien: '', so_buoi_da_hoc: 0, trang_thai_thanh_toan: 'chua_thanh_toan' })
+  const [modalLoading, setModalLoading] = useState(false)
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, hocPhi: null, loading: false })
+  const [dangKyList, setDangKyList] = useState([])
+  const [dangKySearch, setDangKySearch] = useState('')
+  const [quaHanModal, setQuaHanModal] = useState({ isOpen: false, loading: false, count: 0 })
+
   useEffect(() => {
     fetchHocPhiData()
+    fetchDangKyList()
   }, [])
+
+  // Mở modal xác nhận gửi thông báo quá hạn
+  const handleOpenQuaHanModal = () => {
+    setQuaHanModal({ isOpen: true, loading: false, count: 0 })
+  }
+
+  // Gửi thông báo quá hạn sau khi xác nhận
+  const handleConfirmSendQuaHan = async () => {
+    setQuaHanModal(prev => ({ ...prev, loading: true }))
+    try {
+      const result = await hocPhiAPI.checkQuaHan()
+      if (result.success) {
+        setQuaHanModal({ isOpen: false, loading: false, count: result.data?.count || 0 })
+        toast.success(result.message || 'Đã gửi thông báo học phí quá hạn!')
+        fetchHocPhiData()
+      } else {
+        toast.error(result.message || 'Lỗi kiểm tra')
+        setQuaHanModal(prev => ({ ...prev, loading: false }))
+      }
+    } catch (error) {
+      console.error('Lỗi:', error)
+      toast.error('Lỗi khi gửi thông báo học phí quá hạn')
+      setQuaHanModal(prev => ({ ...prev, loading: false }))
+    }
+  }
+
+  const fetchDangKyList = async () => {
+    try {
+      const response = await dangKyLopAPI.getAll()
+      if (response.status === 'success') {
+        setDangKyList(response.data || [])
+      }
+    } catch (error) {
+      console.error('Lỗi tải danh sách đăng ký:', error)
+    }
+  }
 
   const fetchHocPhiData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost/QuanLyTrungTamGiaSu/backend/public/api.php?route=/hocphi', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      const data = await response.json()
+      const data = await hocPhiAPI.getAll()
       if (data.success) {
         setHocPhiData(data.data || [])
       }
     } catch (error) {
       console.error('Lỗi tải dữ liệu học phí:', error)
+      toast.error('Lỗi tải dữ liệu học phí')
     } finally {
       setLoading(false)
     }
@@ -70,6 +117,80 @@ export default function HocPhiManagement({ user }) {
     setCurrentPage(1)
   }
 
+  // Modal handlers
+  const handleOpenAddModal = () => {
+    setModalMode('add')
+    setCurrentHocPhi(null)
+    setFormData({ dang_ky_id: '', so_tien: '', so_buoi_da_hoc: 0, trang_thai_thanh_toan: 'chua_thanh_toan' })
+    setIsModalOpen(true)
+  }
+
+  const handleEdit = (hocPhi) => {
+    setModalMode('edit')
+    setCurrentHocPhi(hocPhi)
+    setFormData({
+      dang_ky_id: hocPhi.dang_ky_id || '',
+      so_tien: hocPhi.so_tien || '',
+      so_buoi_da_hoc: hocPhi.so_buoi_da_hoc || 0,
+      trang_thai_thanh_toan: hocPhi.trang_thai || 'chua_thanh_toan'
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault()
+    if (!formData.dang_ky_id || !formData.so_tien) {
+      toast.error('Vui lòng điền đầy đủ thông tin')
+      return
+    }
+
+    setModalLoading(true)
+    try {
+      if (modalMode === 'edit') {
+        await hocPhiAPI.updateStatus(currentHocPhi.hoc_phi_id, formData.trang_thai_thanh_toan)
+        toast.success('Cập nhật học phí thành công!')
+      } else {
+        await hocPhiAPI.create(formData)
+        toast.success('Thêm học phí thành công!')
+      }
+      setIsModalOpen(false)
+      fetchHocPhiData()
+    } catch (error) {
+      toast.error(error.message || 'Lỗi thao tác')
+    } finally {
+      setModalLoading(false)
+    }
+  }
+
+  const handleDelete = (hocPhi) => {
+    setConfirmModal({ isOpen: true, hocPhi: hocPhi, loading: false })
+  }
+
+  const executeDelete = async () => {
+    if (!confirmModal.hocPhi) return
+
+    setConfirmModal(prev => ({ ...prev, loading: true }))
+    try {
+      await hocPhiAPI.delete(confirmModal.hocPhi.hoc_phi_id)
+      toast.success('Xóa học phí thành công!')
+      fetchHocPhiData()
+      setConfirmModal({ isOpen: false, hocPhi: null, loading: false })
+    } catch (error) {
+      toast.error(error.message || 'Lỗi xóa học phí')
+      setConfirmModal(prev => ({ ...prev, loading: false }))
+    }
+  }
+
+  // Filter đăng ký list based on search
+  const filteredDangKyList = dangKyList.filter((dk) => {
+    const search = dangKySearch.toLowerCase().trim()
+    if (!search) return true
+    const tenHocSinh = String(dk.ten_hoc_sinh || '').toLowerCase()
+    const tenLop = String(dk.ten_lop || '').toLowerCase()
+    const tenMonHoc = String(dk.ten_mon_hoc || '').toLowerCase()
+    return tenHocSinh.includes(search) || tenLop.includes(search) || tenMonHoc.includes(search)
+  })
+
   return (
     <div>
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -78,10 +199,22 @@ export default function HocPhiManagement({ user }) {
             <h2 className="text-2xl font-bold text-gray-900">Quản lý Học phí</h2>
             <p className="text-gray-500 text-sm mt-1">Theo dõi học phí theo học sinh, tháng và trạng thái thanh toán</p>
           </div>
-          <button className="flex items-center gap-2 bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white px-4 py-2 rounded-xl transition">
-            <Plus className="w-5 h-5" />
-            Thêm học phí
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleOpenQuaHanModal}
+              className="flex items-center gap-2 border border-yellow-500 text-yellow-700 hover:bg-yellow-50 px-4 py-2 rounded-xl transition"
+              title="Gửi thông báo học phí quá hạn"
+            >
+              <Bell className="w-5 h-5" />
+              Thông báo quá hạn
+            </button>
+            <button 
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-2 bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white px-4 py-2 rounded-xl transition">
+              <Plus className="w-5 h-5" />
+              Thêm học phí
+            </button>
+          </div>
         </div>
 
         <div className="p-5 border-b border-gray-200">
@@ -119,7 +252,10 @@ export default function HocPhiManagement({ user }) {
             >
               <option value="all">Tất cả trạng thái</option>
               {statusOptions.map((status) => (
-                <option key={status} value={status}>{status === 'da_thanh_toan' ? 'Đã thanh toán' : status === 'chua_thanh_toan' ? 'Chưa thanh toán' : status}</option>
+                <option key={status} value={status}>
+                  {status === 'da_thanh_toan' ? 'Đã thanh toán' : 
+                   status === 'qua_han' ? 'Quá hạn' : 'Chưa thanh toán'}
+                </option>
               ))}
             </select>
           </div>
@@ -154,18 +290,32 @@ export default function HocPhiManagement({ user }) {
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         item.trang_thai === 'da_thanh_toan' 
                           ? 'bg-blue-100 text-blue-800' 
+                          : item.trang_thai === 'qua_han'
+                          ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {item.trang_thai === 'da_thanh_toan' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                        {item.trang_thai === 'da_thanh_toan' 
+                          ? 'Đã thanh toán' 
+                          : item.trang_thai === 'qua_han'
+                          ? 'Quá hạn'
+                          : 'Chưa thanh toán'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">{item.ngay_tao || 'N/A'}</td>
                     <td className="px-6 py-4 text-sm">
                       <div className="flex gap-2">
-                        <button className="p-2 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors">
+                        <button 
+                          onClick={() => handleEdit(item)}
+                          className="p-2 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Chỉnh sửa"
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button className="p-2 text-red-700 hover:bg-red-50 rounded-lg transition-colors">
+                        <button 
+                          onClick={() => handleDelete(item)}
+                          className="p-2 text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Xóa"
+        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -187,6 +337,220 @@ export default function HocPhiManagement({ user }) {
           itemLabel="học phí"
         />
       </div>
+
+      {/* Add/Edit Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all overflow-hidden border border-gray-200">
+            <div className="p-5 flex justify-between items-center border-b bg-white">
+              <h3 className="text-2xl font-bold text-gray-900">
+                {modalMode === 'edit' ? 'Cập nhật học phí' : 'Thêm học phí mới'}
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition">
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleFormSubmit}>
+              <div className="p-6 space-y-4">
+                {modalMode === 'add' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                      <User size={14} /> Đăng ký lớp <span className="text-red-500">*</span>
+                    </label>
+                    {/* Search input */}
+                    <div className="relative mb-2">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Tìm theo tên HS, lớp, môn..."
+                        value={dangKySearch}
+                        onChange={(e) => setDangKySearch(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <select
+                      value={formData.dang_ky_id}
+                      onChange={(e) => setFormData({ ...formData, dang_ky_id: e.target.value })}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      required
+                    >
+                      <option value="">-- Chọn đăng ký --</option>
+                      {filteredDangKyList.map((dk) => (
+                        <option key={dk.dang_ky_id} value={dk.dang_ky_id}>
+                          {dk.ten_hoc_sinh || `HS ID: ${dk.hoc_sinh_id}`} - {dk.ten_lop || `Lớp ID: ${dk.lop_hoc_id}`} {dk.ten_mon_hoc ? `(${dk.ten_mon_hoc})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {dangKySearch && filteredDangKyList.length === 0 && (
+                      <p className="text-sm text-gray-500 mt-1">Không tìm thấy kết quả</p>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                    <DollarSign size={14} /> Số tiền <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.so_tien}
+                    onChange={(e) => setFormData({ ...formData, so_tien: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Nhập số tiền"
+                    required
+                    disabled={modalMode === 'edit'}
+                  />
+                </div>
+
+                {modalMode === 'add' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                      <Calendar size={14} /> Số buổi đã học
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.so_buoi_da_hoc}
+                      onChange={(e) => setFormData({ ...formData, so_buoi_da_hoc: e.target.value })}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Số buổi"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái thanh toán</label>
+                  <select
+                    value={formData.trang_thai_thanh_toan}
+                    onChange={(e) => setFormData({ ...formData, trang_thai_thanh_toan: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="chua_thanh_toan">Chưa thanh toán</option>
+                    <option value="da_thanh_toan">Đã thanh toán</option>
+                  </select>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-100 transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={modalLoading}
+                  className="px-4 py-2 bg-red-800 text-white rounded-xl font-medium hover:bg-red-900 transition disabled:opacity-50 flex items-center gap-2"
+                >
+                  {modalLoading && (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                  {modalMode === 'edit' ? 'Lưu thay đổi' : 'Thêm mới'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                  <AlertTriangle className="h-6 w-6 text-red-600" aria-hidden="true" />
+                </div>
+                <div className="mt-0 text-left">
+                  <h3 className="text-lg leading-6 font-bold text-gray-900">
+                    Xác nhận xóa học phí
+                  </h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-600">
+                      Bạn có chắc chắn muốn xóa học phí của học sinh <span className="font-bold">"{confirmModal.hocPhi?.ten_hocsinh}"</span>?
+                    </p>
+                    <p className="text-sm text-red-600 mt-1">Hành động này không thể được hoàn tác.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
+              <button
+                type="button"
+                onClick={() => setConfirmModal({ isOpen: false, hocPhi: null, loading: false })}
+                className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition"
+                disabled={confirmModal.loading}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={executeDelete}
+                disabled={confirmModal.loading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
+              >
+                {confirmModal.loading && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                )}
+                Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Send Overdue Notification Modal */}
+      {quaHanModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                  <Bell className="h-6 w-6 text-yellow-600" aria-hidden="true" />
+                </div>
+                <div className="mt-0 text-left">
+                  <h3 className="text-lg leading-6 font-bold text-gray-900">
+                    Gửi thông báo học phí quá hạn
+                  </h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-600">
+                      Hệ thống sẽ gửi thông báo đến <span className="font-bold text-yellow-600">phụ huynh</span> của các học sinh có học phí quá hạn (trên 30 ngày chưa thanh toán).
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Đồng thời thông báo cũng sẽ được gửi đến <span className="font-bold">admin</span>.
+                    </p>
+                    <p className="text-sm text-red-600 mt-2 font-medium">
+                      Bạn có chắc chắn muốn gửi thông báo?
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
+              <button
+                type="button"
+                onClick={() => setQuaHanModal({ isOpen: false, loading: false, count: 0 })}
+                className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition"
+                disabled={quaHanModal.loading}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSendQuaHan}
+                disabled={quaHanModal.loading}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 transition disabled:opacity-50 flex items-center gap-2"
+              >
+                {quaHanModal.loading && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                )}
+                Gửi thông báo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
