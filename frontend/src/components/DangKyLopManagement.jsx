@@ -196,7 +196,7 @@ export default function DangKyLopManagement({ user }) {
   const filteredLopHocs = lopHocs.filter((lop) => {
     const searchLower = searchTerm.toLowerCase();
     const tenLop = lop.ten_lop ? lop.ten_lop.toLowerCase() : "";
-    const monHoc = lop.ten_mon_hoc ? lop.ten_mon_hoc.toLowerCase() : ""; 
+    const monHoc = lop.ten_mon_hoc ? lop.ten_mon_hoc.toLowerCase() : "";
     const tenGiaSu = lop.ten_gia_su ? lop.ten_gia_su.toLowerCase() : "";
 
     return (
@@ -288,19 +288,23 @@ export default function DangKyLopManagement({ user }) {
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
               <div className="bg-blue-50 px-6 py-4 border-b border-blue-100 flex justify-between items-center">
-                <h3 className="font-bold text-lg text-blue-900">Chi tiết đăng ký</h3>
-                <button 
+                <h3 className="font-bold text-lg text-blue-900">
+                  Chi tiết đăng ký
+                </h3>
+                <button
                   onClick={() => setDetailModal({ show: false, data: null })}
                   className="text-gray-400 hover:text-gray-700 transition"
                 >
                   <X size={20} />
                 </button>
               </div>
-              
+
               <div className="p-6 space-y-4">
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Mã đơn:</span>
-                  <span className="font-bold text-gray-800">#{detailModal.data.dang_ky_id}</span>
+                  <span className="font-bold text-gray-800">
+                    #{detailModal.data.dang_ky_id}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Trạng thái:</span>
@@ -308,31 +312,44 @@ export default function DangKyLopManagement({ user }) {
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Học sinh:</span>
-                  <span className="font-medium text-gray-800">{detailModal.data.ten_hoc_sinh}</span>
+                  <span className="font-medium text-gray-800">
+                    {detailModal.data.ten_hoc_sinh}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Lớp:</span>
-                  <span className="font-medium text-blue-600">{detailModal.data.ten_lop || `Lớp #${detailModal.data.lop_hoc_id}`}</span>
+                  <span className="font-medium text-blue-600">
+                    {detailModal.data.ten_lop ||
+                      `Lớp #${detailModal.data.lop_hoc_id}`}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Môn học:</span>
-                  <span className="font-medium text-gray-800">{detailModal.data.ten_mon_hoc || "Đang cập nhật"}</span>
+                  <span className="font-medium text-gray-800">
+                    {detailModal.data.ten_mon_hoc || "Đang cập nhật"}
+                  </span>
                 </div>
-                
+
                 {/* THÊM KHỐI LỚP VÀ GIA SƯ */}
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Khối lớp:</span>
-                  <span className="font-medium text-gray-800">{detailModal.data.khoi_lop || "Đang cập nhật"}</span>
+                  <span className="font-medium text-gray-800">
+                    {detailModal.data.khoi_lop || "Đang cập nhật"}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Gia sư:</span>
-                  <span className="font-medium text-gray-800">{detailModal.data.ten_gia_su || "Chưa phân công"}</span>
+                  <span className="font-medium text-gray-800">
+                    {detailModal.data.ten_gia_su || "Chưa phân công"}
+                  </span>
                 </div>
 
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Số buổi:</span>
                   <span className="font-medium text-gray-800">
-                    {detailModal.data.so_buoi_hoc ? `${detailModal.data.so_buoi_hoc} buổi` : "Đang cập nhật"}
+                    {detailModal.data.so_buoi_hoc
+                      ? `${detailModal.data.so_buoi_hoc} buổi`
+                      : "Đang cập nhật"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
@@ -344,8 +361,8 @@ export default function DangKyLopManagement({ user }) {
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Học phí:</span>
                   <span className="font-bold text-red-600 text-base">
-                    {detailModal.data.gia_toan_khoa 
-                      ? `${Number(detailModal.data.gia_toan_khoa).toLocaleString("vi-VN")} đ` 
+                    {detailModal.data.gia_toan_khoa
+                      ? `${Number(detailModal.data.gia_toan_khoa).toLocaleString("vi-VN")} đ`
                       : "Đang cập nhật"}
                   </span>
                 </div>
@@ -353,11 +370,13 @@ export default function DangKyLopManagement({ user }) {
                 <div className="flex justify-between items-center pb-1">
                   <span className="text-gray-500 text-sm">Ngày gửi đơn:</span>
                   <span className="font-medium text-gray-800">
-                    {new Date(detailModal.data.ngay_dang_ky).toLocaleString("vi-VN")}
+                    {new Date(detailModal.data.ngay_dang_ky).toLocaleString(
+                      "vi-VN",
+                    )}
                   </span>
                 </div>
               </div>
-              
+
               <div className="bg-gray-50 px-6 py-4 flex justify-end">
                 <button
                   onClick={() => setDetailModal({ show: false, data: null })}
@@ -521,7 +540,9 @@ export default function DangKyLopManagement({ user }) {
                         <td className="p-3 text-center flex justify-center items-center gap-2">
                           {/* NÚT CHI TIẾT CỦA ADMIN */}
                           <button
-                            onClick={() => setDetailModal({ show: true, data: dk })}
+                            onClick={() =>
+                              setDetailModal({ show: true, data: dk })
+                            }
                             className="px-3 py-1.5 bg-white text-gray-700 hover:bg-gray-100 text-xs font-bold rounded border border-gray-300 transition-colors shadow-sm flex items-center gap-1"
                             title="Xem chi tiết đơn"
                           >

@@ -72,6 +72,12 @@ const Tutorpage = () => {
     "Phụ huynh chỉ phải đóng phí khi hài lòng về gia sư giảng dạy.",
   ];
 
+  const caNhanHoa = [
+    "Giáo án riêng biệt: Không dùng chung một tài liệu cho tất cả. Mỗi học sinh được thiết kế một lộ trình học tập riêng dựa trên bài kiểm tra năng lực đầu vào.",
+    "Bám sát chương trình: Nội dung dạy luôn cập nhật mới nhất theo chương trình cải cách của Bộ Giáo dục & Đào tạo và các trường quốc tế.",
+    "Học đi đôi với hành: Tập trung giải quyết các lỗ hổng kiến thức ngay tại lớp và rèn luyện kỹ năng tư duy độc lập.",
+  ];
+
   return (
     <div className="">
       <div className="p-6 mx-auto max-w-7xl">
@@ -167,7 +173,7 @@ const Tutorpage = () => {
         <div className="border border-dashed border-[#ccc]" />
 
         <section className="py-20 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold">CAM KẾT CHỨC LƯỢNG</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">CAM KẾT CHẤT LƯỢNG</h1>
         </section>
 
         <section className="pb-9">
@@ -201,6 +207,41 @@ const Tutorpage = () => {
         </section>
 
         <div className="border border-dashed border-[#ccc]" />
+
+        <section className="py-20 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold">
+            PHƯƠNG PHÁP CÁ NHÂN HOÁ
+          </h1>
+        </section>
+
+        <section className="pb-9">
+          <div className="relative grid items-center gap-4 lg:gap-10 xl:gap-[62px] md:grid-cols-1 lg:grid-cols-2 justify-self-center px-5 md:px-0 z-10 ">
+            <ul className=" space-y-4">
+              {caNhanHoa.map((item) => (
+                <li className="flex gap-3 items-start">
+                  <CheckCircle
+                    className="text-green-500 mt-1 shrink-0"
+                    size={30}
+                  />
+                  <p className="text-gray-700">{item}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="relative flex justify-center">
+              <div className="relative w-full max-w-[430px]">
+                <div className="absolute inset-0 bg-blue-200 max-w-[450px] pt-[76%] -z-10 -skew-y-7 skew-x-9 " />
+
+                <div
+                  className="sm:max-w-full w-full max-w-[430px] lg:h-[329px] pt-[76%] bg-no-repeat bg-contain bg-center z-20"
+                  style={{
+                    backgroundImage:
+                      "url(	https://giasuongmattroi.com//wp-content/uploads/2023/01/gsomt-image-29.jpg)",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <RegisterForm className="pt-6" />

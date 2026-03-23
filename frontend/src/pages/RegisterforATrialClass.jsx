@@ -92,7 +92,6 @@ const RegisterforATrialClass = () => {
 
   const onSubmit = async (data) => {
     try {
-      // Map form data to backend expected format
       const submitData = {
         ho_ten: data.name,
         so_dien_thoai: data.phone,

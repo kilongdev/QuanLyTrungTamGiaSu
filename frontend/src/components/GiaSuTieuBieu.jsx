@@ -5,6 +5,15 @@ const GiaSuTieuBieu = ({ tutor }) => {
   const [startIndex, setStartIndex] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(3);
 
+  const getAvatarInitials = (name) => {
+    if (!name || typeof name !== "string") return "";
+
+    const words = name.trim().split(/\s+/);
+    const lastWord = words[words.length - 1];
+
+    return lastWord.charAt(0).toUpperCase();
+  };
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 640) {
@@ -39,7 +48,7 @@ const GiaSuTieuBieu = ({ tutor }) => {
 
   return (
     <div className="flex flex-col items-center mb-12 mx-auto max-w-6xl px-4 lg:w-[750px] md:w-[650px]">
-      <h2 className="text-3xl font-bold mb-10 text-gray-800">
+      <h2 className="text-6xl font-bold my-7 text-blue-800 font-corinthia">
         Gia Sư Tiêu Biểu
       </h2>
 
@@ -63,20 +72,25 @@ const GiaSuTieuBieu = ({ tutor }) => {
         >
           {visibleTutors.map((t) => (
             <div
-              key={t.gia_su_id}
+              key={t?.gia_su_id}
               className="bg-white rounded-2xl shadow-md hover:shadow-xl transition p-6 flex flex-col items-center"
             >
-              <img
-                src={t.anh_dai_dien}
-                alt={t.anh_dai_dien}
-                className="w-24 h-24 rounded-full mb-4"
-              />
+              {/* <img
+                src={getAvatarInitials(t?.ho_ten)}
+                alt={getAvatarInitials(t?.ho_ten)}
+                className="w-24 h-24 rounded-full mb-4 text-center"
+              /> */}
+              <div className=" text-black w-24 h-24 rounded-full flex items-center justify-center font-bold text-4xl shadow-md mb-5 ring-1 ring-red-300">
+                {getAvatarInitials(t?.ho_ten)}
+              </div>
 
-              <h3 className="text-lg font-semibold">{t.ho_ten}</h3>
+              <h3 className="text-lg font-semibold">{t?.ho_ten}</h3>
 
-              <p className="text-sm text-gray-500">{t.bang_cap}</p>
+              <p className="text-sm text-gray-500">{t?.bang_cap}</p>
 
-              <p className="text-sm text-gray-500">{t.kinh_nghiem}</p>
+              <p className="text-sm text-gray-500">
+                kinh nghiệm: {t?.kinh_nghiem}
+              </p>
 
               {/* rating
               <div className="flex items-center gap-1 mt-2 text-yellow-500">

@@ -32,7 +32,7 @@ const PhuHuynhPage = () => {
         </div>
       </section> */}
 
-      <div className="max-w-6xl mx-auto px-6 py-16 space-y-20">
+      <div className="max-w-6xl mx-auto px-6 py-16 space-y-20 border-r-1 border-l-1 border-dashed border-gray-300">
         <section className="grid md:grid-cols-2 gap-10 items-center">
           <img
             src="https://images.unsplash.com/photo-1588072432836-e10032774350"
