@@ -2,7 +2,7 @@
  * API cho quản lý yêu cầu (guest đăng ký lớp, gửi yêu cầu)
  */
 
-const API_URL = "http://localhost:5001/public";
+const API_URL = "http://localhost:5001/QuanLyTrungTamGiaSu/backend/public";
 
 /**
  * Gửi request đến API
