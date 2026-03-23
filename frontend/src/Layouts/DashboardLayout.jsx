@@ -2,14 +2,11 @@ import { useState } from 'react'
 import DashboardSidebar from './DashboardSidebar'
 import DashboardNavbar from './DashboardNavbar'
 import DashboardFooter from './DashboardFooter'
-import EditProfileModal from '../components/EditProfileModal'
 
 export default function DashboardLayout({ 
   children, 
   user, 
-  onLogout,
-  showEditProfile,
-  setShowEditProfile,
+  onLogout, 
   menuItems, 
   activeItem, 
   onMenuClick,
@@ -17,20 +14,9 @@ export default function DashboardLayout({
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [hoverExpanded, setHoverExpanded] = useState(false)
-  const [modalTab, setModalTab] = useState('profile')
 
   // Sidebar hiển thị mở rộng khi không collapsed HOẶC khi hover
   const isSidebarExpanded = !sidebarCollapsed || hoverExpanded
-
-  const handleEditProfile = () => {
-    setModalTab('profile')
-    setShowEditProfile(true)
-  }
-
-  const handleChangePassword = () => {
-    setModalTab('password')
-    setShowEditProfile(true)
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -52,8 +38,6 @@ export default function DashboardLayout({
         <DashboardNavbar 
           user={user} 
           onLogout={onLogout}
-          onEditProfile={handleEditProfile}
-          onChangePassword={handleChangePassword}
           pageTitle={pageTitle}
           sidebarCollapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -67,15 +51,6 @@ export default function DashboardLayout({
         {/* Footer */}
         <DashboardFooter sidebarCollapsed={sidebarCollapsed} />
       </div>
-
-      {/* Modal */}
-      {showEditProfile && (
-        <EditProfileModal 
-          user={user}
-          onClose={() => setShowEditProfile(false)}
-          initialTab={modalTab}
-        />
-      )}
     </div>
   )
 }

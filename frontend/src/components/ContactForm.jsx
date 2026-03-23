@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { ArrowRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { yeuCauAPI } from "@/api/yeuCauAPI";
 
 const ContactForm = () => {
   const {
@@ -22,10 +23,20 @@ const ContactForm = () => {
 
   const onSubmit = async (data) => {
     try {
-      console.log("form data: ", data);
-      await new Promise((r) => setTimeout(r, 1000));
-      reset();
-      toast.success("Gửi thành công!");
+      const submitData = {
+        ho_ten: data.name,
+        so_dien_thoai: data.phone,
+        noi_dung_chi_tiet: data.message,
+      };
+      const res = await yeuCauAPI.createGuest(submitData);
+      console.log("Dữ liệu gửi lên server:", submitData);
+
+      if (res.status === "success") {
+        (reset(),
+          toast.success(
+            "Đăng ký học thành công! Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.!",
+          ));
+      }
     } catch (error) {
       console.error(error);
       toast.error("Lỗi khi gửi thông tin!");

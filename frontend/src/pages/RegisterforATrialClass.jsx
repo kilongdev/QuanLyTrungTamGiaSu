@@ -3,11 +3,24 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { ArrowRight } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { yeuCauAPI } from "@/api/yeuCauAPI";
+import { lopHocAPI } from "@/api/lophocApi";
+import { monHocAPI } from "@/api/monhocApi";
 
 const RegisterforATrialClass = () => {
+  const [searchParams] = useSearchParams();
+  const [classData, setClassData] = useState(null);
+
+  const [subjects, setSubjects] = useState([]);
+  const [gradesBySubject, setGradesBySubject] = useState({});
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedGrade, setSelectedGrade] = useState("");
+  const [gradeOptions, setGradeOptions] = useState([]);
+
   const {
     register,
     handleSubmit,
@@ -15,15 +28,120 @@ const RegisterforATrialClass = () => {
     reset,
   } = useForm({ mode: "onBlur" });
 
+  // lấy lớp học theo id
+  useEffect(() => {
+    const source = searchParams.get("source");
+    const classId = searchParams.get("MSL");
+    if (source === "available" && classId) {
+      const fetchClassData = async () => {
+        try {
+          const res = await lopHocAPI.getById(classId);
+          setClassData(res.data || res);
+        } catch (error) {
+          console.error("Lỗi khi lấy thông tin lớp học:", error);
+        }
+      };
+      fetchClassData();
+    }
+  }, [searchParams]);
+
+  // lấy dữ liệu môn học + lớp học, dropdown khối lớp phù thuộc
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [subRes, classRes] = await Promise.all([
+          monHocAPI.getAll(),
+          lopHocAPI.getAll(),
+        ]);
+        const subs = subRes.data || [];
+        const classes = classRes.data || classRes || [];
+        console.log("subRes: ", subRes);
+        console.log("classRes: ", classRes);
+        setSubjects(subs);
+        const map = {};
+        classes.forEach((c) => {
+          if (c.mon_hoc_id) {
+            map[c.mon_hoc_id] = map[c.mon_hoc_id] || new Set();
+            if (c.khoi_lop) map[c.mon_hoc_id].add(c.khoi_lop);
+          }
+          // console.log("map[c.mon_hoc_id]", map[c.mon_hoc_id]);
+        });
+        const obj = {};
+        for (const key in map) {
+          obj[key] = Array.from(map[key]);
+        }
+        // console.log("map", map);
+        // console.log("obj", obj);
+
+        setGradesBySubject(obj);
+      } catch (err) {
+        console.error("Lỗi khi lấy môn/ lớp học:", err);
+      }
+    };
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (selectedSubject && gradesBySubject[selectedSubject]) {
+      setGradeOptions(gradesBySubject[selectedSubject]);
+    } else {
+      setGradeOptions([]);
+    }
+    setSelectedGrade("");
+  }, [selectedSubject, gradesBySubject]);
+
   const onSubmit = async (data) => {
     try {
-      console.log("data: ", data);
-      await new Promise((r) => setTimeout(r, 1000));
-      reset();
-      toast.success("Gửi thành công!");
+      const submitData = {
+        ho_ten: data.name,
+        so_dien_thoai: data.phone,
+        email: data.email,
+        hinh_thuc_hoc: data.studyType,
+        noi_dung_chi_tiet: data.note || "",
+      };
+
+      if (classData) {
+        submitData.lop_hoc_id = classData.lop_hoc_id;
+        // submitData.mon_hoc_id = classData.mon_hoc_id;
+        // submitData.khoi_lop = classData.khoi_lop;
+        // submitData.hoc_phi_du_kien = classData.gia_moi_buoi;
+        // submitData.so_hoc_vien = classData.so_luong_hien_tai;
+        // submitData.so_buoi_tuan = classData.so_buoi_hoc;
+        // submitData.ngay_du_kien = data.startDate || null;
+      } else {
+        submitData.mon_hoc_id = selectedSubject;
+        submitData.khoi_lop = selectedGrade;
+        submitData.hoc_phi_du_kien = data.expectedFee
+          ? parseFloat(data.expectedFee.replace(/[^\d]/g, ""))
+          : null;
+        submitData.so_hoc_vien = data.number ? parseInt(data.number) : null;
+        submitData.so_buoi_tuan = data.sessionsPerWeek
+          ? parseInt(data.sessionsPerWeek)
+          : null;
+        submitData.ngay_du_kien = data.startDate || null;
+        submitData.lop_hoc_id = null;
+      }
+
+      console.log("Dữ liệu gửi lên server:", submitData);
+
+      const response = await yeuCauAPI.createGuest(submitData);
+
+      if (response.status === "success") {
+        reset();
+        toast.success(
+          response.message ||
+            "Đăng ký học thành công! Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.",
+        );
+      } else {
+        throw new Error(response.message || "Có lỗi xảy ra khi đăng ký");
+      }
     } catch (error) {
-      console.error(errors);
-      toast.error("Lỗi khi gửi thông tin");
+      console.error("Lỗi khi gửi thông tin:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Lỗi khi gửi thông tin";
+      toast.error(errorMessage);
     }
   };
   return (
@@ -139,42 +257,7 @@ const RegisterforATrialClass = () => {
               )}
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label htmlFor="" className="font-semibold">
-                Tỉnh/thành *
-              </label>
-              {/* <Input
-                {...register("city", {
-                  required: "Vui lòng nhập tỉnh/thành",
-                })}
-                placeholder="Tỉnh/thành *"
-                className="rounded-full bg-white shadow-inner text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
-              /> */}
-              <select
-                name="province"
-                id="province"
-                {...register("province", {
-                  required: "Vui lòng chọn tỉnh/thành",
-                })}
-                className="rounded-full bg-white shadow-inner text-black px-4 py-2
-               focus-visible:outline-none focus-visible:ring-2
-               focus-visible:ring-blue-400 focus-visible:border-blue-400"
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  -- Chọn tỉnh --
-                </option>
-                <option value="hcm">TP.HCM</option>
-                <option value="hn">Hà Nội</option>
-              </select>
-              {errors.province && (
-                <div className="mt-2 text-red-600">
-                  <p>{errors.province.message}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2 col-span-2">
+            {/* <div className="flex flex-col gap-2 col-span-2">
               <label htmlFor="" className="font-semibold">
                 Địa chỉ
               </label>
@@ -182,7 +265,7 @@ const RegisterforATrialClass = () => {
                 placeholder="Vd: 275 An Dương Vương, Quận 5"
                 className="rounded-full bg-white shadow-inner text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
               />
-            </div>
+            </div> */}
           </div>
 
           {/* Thông tin khóa học bạn muốn học thử */}
@@ -191,107 +274,199 @@ const RegisterforATrialClass = () => {
               Thông tin khóa học bạn muốn học thử
             </h3>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pb-3">
-            <div className="flex flex-col gap-2">
-              <label htmlFor="" className="font-semibold">
-                Môn học *
-              </label>
-              <Input
-                placeholder="Môn học *"
-                className="rounded-full bg-white shadow-inner text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
-              />
-            </div>
+          {classData ? (
+            <div className="bg-gray-50 p-5 rounded-lg">
+              <ul className="space-y-2 text-[15px] list-disc marker:text-blue-600">
+                <li>
+                  <b>Mã lớp:</b> {classData.lop_hoc_id}
+                </li>
+                <li>
+                  <b>Gia sư:</b> {classData.ten_gia_su || "Chưa có"}
+                  {" - "}
+                  {classData.bang_cap}
+                </li>
+                <li>
+                  <b>Môn học:</b> {classData.ten_mon_hoc}
+                </li>
+                <li>
+                  <b>Khối lớp:</b> {classData.khoi_lop}
+                </li>
+                <li>
+                  <b>Số buổi học:</b> {classData.so_buoi_hoc}
+                </li>
 
-            <div className="flex flex-col gap-2">
-              <label htmlFor="" className="font-semibold">
-                Nội dung *
-              </label>
-              <Input
-                placeholder="Nội dung *"
-                className="rounded-full bg-white shadow-inner text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
-              />
+                <li>
+                  <b>Số lượng tối đa:</b> {classData.so_luong_toi_da}
+                </li>
+                <li>
+                  <b>Số lượng hiện tại:</b> {classData.so_luong_hien_tai}
+                </li>
+                <li>
+                  <b>Học phí mỗi buổi:</b>{" "}
+                  {Number(classData.gia_moi_buoi).toLocaleString("vi-VN")} đ
+                </li>
+                <li>
+                  <b>Học phí toàn khoá:</b>{" "}
+                  {Number(classData.gia_toan_khoa).toLocaleString("vi-VN")} đ
+                </li>
+                {/* <li>
+                  <b>Trạng thái:</b> {classData.trang_thai}
+                </li> */}
+              </ul>
             </div>
-            <div className="flex flex-col gap-2">
-              <label htmlFor="" className="font-semibold">
-                Học phí dự kiến (VNĐ/buổi)
-              </label>
-              <Input
-                placeholder="Vd: 200.200"
-                className="rounded-full bg-white shadow-inner text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label htmlFor="" className="font-semibold">
-                Số học viên
-              </label>
-              <Input
-                placeholder="Vd: 2"
-                className="rounded-full bg-white shadow-inner text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pb-3">
               <div className="flex flex-col gap-2">
-                <label htmlFor="sessionsPerWeek" className="font-semibold">
-                  Số buổi/tuần
+                <label htmlFor="" className="font-semibold">
+                  Môn học *
                 </label>
-
                 <select
-                  id="sessionsPerWeek"
-                  name="sessionsPerWeek"
+                  id="subject"
+                  name="subject"
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value)}
                   className="rounded-full bg-white shadow-inner text-black px-4 py-2
                focus-visible:outline-none focus-visible:ring-2
                focus-visible:ring-blue-400 focus-visible:border-blue-400"
-                  defaultValue=""
                 >
                   <option value="" disabled>
-                    -- Chọn số buổi --
+                    -- chọn môn học --
                   </option>
-                  <option value="1">1 buổi/tuần</option>
-                  <option value="2">2 buổi/tuần</option>
-                  <option value="3">3 buổi/tuần</option>
-                  <option value="4">4 buổi/tuần</option>
+                  {subjects.map((s) => (
+                    <option key={s.mon_hoc_id} value={s.mon_hoc_id}>
+                      {s.ten_mon_hoc}
+                    </option>
+                  ))}
                 </select>
               </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="font-semibold">Ngày dự kiến</label>
-              <Input
-                type="date"
-                className="rounded-full bg-white shadow-inner text-black h-11 px-4 focus-visible:ring-2 focus-visible:ring-blue-400 appearance-none"
-              />
-              {/* <Calendar /> */}
-            </div>
 
-            <div className="flex gap-5">
-              <label htmlFor="" className="font-semibold">
-                Hình thức học *{" "}
-              </label>
-              <div className="flex gap-2">
-                <input id="home" type="radio" name="studyType" value="home" />
-                <label htmlFor="home">Tại nhà</label>
+              <div className="flex flex-col gap-2">
+                <label htmlFor="" className="font-semibold">
+                  Khối lớp *
+                </label>
+                <select
+                  id="grade"
+                  name="grade"
+                  value={selectedGrade}
+                  onChange={(e) => setSelectedGrade(e.target.value)}
+                  disabled={!selectedSubject || gradeOptions.length === 0}
+                  className="rounded-full bg-white shadow-inner text-black px-4 py-2
+               focus-visible:outline-none focus-visible:ring-2
+               focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                >
+                  <option value="" disabled>
+                    {selectedSubject
+                      ? gradeOptions.length
+                        ? "-- Chọn khối lớp --"
+                        : "Không có kết quả"
+                      : "Chọn môn trước"}
+                  </option>
+                  {gradeOptions.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="flex gap-2">
-                <input
-                  id="online"
-                  type="radio"
-                  name="studyType"
-                  value="Trực tuyến"
+              <div className="flex flex-col gap-2">
+                <label htmlFor="" className="font-semibold">
+                  Học phí dự kiến (VNĐ/buổi)
+                </label>
+                <Input
+                  {...register("expectedFee")}
+                  placeholder="Vd: 200.000"
+                  className="rounded-full bg-white shadow-inner text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
                 />
-                <label htmlFor="online">Trực tuyến</label>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label htmlFor="" className="font-semibold">
+                  Số học viên
+                </label>
+                <Input
+                  {...register("number", {
+                    required: classData ? false : "Vui lòng nhập số",
+                    pattern: {
+                      value: /^\d+$/,
+                      message: "Vui lòng nhập số hợp lệ",
+                    },
+                  })}
+                  placeholder="Vd: 2"
+                  className="rounded-full bg-white shadow-inner text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="sessionsPerWeek" className="font-semibold">
+                    Số buổi/tuần
+                  </label>
+
+                  <select
+                    {...register("sessionsPerWeek")}
+                    id="sessionsPerWeek"
+                    name="sessionsPerWeek"
+                    className="rounded-full bg-white shadow-inner text-black px-4 py-2
+                 focus-visible:outline-none focus-visible:ring-2
+                 focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      -- Chọn số buổi --
+                    </option>
+                    <option value="1">1 buổi/tuần</option>
+                    <option value="2">2 buổi/tuần</option>
+                    <option value="3">3 buổi/tuần</option>
+                    <option value="4">4 buổi/tuần</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="font-semibold">Ngày dự kiến</label>
+                <Input
+                  {...register("startDate")}
+                  type="date"
+                  className="rounded-full bg-white shadow-inner text-black h-11 px-4 focus-visible:ring-2 focus-visible:ring-blue-400 appearance-none"
+                />
+              </div>
+
+              <div className="flex gap-5">
+                <label htmlFor="" className="font-semibold">
+                  Hình thức học *{" "}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    {...register("studyType", { required: true })}
+                    id="home"
+                    type="radio"
+                    name="studyType"
+                    value="home"
+                  />
+                  <label htmlFor="home">Tại nhà</label>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    {...register("studyType", { required: true })}
+                    id="online"
+                    type="radio"
+                    name="studyType"
+                    value="online"
+                  />
+                  <label htmlFor="online">Trực tuyến</label>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 col-span-2">
+                <label htmlFor="" className="font-semibold">
+                  Nội dung chi tiết muốn học và lưu ý cho gia sư
+                </label>
+                <textarea
+                  {...register("note")}
+                  placeholder="Vd: Ôn luyện tiếng Anh trên lớp, luyện khả năng giao tiếp, phản xạ tự nhiên. Bé trai 8 tuổi cần người dạy học và chơi cùng buổi sáng và chiều. Bé ngủ trưa 1 tiếng. Gia sư ăn trưa với gia đình..."
+                  className=" p-3 overflow-y-auto rounded-full resize-none bg-white shadow-inner border text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                />
               </div>
             </div>
-
-            <div className="flex flex-col gap-2 col-span-2">
-              <label htmlFor="" className="font-semibold">
-                Nội dung chi tiết muốn học và lưu ý cho gia sư
-              </label>
-              <textarea
-                placeholder="Vd: Ôn luyện tiếng Anh trên lớp, luyện khả năng giao tiếp, phản xạ tự nhiên. Bé trai 8 tuổi cần người dạy học và chơi cùng buổi sáng và chiều. Bé ngủ trưa 1 tiếng. Gia sư ăn trưa với gia đình..."
-                className=" p-3 overflow-y-auto rounded-full resize-none bg-white shadow-inner border text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
-              />
-            </div>
-          </div>
+          )}
           <Button
             type="submit"
             disabled={isSubmitting}

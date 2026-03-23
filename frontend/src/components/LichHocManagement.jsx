@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Plus, Edit2, Trash2, MoreVertical, X, AlertTriangle, CheckCircle, UserCheck, Lock, ChevronLeft, ChevronRight, FileText, Eye } from 'lucide-react';
 import { lichHocAPI } from '../api/lichhocApi';
 import { diemDanhAPI } from '../api/diemdanhApi';
-import { validateScheduleForm } from '@/lib/validators';
 
 export default function LichHocManagement({ user }) {
     const [lichHocs, setLichHocs] = useState([]);
@@ -131,12 +130,6 @@ export default function LichHocManagement({ user }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        const validationMessage = validateScheduleForm(formData);
-        if (validationMessage) {
-            setAlertModal({ show: true, message: validationMessage, type: 'error' });
-            return;
-        }
         
         if (formData.gio_bat_dau >= formData.gio_ket_thuc) {
             setAlertModal({ show: true, message: 'Giờ kết thúc phải lớn hơn Giờ bắt đầu!', type: 'error' });
@@ -430,15 +423,15 @@ export default function LichHocManagement({ user }) {
             <>
                 {showModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-200 overflow-hidden">
-                            <div className="flex justify-between items-center p-5 border-b bg-white">
-                                <h3 className="font-bold text-2xl text-gray-900">{editingId ? 'Sửa lịch học' : 'Thêm lịch học mới'}</h3>
-                                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition"><X size={22} /></button>
+                        <div className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
+                            <div className="flex justify-between items-center p-4 border-b">
+                                <h3 className="font-bold text-lg text-gray-900">{editingId ? 'Sửa lịch học' : 'Thêm lịch học mới'}</h3>
+                                <button onClick={() => setShowModal(false)}><X size={20} className="text-gray-500 hover:text-red-500"/></button>
                             </div>
                             <form onSubmit={handleSubmit} className="p-5 space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Chọn Lớp học</label>
-                                    <select value={formData.lop_hoc_id} onChange={e => setFormData({...formData, lop_hoc_id: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-xl text-gray-900 bg-white focus:ring-2 focus:ring-blue-500" required>
+                                    <select value={formData.lop_hoc_id} onChange={e => setFormData({...formData, lop_hoc_id: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500" required>
                                         <option value="">-- Chọn lớp --</option>
                                         {lopHocs.map(lop => (
                                             <option key={lop.lop_hoc_id} value={lop.lop_hoc_id}>Lớp #{lop.lop_hoc_id} {lop.ten_lop ? `- ${lop.ten_lop}` : ''}</option>
@@ -447,21 +440,21 @@ export default function LichHocManagement({ user }) {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Ngày học</label>
-                                    <input type="date" min={todayString} value={formData.ngay_hoc} onChange={e => setFormData({...formData, ngay_hoc: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-xl text-gray-900" required/>
+                                    <input type="date" min={todayString} value={formData.ngay_hoc} onChange={e => setFormData({...formData, ngay_hoc: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-lg text-gray-900" required/>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Giờ bắt đầu</label>
-                                        <input type="time" value={formData.gio_bat_dau} onChange={e => setFormData({...formData, gio_bat_dau: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-xl text-gray-900" required/>
+                                        <input type="time" value={formData.gio_bat_dau} onChange={e => setFormData({...formData, gio_bat_dau: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-lg text-gray-900" required/>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Giờ kết thúc</label>
-                                        <input type="time" value={formData.gio_ket_thuc} onChange={e => setFormData({...formData, gio_ket_thuc: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-xl text-gray-900" required/>
+                                        <input type="time" value={formData.gio_ket_thuc} onChange={e => setFormData({...formData, gio_ket_thuc: e.target.value})} className="w-full p-2.5 border border-gray-300 rounded-lg text-gray-900" required/>
                                     </div>
                                 </div>
-                                <div className="flex gap-3 pt-5 border-t mt-5 bg-gray-50 -mx-5 px-5 -mb-5 pb-5">
-                                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-100">Hủy</button>
-                                    <button type="submit" className="flex-1 py-2.5 bg-red-800 text-white font-medium rounded-xl hover:bg-red-900">{editingId ? 'Lưu thay đổi' : 'Tạo mới'}</button>
+                                <div className="flex gap-3 pt-5 border-t mt-5">
+                                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50">Hủy</button>
+                                    <button type="submit" className="flex-1 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700">{editingId ? 'Lưu thay đổi' : 'Tạo mới'}</button>
                                 </div>
                             </form>
                         </div>
@@ -598,10 +591,10 @@ export default function LichHocManagement({ user }) {
     // 3. GIAO DIỆN QUẢN LÝ CỦA ADMIN
     // ==========================================
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative">
-            <div className="flex justify-between items-center p-5 border-b border-gray-200">
-                <h3 className="font-bold text-gray-900 text-xl">Quản lý Lịch học</h3>
-                <button onClick={() => { resetForm(); setShowModal(true); }} className="bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition">
+        <div className="bg-white rounded-2xl shadow-sm p-6 relative">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-gray-800 text-lg">Quản lý toàn bộ Lịch học</h3>
+                <button onClick={() => { resetForm(); setShowModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700">
                     <Plus size={18} /> Thêm buổi học
                 </button>
             </div>
@@ -623,7 +616,7 @@ export default function LichHocManagement({ user }) {
                             const isOverdue = checkIsOverdue(lh.ngay_hoc, lh.gio_ket_thuc); 
                             
                             return (
-                                <tr key={lh.lich_hoc_id} className="border-b border-gray-100 hover:bg-red-50/40">
+                                <tr key={lh.lich_hoc_id} className="border-b border-gray-100 hover:bg-gray-50">
                                     <td className="p-3 text-sm font-medium text-gray-800">{lh.ten_lop || `Lớp #${lh.lop_hoc_id}`}</td>
                                     <td className="p-3 text-sm text-gray-600">{new Date(lh.ngay_hoc).toLocaleDateString('vi-VN')}</td>
                                     <td className="p-3 text-sm text-gray-600">{lh.gio_bat_dau.substring(0,5)} - {lh.gio_ket_thuc.substring(0,5)}</td>
