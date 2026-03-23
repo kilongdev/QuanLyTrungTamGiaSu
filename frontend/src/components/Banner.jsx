@@ -80,7 +80,7 @@ const Banner = () => {
             hover:before:scale-x-100 hover:text-red-600 hover:border-white shadow-[2px_2px_0_rgba(239,68,68,0.9)]  "
             >
               <Link to={"/dang-ky-hoc-thu"} className="relative z-10">
-                <span className="relative z-10">Học thử miễn phí</span>
+                <span className="relative z-10">Đăng ký học ngay</span>
               </Link>
               <ArrowRight className="relative z-10" />
             </Button>

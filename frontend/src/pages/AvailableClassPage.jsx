@@ -65,7 +65,6 @@ const AvailableClassPage = () => {
 
       setOptions(dynamicOptions);
 
-      // Use override values if provided, otherwise use state
       const currentFilters =
         overrideFilters !== null ? overrideFilters : filters;
       const currentSearchCode =
@@ -125,7 +124,7 @@ const AvailableClassPage = () => {
   };
 
   const getPagination = (currentPage, totalPages) => {
-    const delta = 1; // số trang 2 bên current
+    const delta = 1;
     const range = [];
     const rangeWithDots = [];
 
@@ -162,14 +161,14 @@ const AvailableClassPage = () => {
 
   return (
     <>
-      <div className=" w-full">
+      {/* <div className=" w-full">
         <img
           src="https://giasuongmattroi.com/wp-content/uploads/2017/07/lop-hien-co-tim-lop-day-kem.jpg"
           alt=""
           className=" w-full h-[240px] md:h-[360px] lg:h-[420px] object-cover"
         />
-      </div>
-      <section className=" bg-[#f4f4f4] pt-11 pb-8 mb-5 ">
+      </div> */}
+      {/* <section className=" bg-[#f4f4f4] pt-11 pb-8 mb-5 ">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
           <div className="flex flex-col items-center text-center m-2 p-2">
             <div>
@@ -266,7 +265,7 @@ const AvailableClassPage = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       <div className="flex flex-col items-center mb-6 text-center">
         <h2 className="font-corinthia text-red-500 text-5xl">Lớp hiện</h2>

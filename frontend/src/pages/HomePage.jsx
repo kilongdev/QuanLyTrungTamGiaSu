@@ -17,40 +17,43 @@ const Homepage = () => {
   const activeProgram = dataStudyProgram.find((item) => item.id === active);
   console.log(activeProgram);
 
+  // const [startIndex, setStartIndex] = useState(0);
+  const [descIndex, setDescIndex] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(1);
+
+  const getAvatarInitials = (name) => {
+    if (!name || typeof name !== "string") return "";
+
+    const words = name.trim().split(/\s+/);
+    const lastWord = words[words.length - 1];
+
+    return lastWord.charAt(0).toUpperCase();
+  };
   const [classes, setClasses] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
   const [tutors, setTutors] = useState([]);
 
-  // scroll
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const containerRef = useRef(null);
-  const itemRefs = useRef([]);
-
   // đánh giá của phụ huynh
   const totalDes = descriptions.length;
-  console.log("totaldes: ", totalDes);
 
-  const prev = () => {
-    const prevIndex = currentIndex === 0 ? totalDes - 1 : currentIndex - 1;
-    setCurrentIndex(prevIndex);
-
-    itemRefs.current[prevIndex]?.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-    });
+  const getActiveItem = (data, currentIndex) => {
+    if (!data || data.length === 0) return null;
+    // Đảm bảo index luôn nằm trong phạm vi mảng
+    const safeIndex = Math.abs(currentIndex) % data.length;
+    return data[safeIndex];
+  };
+  const handleNext = () => {
+    setDescIndex((prev) => (prev + 1) % totalDes);
   };
 
-  const next = () => {
-    const nextIndex = currentIndex === totalDes - 1 ? 0 : currentIndex + 1;
-    setCurrentIndex(nextIndex);
-
-    itemRefs.current[nextIndex]?.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-    });
+  const handlePrev = () => {
+    setDescIndex((prev) => (prev === 0 ? totalDes - 1 : prev - 1));
   };
+
+  const activeItem = getActiveItem(descriptions, descIndex);
+  if (!activeItem) return null;
 
   useEffect(() => {
     const getClasses = async () => {
@@ -88,7 +91,6 @@ const Homepage = () => {
     <>
       <Banner />
       {/* Dịch vụ gia sư   */}
-
       <section className="relative flex flex-col justify-center items-center my-7 lg:max-w-6xl mx-auto">
         {/* <div className=" hidden lg:block absolute -z-10">
           <img
@@ -202,7 +204,6 @@ const Homepage = () => {
           <ArrowRight className="relative z-10" />
         </Button>
       )}
-
       {/* Gia sư tiêu biểu */}
       <section className="relative flex flex-col justify-center items-center my-7 lg:max-w-6xl mx-auto">
         <div className=" hidden lg:block absolute -z-10">
@@ -215,65 +216,80 @@ const Homepage = () => {
           <GiaSuTieuBieu tutor={tutors?.slice(0, 6) || []} />
         </div>
       </section>
-
       {/* Đánh giá trung tâm */}
-      <div className="flex flex-col justify-center items-center bg-amber-100/45 md:w-full">
+      <div className="flex flex-col justify-center items-center bg-amber-100/45 w-full py-10">
         <div className="flex flex-col justify-center items-center max-w-[400px] md:max-w-6xl mx-auto md:px-5 py-5">
-          <h3 className="font-corinthia font-medium text-4xl text-red-500">
-            Phụ huynh nói gì về{" "}
-          </h3>
-          <h3 className="font-bold text-3xl">TRUNG TÂM CHÚNG TÔI</h3>
+          <div className="text-center mb-12">
+            <h3 className="font-corinthia text-5xl text-red-500">
+              Phụ huynh nói gì về
+            </h3>
+            <h2 className="font-bold text-3xl uppercase tracking-wide">
+              Trung tâm chúng tôi
+            </h2>
+          </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-6">
             <button
-              onClick={prev}
-              className="hidden md:block rounded-full p-2 bg-[#3333] text-white"
+              onClick={handlePrev}
+              className="hidden md:block p-4 bg-white rounded-full shadow-lg hover:bg-gray-50 active:scale-90 transition-all text-gray-600 shrink-0 border border-gray-100"
             >
-              <ChevronLeft />
+              <ChevronLeft size={28} />
             </button>
 
             <div className="max-w-[350px] md:max-w-full mx-auto">
-              <div
-                ref={containerRef}
-                className=" flex gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory no-scrollbar"
-              >
-                {descriptions.map((item, index) => (
-                  <div
-                    key={index}
-                    ref={(el) => (itemRefs.current[index] = el)}
-                    className=" min-w-full snap-center flex flex-col gap-6 bg-white p-7 mt-4 shadow-xl  "
-                  >
-                    <div className="flex gap-6">
-                      {/* avatar */}
-                      <img
-                        src={item.img}
-                        alt={item.label}
-                        className="w-14 h-14 rounded-full object-cover"
-                      />
-
-                      {/* meta */}
-                      <div>
-                        <h3 className="font-semibold">{item.name}</h3>
-                        <p className="italic">{item.label}</p>
-                      </div>
-                    </div>
-
-                    {/* description */}
-                    <blockquote>"{item.des}"</blockquote>
+              <div className="bg-white p-10 md:p-14 rounded-3xl shadow-xl border border-gray-50 flex flex-col gap-8 min-h-[350px] transition-all duration-500">
+                <div className="flex items-center gap-4">
+                  <div className="w-18 h-18 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold text-3xl ring-4 ring-red-100 shadow-inner">
+                    {getAvatarInitials(activeItem.name)}
                   </div>
-                ))}
+                  <div>
+                    <h4 className="font-bold text-2xl text-gray-800">
+                      {activeItem.name}
+                    </h4>
+                    <p className="text-sm italic text-red-500 font-medium">
+                      {activeItem.label}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <span className="text-6xl text-red-100 absolute -top-8 -left-6 font-serif">
+                    “
+                  </span>
+                  <p className="text-gray-600 italic text-xl leading-relaxed relative z-10">
+                    {activeItem.des}
+                  </p>
+                  <span className="text-6xl text-red-100 absolute -bottom-12 -right-6 font-serif">
+                    ”
+                  </span>
+                </div>
               </div>
             </div>
 
             <button
-              onClick={next}
-              className="hidden md:block rounded-full p-2 bg-[#3333] text-white"
+              onClick={handleNext}
+              className=" hidden md:block p-4 bg-white rounded-full shadow-lg hover:bg-gray-50 active:scale-90 transition-all text-gray-600 shrink-0 border border-gray-100"
             >
-              <ChevronRight />
+              <ChevronRight size={28} />
             </button>
+          </div>
+
+          <div className="flex justify-center gap-3 mt-10">
+            {descriptions.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setDescIndex(idx)}
+                className={`h-2.5 transition-all duration-300 rounded-full ${
+                  descIndex === idx
+                    ? "bg-red-500 w-8"
+                    : "bg-gray-300 w-2.5 hover:bg-gray-400"
+                }`}
+              />
+            ))}
           </div>
         </div>
       </div>
+
       {/* form đăng ký */}
       <div>
         <RegisterForm />
