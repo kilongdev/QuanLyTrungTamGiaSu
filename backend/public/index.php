@@ -57,11 +57,10 @@ try {
 
     // Dispatch the route
     Router::dispatch();
-
 } catch (Exception $e) {
     // Clear any buffered output
     ob_end_clean();
-    
+
     // Return error as JSON
     http_response_code(500);
     echo json_encode([
