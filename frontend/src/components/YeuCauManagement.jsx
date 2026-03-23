@@ -125,9 +125,6 @@ export default function YeuCauManagement({ user }) {
       fetchYeuCaus();
     } catch (error) {
       toast.error(error.message || "Không thể xóa yêu cầu này");
-      // alert("Xóa yêu cầu thành công!");
-      toast.delete("Xóa yêu cầu thành công!");
-      fetchYeuCaus();
     }
   };
 
