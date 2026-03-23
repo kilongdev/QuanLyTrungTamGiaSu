@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/TinNhanModel.php';
+require_once __DIR__ . '/../models/ThongBaoModel.php';
 
 class TinNhanController {
     private $model;
@@ -11,7 +12,55 @@ class TinNhanController {
     public function send() {
         $data = json_decode(file_get_contents('php://input'), true);
         $this->model->create($data);
+        
+        // Lấy tên người gửi
+        $tenNguoiGui = $this->getUserName($data['nguoi_gui_id'] ?? 0, $data['loai_nguoi_gui'] ?? 'system');
+        $loaiNguoiGuiText = $this->getRoleName($data['loai_nguoi_gui'] ?? 'system');
+        
+        // Gửi thông báo cho người nhận tin nhắn
+        if (!empty($data['nguoi_nhan_id']) && !empty($data['loai_nguoi_nhan'])) {
+            ThongBaoModel::guiThongBao(
+                $data['nguoi_nhan_id'],
+                $data['loai_nguoi_nhan'],
+                'Tin nhắn mới',
+                "Bạn có tin nhắn mới từ {$loaiNguoiGuiText} {$tenNguoiGui}.",
+                'tin_nhan',
+                $data['nguoi_gui_id'] ?? 0,
+                $data['loai_nguoi_gui'] ?? 'system'
+            );
+        }
+        
         $this->sendResponse(true, 'Đã gửi tin nhắn');
+    }
+
+    private function getUserName($id, $type) {
+        require_once __DIR__ . '/../core/Database.php';
+        
+        $tableMap = [
+            'admin' => ['table' => 'admin', 'id_field' => 'admin_id', 'name_field' => 'ho_ten'],
+            'gia_su' => ['table' => 'gia_su', 'id_field' => 'gia_su_id', 'name_field' => 'ho_ten'],
+            'phu_huynh' => ['table' => 'phu_huynh', 'id_field' => 'phu_huynh_id', 'name_field' => 'ho_ten']
+        ];
+        
+        if (!isset($tableMap[$type]) || empty($id)) {
+            return 'Hệ thống';
+        }
+        
+        $config = $tableMap[$type];
+        $sql = "SELECT {$config['name_field']} FROM {$config['table']} WHERE {$config['id_field']} = ?";
+        $result = Database::queryOne($sql, [$id]);
+        
+        return $result ? $result[$config['name_field']] : 'Hệ thống';
+    }
+
+    private function getRoleName($type) {
+        $roleNames = [
+            'admin' => 'Admin',
+            'gia_su' => 'gia sư',
+            'phu_huynh' => 'phụ huynh',
+            'system' => 'Hệ thống'
+        ];
+        return $roleNames[$type] ?? 'Hệ thống';
     }
 
     public function getConversation() {

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/GiaSu.php';
+require_once __DIR__ . '/../models/ThongBaoModel.php';
 
 class GiaSuController
 {
@@ -84,6 +85,10 @@ class GiaSuController
         $input = json_decode(file_get_contents('php://input'), true);
 
         try {
+            // Lấy thông tin cũ trước khi cập nhật
+            $giaSuOld = GiaSu::findById($id);
+            $oldTrangThai = $giaSuOld ? $giaSuOld['trang_thai'] : null;
+            
             $updated = GiaSu::update($id, $input);
 
             if (!$updated) {
@@ -93,6 +98,18 @@ class GiaSuController
                     'message' => 'Không có dữ liệu để cập nhật'
                 ], JSON_UNESCAPED_UNICODE);
                 return;
+            }
+            
+            // Gửi thông báo nếu trạng thái thay đổi
+            if (isset($input['trang_thai']) && $input['trang_thai'] !== $oldTrangThai && $giaSuOld) {
+                $trangThaiText = $input['trang_thai'] === 'da_duyet' ? 'được duyệt' : 'bị từ chối';
+                ThongBaoModel::guiThongBao(
+                    (int)$id,
+                    'gia_su',
+                    'Cập nhật trạng thái hồ sơ',
+                    "Hồ sơ gia sư của bạn đã {$trangThaiText}.",
+                    'he_thong'
+                );
             }
 
             echo json_encode([
@@ -143,7 +160,31 @@ class GiaSuController
         $trangThai = $input['trang_thai'] ?? 'da_duyet';
 
         try {
-            GiaSu::updateStatus($id, $trangThai);
+            // Lấy thông tin gia sư trước khi cập nhật
+            $giaSu = GiaSu::findById($id);
+            
+            $affected = GiaSu::updateStatus($id, $trangThai);
+
+            if ($affected === 0) {
+                http_response_code(404);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không tìm thấy gia sư hoặc trạng thái không thay đổi'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            
+            // Gửi thông báo cho gia sư về kết quả duyệt
+            if ($giaSu) {
+                $trangThaiText = $trangThai === 'da_duyet' ? 'được duyệt' : 'bị từ chối';
+                ThongBaoModel::guiThongBao(
+                    (int)$id,
+                    'gia_su',
+                    'Cập nhật trạng thái hồ sơ',
+                    "Hồ sơ gia sư của bạn đã {$trangThaiText}.",
+                    'he_thong'
+                );
+            }
 
             echo json_encode([
                 'status' => 'success',

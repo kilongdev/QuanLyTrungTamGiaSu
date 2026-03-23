@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../models/LopHoc.php';
+require_once __DIR__ . '/../models/ThongBaoModel.php';
+require_once __DIR__ . '/../core/Database.php';
 
 class LopHocController {
 
@@ -19,6 +21,30 @@ class LopHocController {
         try {
             $result = LopHoc::create($data);
             if ($result) {
+                // Lấy tên lớp vừa tạo
+                $lopHoc = LopHoc::getById(Database::lastInsertId());
+                $tenLop = $lopHoc ? $lopHoc['ten_lop'] : 'lớp học mới';
+                
+                // Thông báo cho Admin về lớp học mới
+                ThongBaoModel::guiThongBao(
+                    1, // Admin ID
+                    'admin',
+                    'Lớp học mới được tạo',
+                    "Lớp {$tenLop} đã được tạo. Vui lòng kiểm tra.",
+                    'lop_hoc'
+                );
+                
+                // Nếu có phân công gia sư, thông báo cho gia sư
+                if (!empty($data['gia_su_id'])) {
+                    ThongBaoModel::guiThongBao(
+                        $data['gia_su_id'],
+                        'gia_su',
+                        'Được phân công dạy lớp mới',
+                        "Bạn đã được phân công dạy lớp {$tenLop}. Vui lòng kiểm tra lịch dạy.",
+                        'lop_hoc'
+                    );
+                }
+                
                 http_response_code(201);
                 echo json_encode(["status" => "success", "message" => "Tạo lớp học thành công!"]);
             }
@@ -44,6 +70,36 @@ class LopHocController {
         try {
             $result = LopHoc::update($id, $data);
             if ($result !== false) {
+                // Nếu có phân công gia sư, gửi thông báo cho gia sư
+                if (!empty($data['gia_su_id'])) {
+                    ThongBaoModel::guiThongBao(
+                        $data['gia_su_id'],
+                        'gia_su',
+                        'Được phân công dạy lớp mới',
+                        "Bạn đã được phân công dạy một lớp học mới. Vui lòng kiểm tra lịch dạy.",
+                        'lop_hoc'
+                    );
+                }
+                // Thông báo cho phụ huynh và học sinh khi lịch học thay đổi
+                if (!empty($data['lich_hoc'])) {
+                    $lopHoc = LopHoc::getById($id);
+                    if ($lopHoc) {
+                        ThongBaoModel::guiThongBao(
+                            $lopHoc['phu_huynh_id'],
+                            'phu_huynh',
+                            'Lịch học đã thay đổi',
+                            "Lịch học của lớp " . $lopHoc['ten_lop'] . " đã thay đổi. Vui lòng kiểm tra lại.",
+                            'lop_hoc'
+                        );
+                        ThongBaoModel::guiThongBao(
+                            $lopHoc['hoc_sinh_id'],
+                            'hoc_sinh',
+                            'Lịch học đã thay đổi',
+                            "Lịch học của lớp " . $lopHoc['ten_lop'] . " đã thay đổi. Vui lòng kiểm tra lại.",
+                            'lop_hoc'
+                        );
+                    }
+                }
                 echo json_encode(["status" => "success", "message" => "Cập nhật lớp học thành công!"]);
             }
         } catch (Exception $e) {

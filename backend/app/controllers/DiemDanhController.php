@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/DiemDanh.php';
+require_once __DIR__ . '/../models/ThongBaoModel.php';
 require_once __DIR__ . '/../core/Database.php';
 
 class DiemDanhController {
@@ -14,9 +15,48 @@ class DiemDanhController {
 
         try {
             $lich_hoc_id = $data['lich_hoc_id'];
+            
+            // Lấy thông tin lịch học
+            $lichHoc = Database::queryOne(
+                "SELECT lh.*, lo.ten_lop, gs.ho_ten as ten_gia_su 
+                 FROM lich_hoc lh 
+                 JOIN lop_hoc lo ON lh.lop_hoc_id = lo.lop_hoc_id
+                 LEFT JOIN gia_su gs ON lo.gia_su_id = gs.gia_su_id
+                 WHERE lh.lich_hoc_id = ?",
+                [$lich_hoc_id]
+            );
+            
             foreach ($data['danh_sach'] as $hoc_sinh) {
                 $hoc_sinh['lich_hoc_id'] = $lich_hoc_id; 
                 DiemDanh::save($hoc_sinh);
+                
+                // Gửi thông báo cho phụ huynh về tình trạng điểm danh
+                if (!empty($hoc_sinh['hoc_sinh_id'])) {
+                    $phuHuynh = Database::queryOne(
+                        "SELECT ph.phu_huynh_id, ph.ho_ten FROM hoc_sinh hs 
+                         JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id 
+                         WHERE hs.hoc_sinh_id = ?",
+                        [$hoc_sinh['hoc_sinh_id']]
+                    );
+                    
+                    if ($phuHuynh) {
+                        $tinhTrangText = [
+                            'co_mat' => 'có mặt',
+                            'vang' => 'vắng mặt',
+                            'vang_co_phep' => 'vắng có phép'
+                        ];
+                        $trangThai = $tinhTrangText[$hoc_sinh['tinh_trang']] ?? $hoc_sinh['tinh_trang'];
+                        $tenLop = $lichHoc['ten_lop'] ?? 'lớp học';
+                        
+                        ThongBaoModel::guiThongBao(
+                            $phuHuynh['phu_huynh_id'],
+                            'phu_huynh',
+                            'Điểm danh học sinh',
+                            "Học sinh {$phuHuynh['ho_ten']} đã {$trangThai} trong buổi học lớp {$tenLop} ngày {$lichHoc['ngay_hoc']}.",
+                            'lich_hoc'
+                        );
+                    }
+                }
             }
 
             Database::execute("UPDATE lich_hoc SET trang_thai = 'da_hoc' WHERE lich_hoc_id = :id", [':id' => $lich_hoc_id]);

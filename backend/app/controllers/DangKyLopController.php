@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/DangKyLop.php';
+require_once __DIR__ . '/../models/ThongBaoModel.php';
 
 class DangKyLopController {
 
@@ -15,6 +16,15 @@ class DangKyLopController {
         try {
             $result = DangKyLop::create($data);
             if ($result) {
+                // Gửi thông báo cho Admin về đăng ký mới
+                ThongBaoModel::guiThongBao(
+                    1, // Admin ID (mặc định là 1)
+                    'admin',
+                    'Đăng ký lớp học mới',
+                    "Có một yêu cầu đăng ký lớp học mới đang chờ duyệt. Vui lòng kiểm tra và xử lý.",
+                    'dang_ky'
+                );
+                
                 http_response_code(201);
                 echo json_encode(["status" => "success", "message" => "Gửi yêu cầu đăng ký thành công, vui lòng chờ duyệt!"]);
             }
@@ -34,8 +44,23 @@ class DangKyLopController {
         }
 
         try {
+            // Lấy thông tin đăng ký từ DB để biết phụ huynh
+            $dangKy = DangKyLop::getById($id);
+            
             $result = DangKyLop::updateStatus($id, $data['trang_thai']);
             if ($result) {
+                // Thông báo cho phụ huynh về kết quả duyệt
+                if ($dangKy && !empty($dangKy['phu_huynh_id'])) {
+                    $trangThaiText = $data['trang_thai'] === 'da_duyet' ? 'được duyệt' : 'bị từ chối';
+                    ThongBaoModel::guiThongBao(
+                        $dangKy['phu_huynh_id'],
+                        'phu_huynh',
+                        'Cập nhật đăng ký lớp học',
+                        "Yêu cầu đăng ký lớp '{$dangKy['ten_lop']}' cho học sinh {$dangKy['ten_hoc_sinh']} đã {$trangThaiText}.",
+                        'dang_ky'
+                    );
+                }
+                
                 echo json_encode(["status" => "success", "message" => "Đã cập nhật trạng thái đơn đăng ký!"]);
             }
         } catch (Exception $e) {
@@ -46,6 +71,11 @@ class DangKyLopController {
 
     public function getByLop($lop_hoc_id) {
         $data = DangKyLop::getByLop($lop_hoc_id);
+        echo json_encode(["status" => "success", "data" => $data]);
+    }
+
+    public function getHocSinhDaDuyetByLop($lop_hoc_id) {
+        $data = DangKyLop::getHocSinhDaDuyetByLop($lop_hoc_id);
         echo json_encode(["status" => "success", "data" => $data]);
     }
 

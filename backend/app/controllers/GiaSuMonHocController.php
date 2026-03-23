@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/GiaSuMonHoc.php';
+require_once __DIR__ . '/../models/ThongBaoModel.php';
 
 class GiaSuMonHocController
 {
@@ -59,6 +60,15 @@ class GiaSuMonHocController
 
         try {
             $id = GiaSuMonHoc::create($input);
+
+            // Thông báo cho Admin về gia sư đăng k môn học
+            ThongBaoModel::guiThongBao(
+                1, // Admin ID
+                'admin',
+                'Gia sư đăng k dạy môn học',
+                "Một gia sư vừa đăng k dạy môn học mới. Vui lòng kiểm tra và duyệt.",
+                'gia_su'
+            );
 
             http_response_code(201);
             echo json_encode([

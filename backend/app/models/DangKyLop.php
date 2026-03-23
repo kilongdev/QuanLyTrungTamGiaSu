@@ -91,6 +91,16 @@ class DangKyLop {
         return Database::query($sql, [':lop_hoc_id' => $lop_hoc_id]);
     }
 
+    public static function getHocSinhDaDuyetByLop($lop_hoc_id) {
+        $sql = "SELECT dkl.*, hs.ho_ten AS ten_hoc_sinh, hs.phu_huynh_id, ph.ho_ten AS ten_phu_huynh
+                FROM dang_ky_lop dkl
+                JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
+                WHERE dkl.lop_hoc_id = :lop_hoc_id AND dkl.trang_thai = 'da_duyet'
+                ORDER BY hs.ho_ten";
+        return Database::query($sql, [':lop_hoc_id' => $lop_hoc_id]);
+    }
+
     public static function getAll() {
         $sql = "SELECT dkl.*, hs.ho_ten AS ten_hoc_sinh, lh.ten_lop, mh.ten_mon_hoc 
                 FROM dang_ky_lop dkl
@@ -110,5 +120,15 @@ class DangKyLop {
                 WHERE hs.phu_huynh_id = :phu_huynh_id
                 ORDER BY dkl.ngay_dang_ky DESC";
         return Database::query($sql, [':phu_huynh_id' => $phu_huynh_id]);
+    }
+
+    public static function getById($id) {
+        $sql = "SELECT dkl.*, hs.ho_ten AS ten_hoc_sinh, hs.phu_huynh_id, lh.ten_lop 
+                FROM dang_ky_lop dkl
+                JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
+                WHERE dkl.dang_ky_id = :id";
+        $result = Database::query($sql, [':id' => $id]);
+        return $result ? $result[0] : null;
     }
 }

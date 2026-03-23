@@ -120,7 +120,7 @@ class GiaSu
 
     public static function update(string $id, array $data): bool
     {
-        $allowedFields = ['ho_ten', 'so_dien_thoai', 'dia_chi', 'bang_cap', 'kinh_nghiem', 'gioi_thieu'];
+        $allowedFields = ['ho_ten', 'so_dien_thoai', 'dia_chi', 'bang_cap', 'kinh_nghiem', 'gioi_thieu', 'trang_thai'];
         $fields = [];
         $params = [];
 
@@ -147,9 +147,9 @@ class GiaSu
         return Database::execute("DELETE FROM gia_su WHERE gia_su_id = ?", [$id]);
     }
 
-    public static function updateStatus(string $id, string $trangThai): void
+    public static function updateStatus(string $id, string $trangThai): int
     {
-        Database::execute(
+        return Database::execute(
             "UPDATE gia_su SET trang_thai = ? WHERE gia_su_id = ?",
             [$trangThai, $id]
         );
