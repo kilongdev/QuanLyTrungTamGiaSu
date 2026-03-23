@@ -5,6 +5,22 @@ class ThongBaoModel extends BaseModel {
     protected $table = 'thong_bao';
     protected $primaryKey = 'thong_bao_id';
 
+    /**
+     * Gửi thông báo - helper method static để gọi từ controller khác
+     */
+    public static function guiThongBao($nguoiNhanId, $loaiNguoiNhan, $tieuDe, $noiDung, $loaiThongBao = 'he_thong', $nguoiGuiId = 0, $loaiNguoiGui = 'system') {
+        $model = new self();
+        return $model->create([
+            'nguoi_gui_id' => $nguoiGuiId,
+            'loai_nguoi_gui' => $loaiNguoiGui,
+            'nguoi_nhan_id' => $nguoiNhanId,
+            'loai_nguoi_nhan' => $loaiNguoiNhan,
+            'loai_thong_bao' => $loaiThongBao,
+            'tieu_de' => $tieuDe,
+            'noi_dung' => $noiDung
+        ]);
+    }
+
     public function create($data) {
         $sql = "INSERT INTO {$this->table} (nguoi_gui_id, loai_nguoi_gui, nguoi_nhan_id, loai_nguoi_nhan, loai_thong_bao, tieu_de, noi_dung, da_doc, ngay_tao) 
                 VALUES (:gui_id, :loai_gui, :nhan_id, :loai_nhan, :loai_tb, :tieu_de, :noi_dung, 0, NOW())";

@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../models/DanhGia.php';
+require_once __DIR__ . '/../models/ThongBaoModel.php';
+require_once __DIR__ . '/../core/Database.php';
 
 class DanhGiaController {
 
@@ -19,6 +21,23 @@ class DanhGiaController {
 
         try {
             DanhGia::save($data);
+            
+            // Lấy tên gia sư
+            $giaSu = Database::queryOne(
+                "SELECT ho_ten FROM gia_su WHERE gia_su_id = ?",
+                [$data['gia_su_id']]
+            );
+            $tenGiaSu = $giaSu ? $giaSu['ho_ten'] : "ID {$data['gia_su_id']}";
+            
+            // Thông báo cho Admin về đánh giá mới
+            ThongBaoModel::guiThongBao(
+                1, // Admin ID
+                'admin',
+                'Đánh giá mới',
+                "Có một đánh giá mới từ phụ huynh cho gia sư {$tenGiaSu} với điểm {$data['diem_so']}/5.",
+                'danh_gia'
+            );
+            
             echo json_encode(["status" => "success", "message" => "Đã lưu đánh giá thành công!"]);
         } catch (Exception $e) {
             http_response_code(500);

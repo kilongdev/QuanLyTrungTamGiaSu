@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/YeuCau.php';
+require_once __DIR__ . '/../models/ThongBaoModel.php';
 
 class YeuCauController {
 
@@ -15,6 +16,15 @@ class YeuCauController {
         try {
             $result = YeuCau::create($data);
             if ($result) {
+                // Gửi thông báo cho Admin về yêu cầu mới
+                ThongBaoModel::guiThongBao(
+                    1, // Admin ID
+                    'admin',
+                    'Yêu cầu hỗ trợ mới',
+                    "Có một yêu cầu hỗ trợ mới từ {$data['loai_nguoi_tao']}: {$data['tieu_de']}. Vui lòng kiểm tra và xử lý.",
+                    'yeu_cau'
+                );
+                
                 http_response_code(201);
                 echo json_encode(["status" => "success", "message" => "Đã gửi yêu cầu thành công! Vui lòng chờ phản hồi."]);
             }
@@ -44,7 +54,30 @@ class YeuCauController {
         }
 
         try {
+            // Lấy thông tin yêu cầu từ DB để biết người tạo
+            $yeuCau = YeuCau::getById($id);
+            
             YeuCau::updateStatus($id, $data);
+            
+            // Thông báo cho người tạo yêu cầu về kết quả xử lý
+            if ($yeuCau && !empty($yeuCau['nguoi_tao_id']) && !empty($yeuCau['loai_nguoi_tao'])) {
+                $statusMessages = [
+                    'cho_duyet' => 'đang chờ duyệt',
+                    'dang_xu_ly' => 'đang được xử lý',
+                    'da_duyet' => 'đã được duyệt',
+                    'tu_choi' => 'bị từ chối',
+                    'da_hoan_thanh' => 'đã hoàn thành'
+                ];
+                $trangThaiText = $statusMessages[$data['trang_thai']] ?? $data['trang_thai'];
+                ThongBaoModel::guiThongBao(
+                    $yeuCau['nguoi_tao_id'],
+                    $yeuCau['loai_nguoi_tao'],
+                    'Cập nhật yêu cầu hỗ trợ',
+                    "Yêu cầu hỗ trợ '{$yeuCau['tieu_de']}' của bạn {$trangThaiText}.",
+                    'yeu_cau'
+                );
+            }
+            
             echo json_encode(["status" => "success", "message" => "Đã cập nhật trạng thái yêu cầu!"]);
         } catch (Exception $e) {
             http_response_code(500);

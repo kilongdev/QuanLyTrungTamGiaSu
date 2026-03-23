@@ -75,4 +75,10 @@ class YeuCau {
         $sql = "DELETE FROM yeu_cau WHERE yeu_cau_id = :id";
         return Database::execute($sql, [':id' => $id]);
     }
+
+    public static function getById($id) {
+        $sql = "SELECT * FROM yeu_cau WHERE yeu_cau_id = :id";
+        $result = Database::query($sql, [':id' => $id]);
+        return $result ? $result[0] : null;
+    }
 }

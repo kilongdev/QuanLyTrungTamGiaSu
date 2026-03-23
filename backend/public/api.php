@@ -16,6 +16,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../app/core/Router.php';
 
+// Autoload controllers
+foreach (glob(__DIR__ . '/../app/controllers/*.php') as $controllerFile) {
+    require_once $controllerFile;
+}
+
 // Lấy route từ query string
 $route = isset($_GET['route']) ? $_GET['route'] : '/api/admin';
 
@@ -33,4 +38,3 @@ foreach (glob(__DIR__ . '/../app/routes/*.php') as $routeFile) {
 
 // Dispatch route
 $router->dispatch();
-?>

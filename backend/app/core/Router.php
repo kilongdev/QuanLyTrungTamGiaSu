@@ -100,17 +100,20 @@ class Router
 
     private static function callHandler(callable|array $handler, array $params): void
     {
+        // Convert named params to positional (array_values)
+        $positionalParams = array_values($params);
+        
         if (is_array($handler)) {
             [$class, $method] = $handler;
             // Instantiate class nếu là class name string
             if (is_string($class)) {
                 $instance = new $class();
-                call_user_func_array([$instance, $method], $params);
+                call_user_func_array([$instance, $method], $positionalParams);
             } else {
-                call_user_func_array([$class, $method], $params);
+                call_user_func_array([$class, $method], $positionalParams);
             }
         } else {
-            call_user_func_array($handler, $params);
+            call_user_func_array($handler, $positionalParams);
         }
     }
 }

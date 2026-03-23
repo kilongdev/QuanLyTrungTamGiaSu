@@ -5,6 +5,7 @@ require_once __DIR__ . '/../models/Admin.php';
 require_once __DIR__ . '/../models/GiaSu.php';
 require_once __DIR__ . '/../models/PhuHuynh.php';
 require_once __DIR__ . '/../models/HocSinh.php';
+require_once __DIR__ . '/../models/ThongBaoModel.php';
 
 class AuthController
 {
@@ -150,6 +151,15 @@ class AuthController
             }
 
             Database::commit();
+
+            // Gửi thông báo cho Admin về thành viên mới
+            ThongBaoModel::guiThongBao(
+                1, // Admin ID
+                'admin',
+                'Thành viên mới đăng ký',
+                "Một {$role} mới đã đăng ký: {$name} ({$email}).",
+                'he_thong'
+            );
 
             $token = JWT::encode([
                 'user_id' => $newUser['id'],
