@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import { useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, BookOpen, GraduationCap, Briefcase, FileText, ClipboardList, BookCheck, DollarSign } from 'lucide-react';
+=======
+import { useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, Briefcase, FileText, Calendar, ClipboardList, BookCheck } from 'lucide-react';
+>>>>>>> 34fed42 (update UI dashboard and homepage)
 
 import DashboardLayout from '../Layouts/DashboardLayout';
 import DashboardOverview from '../components/DashboardOverview';
@@ -10,6 +15,7 @@ import HocSinhManagement from '../components/HocSinhManagement';
 import GiaSuManagement from '../components/GiaSuManagement';
 import YeuCauManagement from '../components/YeuCauManagement';
 import DangKyLopManagement from '../components/DangKyLopManagement'; // Module đăng ký lớp tụi mình vừa làm
+<<<<<<< HEAD
 import LuongGiaSuManagement from '../components/LuongGiaSuManagement';
 import HocPhiManagement from '../components/HocPhiManagement';
 import LopHocEditPage from './LopHocEditPage';
@@ -18,6 +24,12 @@ import LopHocAttendancePage from './LopHocAttendancePage';
 export default function AdminDashboard({ user, onLogout }) {
   const [activeItem, setActiveItem] = useState(() => localStorage.getItem('admin_active_item') || 'dashboard');
   const [showEditProfile, setShowEditProfile] = useState(false);
+=======
+
+export default function AdminDashboard() {
+  const [user, setUser] = useState(null);
+  const [activeItem, setActiveItem] = useState('dashboard');
+>>>>>>> 34fed42 (update UI dashboard and homepage)
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -51,8 +63,6 @@ export default function AdminDashboard({ user, onLogout }) {
     { id: 'hocsinh', label: 'Quản lý Học sinh', icon: GraduationCap },
     { id: 'phuhuynh', label: 'Quản lý Phụ huynh', icon: Users },
     { id: 'giasu', label: 'Quản lý Gia sư', icon: Briefcase },
-    { id: 'luonggiasu', label: 'Lương gia sư', icon: DollarSign },
-    { id: 'hocphi', label: 'Học phí', icon: DollarSign },
   ];
 
   const getPageTitle = () => {
@@ -87,10 +97,6 @@ export default function AdminDashboard({ user, onLogout }) {
         return <PhuHuynhManagement />;
       case 'giasu':
         return <GiaSuManagement />;
-      case 'luonggiasu':
-        return <LuongGiaSuManagement user={user} />;
-      case 'hocphi':
-        return <HocPhiManagement user={user} />;
       default:
         return <DashboardOverview onNavigate={updateActiveItem} />;
     }
@@ -108,9 +114,13 @@ export default function AdminDashboard({ user, onLogout }) {
   return (
     <DashboardLayout
       user={user}
+<<<<<<< HEAD
       onLogout={onLogout}
       showEditProfile={showEditProfile}
       setShowEditProfile={setShowEditProfile}
+=======
+      onLogout={handleLogout}
+>>>>>>> 34fed42 (update UI dashboard and homepage)
       menuItems={menuItems}
       activeItem={activeItem}
       onMenuClick={handleMenuClick}

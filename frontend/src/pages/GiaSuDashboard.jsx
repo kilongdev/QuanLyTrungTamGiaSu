@@ -10,8 +10,12 @@ import YeuCauMoi from '../components/YeuCauMoi'
 import ThuNhapGiaSu from '@/components/ThuNhapGiaSu'
 
 export default function GiaSuDashboard({ user, onLogout }) {
+<<<<<<< HEAD
   const [activeMenu, setActiveMenu] = useState(() => localStorage.getItem('giasu_active_item') || 'dashboard')
   const [showEditProfile, setShowEditProfile] = useState(false)
+=======
+  const [activeMenu, setActiveMenu] = useState('dashboard')
+>>>>>>> 34fed42 (update UI dashboard and homepage)
 
   const handleMenuClick = (menuId) => {
     setActiveMenu(menuId)
@@ -69,8 +73,6 @@ export default function GiaSuDashboard({ user, onLogout }) {
     <DashboardLayout
       user={user}
       onLogout={onLogout}
-      showEditProfile={showEditProfile}
-      setShowEditProfile={setShowEditProfile}
       menuItems={menuItems}
       activeItem={activeMenu}
       onMenuClick={handleMenuClick}
