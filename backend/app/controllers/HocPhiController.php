@@ -26,6 +26,23 @@ class HocPhiController {
             $this->sendResponse(false, 'Thiếu thông tin bắt buộc', null, 400);
             return;
         }
+        
+        // Kiểm tra trùng lặp học phí (cùng đăng ký và cùng tháng/năm)
+        $thang = date('m');
+        $nam = date('Y');
+        $existingHocPhi = Database::queryOne(
+            "SELECT hoc_phi_id FROM hoc_phi 
+             WHERE dang_ky_id = ? 
+             AND MONTH(ngay_tao) = ? 
+             AND YEAR(ngay_tao) = ?",
+            [$data['dang_ky_id'], $thang, $nam]
+        );
+        
+        if ($existingHocPhi) {
+            $this->sendResponse(false, 'Học phí cho lớp này trong tháng này đã tồn tại', null, 400);
+            return;
+        }
+        
         $id = $this->model->create($data);
         
         // Gửi thông báo cho phụ huynh
@@ -63,10 +80,6 @@ class HocPhiController {
 
     public function updateStatus($id) {
         $data = json_decode(file_get_contents('php://input'), true);
-        if (!isset($data['trang_thai_thanh_toan'])) {
-            $this->sendResponse(false, 'Thiếu trạng thái', null, 400);
-            return;
-        }
         
         // Lấy thông tin học phí trước khi cập nhật
         $hocPhi = Database::queryOne(
@@ -79,20 +92,52 @@ class HocPhiController {
             [$id]
         );
         
-        $this->model->updateStatus($id, $data['trang_thai_thanh_toan']);
+        // Cập nhật trạng thái, số buổi và số tiền
+        $updateData = [];
+        $params = [':id' => $id];
+        
+        if (isset($data['trang_thai_thanh_toan'])) {
+            $updateData[] = "trang_thai_thanh_toan = :trang_thai";
+            $params[':trang_thai'] = $data['trang_thai_thanh_toan'];
+        }
+        if (isset($data['so_buoi_da_hoc'])) {
+            $updateData[] = "so_buoi_da_hoc = :so_buoi";
+            $params[':so_buoi'] = $data['so_buoi_da_hoc'];
+        }
+        if (isset($data['so_tien'])) {
+            $updateData[] = "so_tien = :so_tien";
+            $params[':so_tien'] = $data['so_tien'];
+        }
+        
+        if (!empty($updateData)) {
+            $sql = "UPDATE hoc_phi SET " . implode(', ', $updateData) . " WHERE hoc_phi_id = :id";
+            Database::execute($sql, $params);
+        }
         
         // Gửi thông báo khi thanh toán thành công
-        if ($data['trang_thai_thanh_toan'] === 'da_thanh_toan' && $hocPhi && !empty($hocPhi['phu_huynh_id'])) {
+        if (isset($data['trang_thai_thanh_toan']) && $data['trang_thai_thanh_toan'] === 'da_thanh_toan' && $hocPhi) {
+            // Thông báo cho phụ huynh
+            if (!empty($hocPhi['phu_huynh_id'])) {
+                ThongBaoModel::guiThongBao(
+                    $hocPhi['phu_huynh_id'],
+                    'phu_huynh',
+                    'Đã thanh toán học phí',
+                    "Học phí {$this->formatCurrency($data['so_tien'] ?? $hocPhi['so_tien'])}đ cho học sinh {$hocPhi['ten_hoc_sinh']} - lớp {$hocPhi['ten_lop']} đã được thanh toán thành công.",
+                    'thanh_toan'
+                );
+            }
+            
+            // Thông báo cho admin
             ThongBaoModel::guiThongBao(
-                $hocPhi['phu_huynh_id'],
-                'phu_huynh',
+                1,
+                'admin',
                 'Đã thanh toán học phí',
-                "Học phí {$this->formatCurrency($hocPhi['so_tien'])}đ cho học sinh {$hocPhi['ten_hoc_sinh']} - lớp {$hocPhi['ten_lop']} đã được thanh toán thành công.",
-                'hoc_phi'
+                "Học phí {$this->formatCurrency($data['so_tien'] ?? $hocPhi['so_tien'])}đ của HS {$hocPhi['ten_hoc_sinh']} - Lớp {$hocPhi['ten_lop']} đã được thanh toán thành công.",
+                'thanh_toan'
             );
         }
         
-        $this->sendResponse(true, 'Cập nhật trạng thái thành công');
+        $this->sendResponse(true, 'Cập nhật thành công');
     }
 
     public function delete($id) {
@@ -147,6 +192,53 @@ class HocPhiController {
         }
         
         $this->sendResponse(true, "Đã gửi {$count} thông báo học phí quá hạn", ['count' => $count]);
+    }
+
+    public function getDetail($id) {
+        // Debug log
+        error_log("getDetail called with id: " . $id);
+        
+        try {
+            // Lấy thông tin học phí chi tiết
+            $hocPhi = Database::queryOne(
+                "SELECT hp.*, hs.ho_ten as ten_hoc_sinh, hs.hoc_sinh_id, hs.phu_huynh_id, ph.ho_ten as ten_phu_huynh, lh.ten_lop, mh.ten_mon_hoc
+                 FROM hoc_phi hp
+                 JOIN dang_ky_lop dkl ON hp.dang_ky_id = dkl.dang_ky_id
+                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                 LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
+                 JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
+                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
+                 WHERE hp.hoc_phi_id = ?",
+                [$id]
+            );
+            
+            error_log("hocPhi result: " . json_encode($hocPhi));
+            
+            if (!$hocPhi) {
+                $this->sendResponse(false, 'Không tìm thấy học phí', null, 404);
+                return;
+            }
+            
+            // Lấy danh sách các lớp học sinh đang học
+            $lopHocList = Database::query(
+                "SELECT dkl.dang_ky_id, lh.ten_lop, mh.ten_mon_hoc,
+                        (SELECT COALESCE(SUM(hp2.so_tien), 0) FROM hoc_phi hp2 WHERE hp2.dang_ky_id = dkl.dang_ky_id) as tong_tien_lop,
+                        (SELECT COUNT(*) FROM hoc_phi hp3 WHERE hp3.dang_ky_id = dkl.dang_ky_id AND hp3.trang_thai_thanh_toan = 'da_thanh_toan') as so_lan_da_thanh_toan,
+                        (SELECT COUNT(*) FROM hoc_phi hp4 WHERE hp4.dang_ky_id = dkl.dang_ky_id AND hp4.trang_thai_thanh_toan != 'da_thanh_toan') as so_lan_chua_thanh_toan
+                 FROM dang_ky_lop dkl
+                 JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
+                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
+                 WHERE dkl.hoc_sinh_id = ? AND dkl.trang_thai = 'da_duyet'",
+                [$hocPhi['hoc_sinh_id']]
+            );
+            
+            $hocPhi['danh_sach_lop'] = $lopHocList;
+            
+            $this->sendResponse(true, 'Chi tiết học phí', $hocPhi);
+        } catch (Exception $e) {
+            error_log("getDetail error: " . $e->getMessage());
+            $this->sendResponse(false, 'Lỗi: ' . $e->getMessage(), null, 500);
+        }
     }
 
     private function sendResponse($success, $message, $data = null, $code = 200) {

@@ -38,4 +38,3 @@ foreach (glob(__DIR__ . '/../app/routes/*.php') as $routeFile) {
 
 // Dispatch route
 $router->dispatch();
-?>

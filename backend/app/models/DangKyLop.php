@@ -102,9 +102,12 @@ class DangKyLop {
     }
 
     public static function getAll() {
-        $sql = "SELECT dkl.*, hs.ho_ten AS ten_hoc_sinh, lh.ten_lop, mh.ten_mon_hoc 
+        $sql = "SELECT dkl.*, hs.ho_ten AS ten_hoc_sinh, hs.phu_huynh_id, ph.ho_ten AS ten_phu_huynh,
+                       lh.ten_lop, lh.gia_moi_buoi, lh.gia_toan_khoa, lh.loai_chi_tra, lh.gia_tri_chi_tra,
+                       mh.ten_mon_hoc
                 FROM dang_ky_lop dkl
                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
                 JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
                 ORDER BY dkl.trang_thai = 'cho_duyet' DESC, dkl.ngay_dang_ky DESC";
@@ -112,12 +115,15 @@ class DangKyLop {
     }
 
     public static function getByPhuHuynh($phu_huynh_id) {
-        $sql = "SELECT dkl.*, hs.ho_ten AS ten_hoc_sinh, lh.ten_lop, mh.ten_mon_hoc 
+        $sql = "SELECT dkl.*, hs.ho_ten AS ten_hoc_sinh, hs.phu_huynh_id, ph.ho_ten AS ten_phu_huynh,
+                       lh.ten_lop, lh.gia_moi_buoi, lh.gia_toan_khoa, lh.loai_chi_tra, lh.gia_tri_chi_tra,
+                       mh.ten_mon_hoc
                 FROM dang_ky_lop dkl
                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
                 JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
-                WHERE hs.phu_huynh_id = :phu_huynh_id
+                WHERE hs.phu_huynh_id = :phu_huynh_id AND dkl.trang_thai = 'da_duyet'
                 ORDER BY dkl.ngay_dang_ky DESC";
         return Database::query($sql, [':phu_huynh_id' => $phu_huynh_id]);
     }

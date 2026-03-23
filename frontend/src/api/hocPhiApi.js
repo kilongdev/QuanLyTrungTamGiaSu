@@ -33,11 +33,11 @@ export const hocPhiAPI = {
     return response.json();
   },
 
-  updateStatus: async (id, trang_thai_thanh_toan) => {
+  updateStatus: async (id, data) => {
     const response = await fetch(`${API_BASE}?route=/hocphi/update/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ trang_thai_thanh_toan })
+      body: JSON.stringify(data)
     });
     return response.json();
   },
@@ -52,6 +52,14 @@ export const hocPhiAPI = {
 
   checkQuaHan: async () => {
     const response = await fetch(`${API_BASE}?route=/hocphi/check-quahan`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
+  getDetail: async (hocPhiId) => {
+    const response = await fetch(`${API_BASE}?route=/hocphi/chitiet/${hocPhiId}`, {
       method: 'GET',
       headers: getAuthHeaders()
     });

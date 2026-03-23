@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Search, X, AlertTriangle, DollarSign, User, Calendar, Bell } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, X, AlertTriangle, DollarSign, User, Calendar, Bell, Eye } from 'lucide-react'
 import DataPagination from '@/components/ui/DataPagination'
 import { hocPhiAPI } from '@/api/hocPhiApi'
 import { dangKyLopAPI } from '@/api/dangKyLopApi'
@@ -18,17 +18,46 @@ export default function HocPhiManagement({ user }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState('add')
   const [currentHocPhi, setCurrentHocPhi] = useState(null)
-  const [formData, setFormData] = useState({ dang_ky_id: '', so_tien: '', so_buoi_da_hoc: 0, trang_thai_thanh_toan: 'chua_thanh_toan' })
+  const [formData, setFormData] = useState({ 
+    dang_ky_id: '', 
+    so_tien: '', 
+    so_buoi_da_hoc: 0, 
+    trang_thai_thanh_toan: 'chua_thanh_toan',
+    hoc_sinh_id: ''
+  })
   const [modalLoading, setModalLoading] = useState(false)
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, hocPhi: null, loading: false })
   const [dangKyList, setDangKyList] = useState([])
   const [dangKySearch, setDangKySearch] = useState('')
   const [quaHanModal, setQuaHanModal] = useState({ isOpen: false, loading: false, count: 0 })
+  const [detailModal, setDetailModal] = useState({ isOpen: false, data: null, loading: false })
+  
+  // State cho việc chọn học sinh và lớp
+  const [hocSinhList, setHocSinhList] = useState([])
+  const [selectedHocSinh, setSelectedHocSinh] = useState(null)
+  const [lopCuaHocSinh, setLopCuaHocSinh] = useState([])
+  const [selectedLop, setSelectedLop] = useState(null)
 
   useEffect(() => {
     fetchHocPhiData()
     fetchDangKyList()
+    fetchHocSinhList()
   }, [])
+  
+  // Fetch danh sách học sinh
+  const fetchHocSinhList = async () => {
+    try {
+      const response = await fetch('http://localhost/QuanLyTrungTamGiaSu/backend/public/api.php?route=/hocsinh&limit=500', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      })
+      const data = await response.json()
+      if (data.status === 'success' || data.success) {
+        setHocSinhList(data.data || [])
+      }
+    } catch (error) {
+      console.error('Lỗi tải danh sách học sinh:', error)
+    }
+  }
 
   // Mở modal xác nhận gửi thông báo quá hạn
   const handleOpenQuaHanModal = () => {
@@ -52,6 +81,26 @@ export default function HocPhiManagement({ user }) {
       console.error('Lỗi:', error)
       toast.error('Lỗi khi gửi thông báo học phí quá hạn')
       setQuaHanModal(prev => ({ ...prev, loading: false }))
+    }
+  }
+
+  // Xem chi tiết học phí
+  const handleViewDetail = async (item) => {
+    setDetailModal({ isOpen: true, data: null, loading: true })
+    try {
+      console.log('Fetching detail for hoc_phi_id:', item.hoc_phi_id)
+      const response = await hocPhiAPI.getDetail(item.hoc_phi_id)
+      console.log('Detail response:', response)
+      if (response.success) {
+        setDetailModal({ isOpen: true, data: response.data, loading: false })
+      } else {
+        toast.error(response.message || 'Không thể tải chi tiết học phí')
+        setDetailModal({ isOpen: false, data: null, loading: false })
+      }
+    } catch (error) {
+      console.error('Lỗi tải chi tiết:', error)
+      toast.error('Lỗi tải chi tiết học phí: ' + (error.message || 'Unknown error'))
+      setDetailModal({ isOpen: false, data: null, loading: false })
     }
   }
 
@@ -121,13 +170,40 @@ export default function HocPhiManagement({ user }) {
   const handleOpenAddModal = () => {
     setModalMode('add')
     setCurrentHocPhi(null)
-    setFormData({ dang_ky_id: '', so_tien: '', so_buoi_da_hoc: 0, trang_thai_thanh_toan: 'chua_thanh_toan' })
+    setFormData({ dang_ky_id: '', so_tien: '', so_buoi_da_hoc: 0, trang_thai_thanh_toan: 'chua_thanh_toan', hoc_sinh_id: '' })
+    setSelectedHocSinh(null)
+    setLopCuaHocSinh([])
+    setSelectedLop(null)
     setIsModalOpen(true)
+  }
+
+  // Khi chọn học sinh, lọc các lớp đã duyệt của học sinh đó
+  const handleHocSinhChange = (hocSinhId) => {
+    const hs = hocSinhList.find(h => h.hoc_sinh_id == hocSinhId)
+    setSelectedHocSinh(hs)
+    setFormData({ ...formData, hoc_sinh_id: hocSinhId, dang_ky_id: '', so_tien: '' })
+    setSelectedLop(null)
+    
+    // Lọc các đăng ký đã duyệt của học sinh này
+    const lopList = dangKyList.filter(dk => dk.hoc_sinh_id == hocSinhId && dk.trang_thai === 'da_duyet')
+    setLopCuaHocSinh(lopList)
+  }
+
+  // Khi chọn lớp, tính toán số tiền
+  const handleLopChange = (dangKyId) => {
+    const lop = lopCuaHocSinh.find(l => l.dang_ky_id == dangKyId)
+    setSelectedLop(lop)
+    setFormData({ ...formData, dang_ky_id: dangKyId })
   }
 
   const handleEdit = (hocPhi) => {
     setModalMode('edit')
     setCurrentHocPhi(hocPhi)
+    
+    // Tìm thông tin đăng ký để lấy gia_moi_buoi
+    const dk = dangKyList.find(d => d.dang_ky_id == hocPhi.dang_ky_id)
+    setSelectedLop(dk || null)
+    
     setFormData({
       dang_ky_id: hocPhi.dang_ky_id || '',
       so_tien: hocPhi.so_tien || '',
@@ -135,6 +211,27 @@ export default function HocPhiManagement({ user }) {
       trang_thai_thanh_toan: hocPhi.trang_thai || 'chua_thanh_toan'
     })
     setIsModalOpen(true)
+  }
+
+  // Format số tiền khi hiển thị
+  const formatSoTien = (value) => {
+    if (!value) return ''
+    return parseInt(value).toLocaleString('vi-VN')
+  }
+
+  // Parse số tiền từ input
+  const parseSoTien = (value) => {
+    return value.replace(/[^0-9]/g, '')
+  }
+
+  // Tính số tiền khi thay đổi số buổi (dùng cho cả add và edit)
+  const handleSoBuoiChange = (soBuoi) => {
+    if (selectedLop && selectedLop.gia_moi_buoi) {
+      const soTien = parseInt(soBuoi || 0) * parseInt(selectedLop.gia_moi_buoi || 0)
+      setFormData({ ...formData, so_buoi_da_hoc: soBuoi, so_tien: soTien })
+    } else {
+      setFormData({ ...formData, so_buoi_da_hoc: soBuoi })
+    }
   }
 
   const handleFormSubmit = async (e) => {
@@ -147,14 +244,28 @@ export default function HocPhiManagement({ user }) {
     setModalLoading(true)
     try {
       if (modalMode === 'edit') {
-        await hocPhiAPI.updateStatus(currentHocPhi.hoc_phi_id, formData.trang_thai_thanh_toan)
-        toast.success('Cập nhật học phí thành công!')
+        const res = await hocPhiAPI.updateStatus(currentHocPhi.hoc_phi_id, {
+          trang_thai_thanh_toan: formData.trang_thai_thanh_toan,
+          so_buoi_da_hoc: formData.so_buoi_da_hoc,
+          so_tien: formData.so_tien
+        })
+        if (res.success) {
+          toast.success('Cập nhật học phí thành công!')
+          setIsModalOpen(false)
+          fetchHocPhiData()
+        } else {
+          toast.error(res.message || 'Lỗi cập nhật')
+        }
       } else {
-        await hocPhiAPI.create(formData)
-        toast.success('Thêm học phí thành công!')
+        const res = await hocPhiAPI.create(formData)
+        if (res.success) {
+          toast.success('Thêm học phí thành công!')
+          setIsModalOpen(false)
+          fetchHocPhiData()
+        } else {
+          toast.error(res.message || 'Lỗi thêm học phí')
+        }
       }
-      setIsModalOpen(false)
-      fetchHocPhiData()
     } catch (error) {
       toast.error(error.message || 'Lỗi thao tác')
     } finally {
@@ -284,7 +395,7 @@ export default function HocPhiManagement({ user }) {
                   <tr key={idx} className="border-t hover:bg-red-50/40 transition-colors">
                     <td className="px-6 py-4 text-sm text-gray-600">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
                     <td className="px-6 py-4 text-sm text-gray-900 font-medium">{item.ten_hocsinh || 'N/A'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.so_tien?.toLocaleString('vi-VN')} đ</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{parseInt(item.so_tien || 0).toLocaleString('vi-VN')} đ</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{item.thang || 'N/A'}</td>
                     <td className="px-6 py-4 text-sm">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -302,21 +413,28 @@ export default function HocPhiManagement({ user }) {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">{item.ngay_tao || 'N/A'}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <div className="flex gap-2">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex justify-center gap-2">
+                        <button 
+                          onClick={() => handleViewDetail(item)}
+                          className="p-2 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" 
+                          title="Xem chi tiết"
+                        >
+                          <Eye size={18} />
+                        </button>
                         <button 
                           onClick={() => handleEdit(item)}
                           className="p-2 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Chỉnh sửa"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit2 size={18} />
                         </button>
                         <button 
                           onClick={() => handleDelete(item)}
                           className="p-2 text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                           title="Xóa"
-        >
-                          <Trash2 className="w-4 h-4" />
+                        >
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </td>
@@ -353,68 +471,141 @@ export default function HocPhiManagement({ user }) {
             <form onSubmit={handleFormSubmit}>
               <div className="p-6 space-y-4">
                 {modalMode === 'add' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                      <User size={14} /> Đăng ký lớp <span className="text-red-500">*</span>
-                    </label>
-                    {/* Search input */}
-                    <div className="relative mb-2">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Tìm theo tên HS, lớp, môn..."
-                        value={dangKySearch}
-                        onChange={(e) => setDangKySearch(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
+                  <>
+                    {/* Chọn học sinh */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <User size={14} /> Chọn học sinh <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={formData.hoc_sinh_id}
+                        onChange={(e) => handleHocSinhChange(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        required
+                      >
+                        <option value="">-- Chọn học sinh --</option>
+                        {hocSinhList.map((hs) => (
+                          <option key={hs.hoc_sinh_id} value={hs.hoc_sinh_id}>
+                            {hs.ho_ten || `HS ID: ${hs.hoc_sinh_id}`}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                    <select
-                      value={formData.dang_ky_id}
-                      onChange={(e) => setFormData({ ...formData, dang_ky_id: e.target.value })}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                      required
-                    >
-                      <option value="">-- Chọn đăng ký --</option>
-                      {filteredDangKyList.map((dk) => (
-                        <option key={dk.dang_ky_id} value={dk.dang_ky_id}>
-                          {dk.ten_hoc_sinh || `HS ID: ${dk.hoc_sinh_id}`} - {dk.ten_lop || `Lớp ID: ${dk.lop_hoc_id}`} {dk.ten_mon_hoc ? `(${dk.ten_mon_hoc})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                    {dangKySearch && filteredDangKyList.length === 0 && (
-                      <p className="text-sm text-gray-500 mt-1">Không tìm thấy kết quả</p>
+
+                    {/* Chọn lớp học */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <Calendar size={14} /> Chọn lớp học <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={formData.dang_ky_id}
+                        onChange={(e) => handleLopChange(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        required
+                        disabled={!formData.hoc_sinh_id}
+                      >
+                        <option value="">-- Chọn lớp học --</option>
+                        {lopCuaHocSinh.map((lop) => (
+                          <option key={lop.dang_ky_id} value={lop.dang_ky_id}>
+                            {lop.ten_lop} {lop.ten_mon_hoc ? `(${lop.ten_mon_hoc})` : ''} - {parseInt(lop.gia_moi_buoi || 0).toLocaleString('vi-VN')} đ/buổi
+                          </option>
+                        ))}
+                      </select>
+                      {!formData.hoc_sinh_id && (
+                        <p className="text-xs text-gray-500 mt-1">Vui lòng chọn học sinh trước</p>
+                      )}
+                      {formData.hoc_sinh_id && lopCuaHocSinh.length === 0 && (
+                        <p className="text-xs text-yellow-600 mt-1">Học sinh này chưa có lớp nào được duyệt</p>
+                      )}
+                    </div>
+
+                    {/* Số buổi đã học và tính tiền tự động */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <Calendar size={14} /> Số buổi đã học <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.so_buoi_da_hoc}
+                        onChange={(e) => handleSoBuoiChange(parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        placeholder="Nhập số buổi"
+                        required
+                        disabled={!formData.dang_ky_id}
+                      />
+                      {!formData.dang_ky_id && (
+                        <p className="text-xs text-gray-500 mt-1">Vui lòng chọn lớp học trước</p>
+                      )}
+                    </div>
+
+                    {/* Hiển thị tính toán */}
+                    {selectedLop && formData.so_buoi_da_hoc > 0 && (
+                      <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                        <h4 className="font-medium text-green-800 mb-2">Tính toán học phí</h4>
+                        <div className="space-y-1 text-sm">
+                          <p className="text-green-700">
+                            Giá mỗi buổi: <span className="font-bold">{parseInt(selectedLop.gia_moi_buoi || 0).toLocaleString('vi-VN')} đ</span>
+                          </p>
+                          <p className="text-green-700">
+                            Số buổi: <span className="font-bold">{formData.so_buoi_da_hoc || 0}</span>
+                          </p>
+                          <p className="text-green-800 font-bold text-base pt-2 border-t border-green-300">
+                            Tổng học phí: {parseInt(formData.so_tien || 0).toLocaleString('vi-VN')} đ
+                          </p>
+                        </div>
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                    <DollarSign size={14} /> Số tiền <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.so_tien}
-                    onChange={(e) => setFormData({ ...formData, so_tien: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Nhập số tiền"
-                    required
-                    disabled={modalMode === 'edit'}
-                  />
-                </div>
-
-                {modalMode === 'add' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                      <Calendar size={14} /> Số buổi đã học
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.so_buoi_da_hoc}
-                      onChange={(e) => setFormData({ ...formData, so_buoi_da_hoc: e.target.value })}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Số buổi"
-                    />
-                  </div>
+                {modalMode === 'edit' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <Calendar size={14} /> Số buổi đã học
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.so_buoi_da_hoc}
+                        onChange={(e) => handleSoBuoiChange(parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Nhập số buổi"
+                      />
+                    </div>
+                    
+                    {selectedLop && formData.so_buoi_da_hoc > 0 && (
+                      <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                        <h4 className="font-medium text-green-800 mb-2">Tính toán học phí</h4>
+                        <div className="space-y-1 text-sm">
+                          <p className="text-green-700">
+                            Giá mỗi buổi: <span className="font-bold">{parseInt(selectedLop.gia_moi_buoi || 0).toLocaleString('vi-VN')} đ</span>
+                          </p>
+                          <p className="text-green-700">
+                            Số buổi: <span className="font-bold">{formData.so_buoi_da_hoc || 0}</span>
+                          </p>
+                          <p className="text-green-800 font-bold text-base pt-2 border-t border-green-300">
+                            Tổng học phí: {parseInt(formData.so_tien || 0).toLocaleString('vi-VN')} đ
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <DollarSign size={14} /> Số tiền <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formatSoTien(formData.so_tien)}
+                        onChange={(e) => setFormData({ ...formData, so_tien: parseSoTien(e.target.value) })}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Nhập số tiền"
+                        required
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div>
@@ -548,6 +739,108 @@ export default function HocPhiManagement({ user }) {
                 Gửi thông báo
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {detailModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-5 flex justify-between items-center border-b bg-gradient-to-r from-red-700 to-red-800">
+              <h3 className="text-xl font-bold text-white">Chi tiết học phí</h3>
+              <button 
+                onClick={() => setDetailModal({ isOpen: false, data: null, loading: false })} 
+                className="text-white/80 hover:text-white p-1 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          
+          {detailModal.loading ? (
+              <div className="p-8 text-center text-gray-500">Đang tải...</div>
+            ) : detailModal.data ? (
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+                {/* Thông tin học phí */}
+                <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                  <h4 className="font-bold text-gray-900 mb-3">Thông tin học phí</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Số tiền</p>
+                      <p className="font-bold text-red-700">{parseInt(detailModal.data.so_tien || 0).toLocaleString('vi-VN')} đ</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Số buổi đã học</p>
+                      <p className="font-medium">{detailModal.data.so_buoi_da_hoc || 0} buổi</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Tháng</p>
+                      <p className="font-medium">
+                        {(() => {
+                          const thangStr = String(detailModal.data.thang || '')
+                          if (thangStr.includes('/')) {
+                            return thangStr
+                          }
+                          const date = detailModal.data.ngay_tao ? new Date(detailModal.data.ngay_tao) : new Date()
+                          const month = detailModal.data.thang || (date.getMonth() + 1)
+                          const year = date.getFullYear()
+                          return `${String(month).padStart(2, '0')}/${year}`
+                        })()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Trạng thái</p>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        detailModal.data.trang_thai_thanh_toan === 'da_thanh_toan' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : detailModal.data.trang_thai_thanh_toan === 'qua_han'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {detailModal.data.trang_thai_thanh_toan === 'da_thanh_toan' 
+                          ? 'Đã thanh toán' 
+                          : detailModal.data.trang_thai_thanh_toan === 'qua_han'
+                          ? 'Quá hạn'
+                          : 'Chưa thanh toán'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Ngày tạo</p>
+                      <p className="font-medium">{detailModal.data.ngay_tao || 'N/A'}</p>
+                    </div>
+                    {detailModal.data.ngay_thanh_toan && (
+                      <div>
+                        <p className="text-xs text-gray-500">Ngày thanh toán</p>
+                        <p className="font-medium">{detailModal.data.ngay_thanh_toan}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Thông tin học sinh và phụ huynh */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h4 className="font-bold text-gray-900 mb-3">Thông tin học sinh</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Họ tên</p>
+                      <p className="font-medium">{detailModal.data.ten_hoc_sinh || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Lớp học</p>
+                      <p className="font-medium">{detailModal.data.ten_lop || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Môn học</p>
+                      <p className="font-medium">{detailModal.data.ten_mon_hoc || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Phụ huynh</p>
+                      <p className="font-medium">{detailModal.data.ten_phu_huynh || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       )}
