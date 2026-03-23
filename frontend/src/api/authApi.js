@@ -3,8 +3,7 @@
  */
 
 // const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
-const API_URL = "http://localhost:5001/QuanLyTrungTamGiaSu/backend/public";
-
+const API_URL = "http://localhost:5001/public";
 
 /**
  * Gửi request đến API
@@ -36,6 +35,8 @@ async function request(endpoint, options = {}) {
     return data;
   } catch (error) {
     if (error.status) throw error;
+    console.log(error);
+
     throw { status: 0, message: "Không thể kết nối đến server" };
   }
 }

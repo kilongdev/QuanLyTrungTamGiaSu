@@ -25,13 +25,13 @@ const Header = ({ user, onLogin, onRegister, onLogout }) => {
       )}
     >
       <div className="flex items-center justify-between h-30 px-10 text-md bg-white">
-        <Link to={"/"}>
+        <a href="/">
           <img
             src="https://d1reana485161v.cloudfront.net/i/logo_findtutors_v3.svg"
             alt="logo"
             className="h-15 w-auto cursor-pointer"
           />
-        </Link>
+        </a>
 
         {/* Desktop menu */}
         <nav className="hidden lg:flex gap-5">
