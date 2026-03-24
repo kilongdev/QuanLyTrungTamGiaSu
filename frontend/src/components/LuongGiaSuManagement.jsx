@@ -4,12 +4,29 @@ import DataPagination from '@/components/ui/DataPagination'
 import { toast } from 'sonner'
 import { luongGiaSuAPI } from '@/api/luongGiaSuApi'
 
+// Component hiển thị badge trạng thái thanh toán
+function StatusBadge({ status, edited }) {
+  const statusConfig = {
+    da_thanh_toan: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Đã thanh toán' },
+    qua_han: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Quá hạn' },
+    chua_thanh_toan: { bg: 'bg-red-100', text: 'text-red-800', label: 'Chưa thanh toán' }
+  }
+  const config = statusConfig[status] || statusConfig.chua_thanh_toan
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+      {config.label}
+      {edited && <span className="ml-1">*</span>}
+    </span>
+  )
+}
+
 export default function LuongGiaSuManagement({ user }) {
   const [luongData, setLuongData] = useState([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedMonth, setSelectedMonth] = useState('all')
   const [selectedTutor, setSelectedTutor] = useState('all')
+  const [selectedStatus, setSelectedStatus] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
 
@@ -26,11 +43,9 @@ export default function LuongGiaSuManagement({ user }) {
   const [formData, setFormData] = useState({
     gia_su_id: '',
     lop_hoc_id: '',
-    so_buoi_day: 0,
-    tien_tra_gia_su: 0,
     thang: '',
-    nam: '',
-    trang_thai_thanh_toan: 'chua_thanh_toan'
+    nam: new Date().getFullYear(),
+    ngay_den_han: ''
   })
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, luong: null, loading: false })
   const [editGroupModal, setEditGroupModal] = useState({ isOpen: false, data: null, loading: false })
@@ -70,6 +85,9 @@ export default function LuongGiaSuManagement({ user }) {
   const fetchLuongData = async () => {
     try {
       setLoading(true)
+      // Kiểm tra và cập nhật lương quá hạn trước
+      await luongGiaSuAPI.checkOverdue()
+      // Sau đó lấy dữ liệu
       const response = await luongGiaSuAPI.getAll()
       if (response.success) {
         setLuongData(response.data || [])
@@ -108,12 +126,11 @@ export default function LuongGiaSuManagement({ user }) {
     setFormData({
       gia_su_id: '',
       lop_hoc_id: '',
-      so_buoi_day: 0,
-      tien_tra_gia_su: 0,
-      thang: '',
+      thang: new Date().getMonth() + 1,
       nam: new Date().getFullYear(),
-      trang_thai_thanh_toan: 'chua_thanh_toan'
+      ngay_den_han: ''
     })
+    setSelectedLopHoc(null)
     setIsModalOpen(true)
   }
 
@@ -162,6 +179,7 @@ export default function LuongGiaSuManagement({ user }) {
   // State cho việc chỉnh sửa số buổi và trạng thái thanh toán
   const [editedSoBuoi, setEditedSoBuoi] = useState({})
   const [editedTrangThai, setEditedTrangThai] = useState({})
+  const [editedNgayDenHan, setEditedNgayDenHan] = useState({})
 
   // Cập nhật số buổi của một lớp
   const handleUpdateSoBuoi = (luongId, soBuoi) => {
@@ -171,8 +189,18 @@ export default function LuongGiaSuManagement({ user }) {
     }))
   }
 
+  // Cập nhật ngày đến hạn
+  const handleUpdateNgayDenHan = (luongId, ngayDenHan) => {
+    setEditedNgayDenHan(prev => ({
+      ...prev,
+      [luongId]: ngayDenHan
+    }))
+  }
+
   // Cập nhật trạng thái thanh toán local (chưa lưu vào DB)
   const handleToggleTrangThai = (luongId, currentStatus) => {
+    // Nếu đã thanh toán → hoàn tác sang chưa thanh toán
+    // Nếu chưa thanh toán hoặc quá hạn → thanh toán
     const newStatus = currentStatus === 'da_thanh_toan' ? 'chua_thanh_toan' : 'da_thanh_toan'
     setEditedTrangThai(prev => ({
       ...prev,
@@ -180,26 +208,30 @@ export default function LuongGiaSuManagement({ user }) {
     }))
   }
 
-  // Lưu tất cả thay đổi (số buổi + trạng thái thanh toán)
+  // Lưu tất cả thay đổi (số buổi + trạng thái thanh toán + ngày đến hạn)
   const handleSaveAllChanges = async () => {
     const soBuoiIds = Object.keys(editedSoBuoi)
     const trangThaiIds = Object.keys(editedTrangThai)
+    const ngayDenHanIds = Object.keys(editedNgayDenHan)
     
-    if (soBuoiIds.length === 0 && trangThaiIds.length === 0) {
+    if (soBuoiIds.length === 0 && trangThaiIds.length === 0 && ngayDenHanIds.length === 0) {
       toast.info('Không có thay đổi để lưu')
       return
     }
-
-    setEditGroupModal(prev => ({ ...prev, loading: true }))
+    
     try {
       const promises = []
       
       // Lưu thay đổi số buổi
       soBuoiIds.forEach(luongId => {
         const trangThai = editedTrangThai[luongId] // có thể undefined
+        const ngayDenHan = editedNgayDenHan[luongId] // có thể undefined
         const updateData = { so_buoi_day: editedSoBuoi[luongId] }
         if (trangThai) {
           updateData.trang_thai_thanh_toan = trangThai
+        }
+        if (ngayDenHan) {
+          updateData.ngay_den_han = ngayDenHan
         }
         promises.push(luongGiaSuAPI.update(parseInt(luongId), updateData))
       })
@@ -207,19 +239,32 @@ export default function LuongGiaSuManagement({ user }) {
       // Lưu thay đổi trạng thái (những cái chưa được lưu ở trên)
       trangThaiIds.forEach(luongId => {
         if (!soBuoiIds.includes(luongId)) {
-          promises.push(luongGiaSuAPI.update(parseInt(luongId), { trang_thai_thanh_toan: editedTrangThai[luongId] }))
+          const ngayDenHan = editedNgayDenHan[luongId]
+          const updateData = { trang_thai_thanh_toan: editedTrangThai[luongId] }
+          if (ngayDenHan) {
+            updateData.ngay_den_han = ngayDenHan
+          }
+          promises.push(luongGiaSuAPI.update(parseInt(luongId), updateData))
+        }
+      })
+      
+      // Lưu thay đổi ngày đến hạn (những cái chưa được lưu ở trên)
+      ngayDenHanIds.forEach(luongId => {
+        if (!soBuoiIds.includes(luongId) && !trangThaiIds.includes(luongId)) {
+          promises.push(luongGiaSuAPI.update(parseInt(luongId), { ngay_den_han: editedNgayDenHan[luongId] }))
         }
       })
       
       await Promise.all(promises)
       toast.success('Đã lưu tất cả thay đổi!')
       
-      // Refresh data
+      // Cập nhật UI
       if (editGroupModal.data) {
         const updatedList = editGroupModal.data.danh_sach_lop.map(lop => ({
           ...lop,
           so_buoi_day: editedSoBuoi[lop.luong_id] ?? lop.so_buoi_day,
-          trang_thai_thanh_toan: editedTrangThai[lop.luong_id] ?? lop.trang_thai_thanh_toan
+          trang_thai_thanh_toan: editedTrangThai[lop.luong_id] ?? lop.trang_thai_thanh_toan,
+          ngay_den_han: editedNgayDenHan[lop.luong_id] ?? lop.ngay_den_han
         }))
         setEditGroupModal(prev => ({
           ...prev,
@@ -229,10 +274,10 @@ export default function LuongGiaSuManagement({ user }) {
       }
       setEditedSoBuoi({})
       setEditedTrangThai({})
+      setEditedNgayDenHan({})
       fetchLuongData()
     } catch (error) {
       toast.error('Lỗi lưu thay đổi')
-      setEditGroupModal(prev => ({ ...prev, loading: false }))
     }
   }
 
@@ -393,8 +438,25 @@ export default function LuongGiaSuManagement({ user }) {
     const keywordMatch = !keyword || tenGiaSu.includes(keyword) || thangNam.includes(keyword)
     const monthMatch = selectedMonth === 'all' || thangNam === selectedMonth
     const tutorMatch = selectedTutor === 'all' || String(item.ten_giasu || '') === selectedTutor
+    
+    // Lọc theo trạng thái - chuyển sang số để so sánh
+    const soLop = parseInt(item.so_lop) || 0
+    const soLopQuaHan = parseInt(item.so_lop_qua_han) || 0
+    const soLopChuaThanhToan = parseInt(item.so_lop_chua_thanh_toan) || 0
+    const soLopDaThanhToan = parseInt(item.so_lop_da_thanh_toan) || 0
+    
+    let statusMatch = true
+    if (selectedStatus === 'qua_han') {
+      statusMatch = soLopQuaHan > 0
+    } else if (selectedStatus === 'chua_thanh_toan') {
+      // Chưa thanh toán: có lớp chưa thanh toán VÀ không có lớp quá hạn
+      statusMatch = soLopChuaThanhToan > 0 && soLopQuaHan === 0
+    } else if (selectedStatus === 'da_thanh_toan') {
+      // Đã thanh toán: tất cả lớp đều đã thanh toán
+      statusMatch = soLopDaThanhToan === soLop && soLop > 0
+    }
 
-    return keywordMatch && monthMatch && tutorMatch
+    return keywordMatch && monthMatch && tutorMatch && statusMatch
   })
 
   const monthOptions = [...new Set(luongData.map((item) => item.thang_nam || `${String(item.thang || 1).padStart(2, '0')}/${item.nam}`).filter(Boolean))]
@@ -408,7 +470,7 @@ export default function LuongGiaSuManagement({ user }) {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, selectedMonth, selectedTutor])
+  }, [searchTerm, selectedMonth, selectedTutor, selectedStatus])
 
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > totalPages) return
@@ -474,6 +536,19 @@ export default function LuongGiaSuManagement({ user }) {
                 <option key={tutor} value={tutor}>{tutor}</option>
               ))}
             </select>
+
+            <div className="h-px md:h-10 md:w-px bg-gray-200" />
+
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="md:w-48 px-4 py-2.5 bg-transparent focus:outline-none"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="qua_han">Quá hạn</option>
+              <option value="chua_thanh_toan">Chưa thanh toán</option>
+              <option value="da_thanh_toan">Đã thanh toán</option>
+            </select>
           </div>
         </div>
 
@@ -504,7 +579,11 @@ export default function LuongGiaSuManagement({ user }) {
                     <td className="px-6 py-4 text-sm text-gray-900 font-medium">{parseInt(item.tong_luong || 0).toLocaleString('vi-VN')} đ</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{item.thang_nam || `${String(item.thang || 1).padStart(2, '0')}/${item.nam}`}</td>
                     <td className="px-6 py-4 text-sm">
-                      {item.so_lop_chua_thanh_toan > 0 ? (
+                      {item.so_lop_qua_han > 0 ? (
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          Quá hạn ({item.so_lop_qua_han})
+                        </span>
+                      ) : item.so_lop_chua_thanh_toan > 0 ? (
                         <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                           Chưa thanh toán ({item.so_lop_chua_thanh_toan})
                         </span>
@@ -626,17 +705,17 @@ export default function LuongGiaSuManagement({ user }) {
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
                             <div>
-                              <span className="text-gray-400">Số buổi:</span> {lop.so_buoi_day || 0}
+                              <span className="text-gray-400">Số lượt dạy:</span> {lop.so_buoi_day || 0}
                             </div>
                             <div>
                               <span className="text-gray-400">Loại chi trả:</span> {lop.loai_chi_tra === 'phan_tram' ? `% (${lop.gia_tri_ap_dung}%)` : 'Cố định'}
                             </div>
                             <div>
-                              <span className="text-gray-400">Trạng thái:</span>{' '}
-                              <span className={lop.trang_thai_thanh_toan === 'da_thanh_toan' ? 'text-blue-600' : 'text-red-600'}>
-                                {lop.trang_thai_thanh_toan === 'da_thanh_toan' ? 'Đã thanh toán' : 'Chưa thanh toán'}
-                              </span>
+                              <span className="text-gray-400">Đến hạn:</span> {lop.ngay_den_han || 'Chưa đặt'}
                             </div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-100">
+                            <StatusBadge status={lop.trang_thai_thanh_toan} />
                           </div>
                         </div>
                       ))}
@@ -697,34 +776,33 @@ export default function LuongGiaSuManagement({ user }) {
                           <p className="font-bold text-red-700">{parseInt(lop.tien_tra_gia_su || 0).toLocaleString('vi-VN')} đ</p>
                         </div>
                         
-                        {/* Số buổi dạy */}
+                        {/* Số lượt dạy (tự động từ điểm danh) */}
                         <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-200">
-                          <label className="text-sm text-gray-600">Số buổi:</label>
+                          <label className="text-sm text-gray-600">Số lượt dạy:</label>
+                          <span className="font-medium text-gray-900">{lop.so_buoi_day || 0}</span>
+                          <span className="text-xs text-gray-500">(tự động từ điểm danh)</span>
+                        </div>
+                        
+                        {/* Ngày đến hạn */}
+                        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-200">
+                          <label className="text-sm text-gray-600">Ngày đến hạn:</label>
                           <input
-                            type="number"
-                            min="0"
-                            value={editedSoBuoi[lop.luong_id] ?? lop.so_buoi_day ?? 0}
-                            onChange={(e) => handleUpdateSoBuoi(lop.luong_id, parseInt(e.target.value) || 0)}
-                            className="w-20 px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            type="date"
+                            value={editedNgayDenHan[lop.luong_id] ?? lop.ngay_den_han ?? ''}
+                            onChange={(e) => handleUpdateNgayDenHan(lop.luong_id, e.target.value)}
+                            className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
-                          <span className="text-xs text-gray-500">buổi</span>
-                          {editedSoBuoi[lop.luong_id] !== undefined && editedSoBuoi[lop.luong_id] !== lop.so_buoi_day && (
+                          {editedNgayDenHan[lop.luong_id] !== undefined && editedNgayDenHan[lop.luong_id] !== lop.ngay_den_han && (
                             <span className="text-xs text-blue-600">(đã sửa)</span>
                           )}
                         </div>
                         
                         {/* Trạng thái thanh toán */}
                         <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            (editedTrangThai[lop.luong_id] ?? lop.trang_thai_thanh_toan) === 'da_thanh_toan' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {(editedTrangThai[lop.luong_id] ?? lop.trang_thai_thanh_toan) === 'da_thanh_toan' ? 'Đã thanh toán' : 'Chưa thanh toán'}
-                            {editedTrangThai[lop.luong_id] && editedTrangThai[lop.luong_id] !== lop.trang_thai_thanh_toan && (
-                              <span className="ml-1">*</span>
-                            )}
-                          </span>
+                          <StatusBadge 
+                            status={editedTrangThai[lop.luong_id] ?? lop.trang_thai_thanh_toan} 
+                            edited={editedTrangThai[lop.luong_id] && editedTrangThai[lop.luong_id] !== lop.trang_thai_thanh_toan}
+                          />
                           <button
                             onClick={() => handleToggleTrangThai(lop.luong_id, editedTrangThai[lop.luong_id] ?? lop.trang_thai_thanh_toan)}
                             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
@@ -756,7 +834,7 @@ export default function LuongGiaSuManagement({ user }) {
                 )}
 
                 {/* Nút lưu thay đổi */}
-                {(Object.keys(editedSoBuoi).length > 0 || Object.keys(editedTrangThai).length > 0) && (
+                {(Object.keys(editedSoBuoi).length > 0 || Object.keys(editedTrangThai).length > 0 || Object.keys(editedNgayDenHan).length > 0) && (
                   <div className="mt-4">
                     <button
                       onClick={handleSaveAllChanges}
@@ -766,7 +844,7 @@ export default function LuongGiaSuManagement({ user }) {
                       {editGroupModal.loading && (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       )}
-                      Lưu thay đổi ({Object.keys(editedSoBuoi).length + Object.keys(editedTrangThai).length} mục)
+                      Lưu thay đổi ({Object.keys(editedSoBuoi).length + Object.keys(editedTrangThai).length + Object.keys(editedNgayDenHan).length} mục)
                     </button>
                   </div>
                 )}
@@ -816,26 +894,26 @@ export default function LuongGiaSuManagement({ user }) {
                         disabled={!formData.gia_su_id}
                       >
                         <option value="">-- Chọn lớp học --</option>
-                        {filteredLopHocList.map((lop) => (
+                        {lopHocList.filter(lop => lop.gia_su_id == formData.gia_su_id).map((lop) => (
                           <option key={lop.lop_hoc_id} value={lop.lop_hoc_id}>
-                            {lop.ten_lop || `Lớp #${lop.lop_hoc_id}`}
+                            {lop.ten_lop || `Lớp #${lop.lop_hoc_id}`} - {lop.khoi_lop}
                           </option>
                         ))}
                       </select>
                       {!formData.gia_su_id && (
                         <p className="text-xs text-gray-500 mt-1">Vui lòng chọn gia sư trước</p>
                       )}
-                      {selectedLopHoc && (
-                        <div className="mt-2 p-2 bg-blue-50 rounded-lg text-xs">
-                          <p><b>Loại chi trả:</b> {selectedLopHoc.loai_chi_tra === 'phan_tram' ? 'Theo phần trăm' : 'Tiền cụ thể'}</p>
-                          {selectedLopHoc.loai_chi_tra === 'phan_tram' ? (
-                            <p><b>Công thức:</b> {selectedLopHoc.gia_tri_chi_tra}% × Giá toàn khóa ({(selectedLopHoc.gia_toan_khoa || 0).toLocaleString('vi-VN')} đ)</p>
-                          ) : (
-                            <p><b>Lương:</b> {(selectedLopHoc.gia_tri_chi_tra || 0).toLocaleString('vi-VN')} đ</p>
-                          )}
-                        </div>
-                      )}
                     </div>
+                    {selectedLopHoc && (
+                      <div className="p-3 bg-blue-50 rounded-lg text-sm">
+                        <p><b>Loại chi trả:</b> {selectedLopHoc.loai_chi_tra === 'phan_tram' ? 'Theo phần trăm' : 'Tiền cụ thể'}</p>
+                        {selectedLopHoc.loai_chi_tra === 'phan_tram' ? (
+                          <p><b>Công thức:</b> {selectedLopHoc.gia_tri_chi_tra}% × {((selectedLopHoc.gia_moi_buoi || 0)).toLocaleString('vi-VN')} đ/buổi</p>
+                        ) : (
+                          <p><b>Lương/buổi:</b> {((selectedLopHoc.gia_tri_chi_tra || 0)).toLocaleString('vi-VN')} đ</p>
+                        )}
+                      </div>
+                    )}
                   </>
                 )}
                 <div className="grid grid-cols-2 gap-4">
@@ -849,6 +927,7 @@ export default function LuongGiaSuManagement({ user }) {
                       onChange={(e) => setFormData({ ...formData, thang: e.target.value })}
                       className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="1-12"
+                      required
                     />
                   </div>
                   <div>
@@ -859,47 +938,24 @@ export default function LuongGiaSuManagement({ user }) {
                       onChange={(e) => setFormData({ ...formData, nam: e.target.value })}
                       className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="2026"
+                      required
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Số buổi dạy trong tháng</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày đến hạn thanh toán</label>
                   <input
-                    type="number"
-                    value={formData.so_buoi_day}
-                    onChange={(e) => setFormData({ ...formData, so_buoi_day: parseInt(e.target.value) || 0 })}
+                    type="date"
+                    value={formData.ngay_den_han || ''}
+                    onChange={(e) => setFormData({ ...formData, ngay_den_han: e.target.value })}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Số buổi"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Nếu qua ngày này chưa thanh toán, lương sẽ tự động chuyển sang trạng thái "Quá hạn"</p>
                 </div>
-                {selectedLopHoc?.loai_chi_tra === 'phan_tram' && (
-                  <div className="p-3 bg-green-50 rounded-lg">
-                    <p className="text-sm font-medium text-green-800">
-                      Lương dự kiến: {((selectedLopHoc.gia_toan_khoa || 0) * (selectedLopHoc.gia_tri_chi_tra || 0) / 100).toLocaleString('vi-VN')} đ
-                    </p>
-                    <p className="text-xs text-green-600">
-                      = {selectedLopHoc.gia_tri_chi_tra}% × {(selectedLopHoc.gia_toan_khoa || 0).toLocaleString('vi-VN')} đ (giá toàn khóa)
-                    </p>
-                  </div>
-                )}
-                {selectedLopHoc?.loai_chi_tra !== 'phan_tram' && selectedLopHoc && (
-                  <div className="p-3 bg-green-50 rounded-lg">
-                    <p className="text-sm font-medium text-green-800">
-                      Lương: {(selectedLopHoc.gia_tri_chi_tra || 0).toLocaleString('vi-VN')} đ
-                    </p>
-                    <p className="text-xs text-green-600">Tiền cụ thể đã đặt trước</p>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái thanh toán</label>
-                  <select
-                    value={formData.trang_thai_thanh_toan}
-                    onChange={(e) => setFormData({ ...formData, trang_thai_thanh_toan: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    <option value="chua_thanh_toan">Chưa thanh toán</option>
-                    <option value="da_thanh_toan">Đã thanh toán</option>
-                  </select>
+                <div className="p-3 bg-yellow-50 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <b>Lưu ý:</b> Lương sẽ được tính tự động dựa trên số lượt học sinh có mặt trong tháng (từ dữ liệu điểm danh).
+                  </p>
                 </div>
               </div>
               <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
