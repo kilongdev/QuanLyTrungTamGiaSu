@@ -23,7 +23,8 @@ export default function HocPhiManagement({ user }) {
     so_tien: '', 
     so_buoi_da_hoc: 0, 
     trang_thai_thanh_toan: 'chua_thanh_toan',
-    hoc_sinh_id: ''
+    hoc_sinh_id: '',
+    ngay_den_han: ''
   })
   const [modalLoading, setModalLoading] = useState(false)
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, hocPhi: null, loading: false })
@@ -170,7 +171,7 @@ export default function HocPhiManagement({ user }) {
   const handleOpenAddModal = () => {
     setModalMode('add')
     setCurrentHocPhi(null)
-    setFormData({ dang_ky_id: '', so_tien: '', so_buoi_da_hoc: 0, trang_thai_thanh_toan: 'chua_thanh_toan', hoc_sinh_id: '' })
+    setFormData({ dang_ky_id: '', so_tien: '', so_buoi_da_hoc: 0, trang_thai_thanh_toan: 'chua_thanh_toan', hoc_sinh_id: '', ngay_den_han: '' })
     setSelectedHocSinh(null)
     setLopCuaHocSinh([])
     setSelectedLop(null)
@@ -189,18 +190,20 @@ export default function HocPhiManagement({ user }) {
     setLopCuaHocSinh(lopList)
   }
 
-  // Khi chọn lớp, tính toán số tiền
+  // Khi chọn lớp, tự động điền số tiền theo khóa
   const handleLopChange = (dangKyId) => {
     const lop = lopCuaHocSinh.find(l => l.dang_ky_id == dangKyId)
     setSelectedLop(lop)
-    setFormData({ ...formData, dang_ky_id: dangKyId })
+    // Tự động điền số tiền = gia_toan_khoa
+    const soTien = lop?.gia_toan_khoa || ''
+    setFormData({ ...formData, dang_ky_id: dangKyId, so_tien: soTien })
   }
 
   const handleEdit = (hocPhi) => {
     setModalMode('edit')
     setCurrentHocPhi(hocPhi)
     
-    // Tìm thông tin đăng ký để lấy gia_moi_buoi
+    // Tìm thông tin đăng ký để lấy thông tin lớp
     const dk = dangKyList.find(d => d.dang_ky_id == hocPhi.dang_ky_id)
     setSelectedLop(dk || null)
     
@@ -208,7 +211,8 @@ export default function HocPhiManagement({ user }) {
       dang_ky_id: hocPhi.dang_ky_id || '',
       so_tien: hocPhi.so_tien || '',
       so_buoi_da_hoc: hocPhi.so_buoi_da_hoc || 0,
-      trang_thai_thanh_toan: hocPhi.trang_thai || 'chua_thanh_toan'
+      trang_thai_thanh_toan: hocPhi.trang_thai || 'chua_thanh_toan',
+      ngay_den_han: hocPhi.ngay_den_han || ''
     })
     setIsModalOpen(true)
   }
@@ -246,8 +250,7 @@ export default function HocPhiManagement({ user }) {
       if (modalMode === 'edit') {
         const res = await hocPhiAPI.updateStatus(currentHocPhi.hoc_phi_id, {
           trang_thai_thanh_toan: formData.trang_thai_thanh_toan,
-          so_buoi_da_hoc: formData.so_buoi_da_hoc,
-          so_tien: formData.so_tien
+          ngay_den_han: formData.ngay_den_han
         })
         if (res.success) {
           toast.success('Cập nhật học phí thành công!')
@@ -507,7 +510,7 @@ export default function HocPhiManagement({ user }) {
                         <option value="">-- Chọn lớp học --</option>
                         {lopCuaHocSinh.map((lop) => (
                           <option key={lop.dang_ky_id} value={lop.dang_ky_id}>
-                            {lop.ten_lop} {lop.ten_mon_hoc ? `(${lop.ten_mon_hoc})` : ''} - {parseInt(lop.gia_moi_buoi || 0).toLocaleString('vi-VN')} đ/buổi
+                            {lop.ten_lop} {lop.ten_mon_hoc ? `(${lop.ten_mon_hoc})` : ''} - Học phí: {parseInt(lop.gia_toan_khoa || 0).toLocaleString('vi-VN')} đ/khóa
                           </option>
                         ))}
                       </select>
@@ -519,90 +522,78 @@ export default function HocPhiManagement({ user }) {
                       )}
                     </div>
 
-                    {/* Số buổi đã học và tính tiền tự động */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                        <Calendar size={14} /> Số buổi đã học <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.so_buoi_da_hoc}
-                        onChange={(e) => handleSoBuoiChange(parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        placeholder="Nhập số buổi"
-                        required
-                        disabled={!formData.dang_ky_id}
-                      />
-                      {!formData.dang_ky_id && (
-                        <p className="text-xs text-gray-500 mt-1">Vui lòng chọn lớp học trước</p>
-                      )}
-                    </div>
-
-                    {/* Hiển thị tính toán */}
-                    {selectedLop && formData.so_buoi_da_hoc > 0 && (
-                      <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-                        <h4 className="font-medium text-green-800 mb-2">Tính toán học phí</h4>
+                    {/* Hiển thị số tiền theo khóa */}
+                    {selectedLop && (
+                      <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                        <h4 className="font-medium text-blue-800 mb-2">Thông tin học phí</h4>
                         <div className="space-y-1 text-sm">
-                          <p className="text-green-700">
-                            Giá mỗi buổi: <span className="font-bold">{parseInt(selectedLop.gia_moi_buoi || 0).toLocaleString('vi-VN')} đ</span>
+                          <p className="text-blue-700">
+                            Số buổi khóa: <span className="font-bold">{selectedLop.so_buoi_hoc || 0} buổi</span>
                           </p>
-                          <p className="text-green-700">
-                            Số buổi: <span className="font-bold">{formData.so_buoi_da_hoc || 0}</span>
-                          </p>
-                          <p className="text-green-800 font-bold text-base pt-2 border-t border-green-300">
-                            Tổng học phí: {parseInt(formData.so_tien || 0).toLocaleString('vi-VN')} đ
+                          <p className="text-blue-700">
+                            Học phí khóa: <span className="font-bold">{parseInt(selectedLop.gia_toan_khoa || 0).toLocaleString('vi-VN')} đ</span>
                           </p>
                         </div>
                       </div>
                     )}
+
+                    {/* Hạn thanh toán */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <Calendar size={14} /> Hạn thanh toán
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.ngay_den_han}
+                        onChange={(e) => setFormData({ ...formData, ngay_den_han: e.target.value })}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Để trống = 30 ngày sau"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Mặc định: 30 ngày sau ngày tạo</p>
+                    </div>
                   </>
                 )}
 
                 {modalMode === 'edit' && (
                   <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                        <Calendar size={14} /> Số buổi đã học
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.so_buoi_da_hoc}
-                        onChange={(e) => handleSoBuoiChange(parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Nhập số buổi"
-                      />
-                    </div>
-                    
-                    {selectedLop && formData.so_buoi_da_hoc > 0 && (
-                      <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-                        <h4 className="font-medium text-green-800 mb-2">Tính toán học phí</h4>
+                    {/* Thông tin học phí khóa */}
+                    {selectedLop && (
+                      <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                        <h4 className="font-medium text-blue-800 mb-2">Thông tin học phí khóa</h4>
                         <div className="space-y-1 text-sm">
-                          <p className="text-green-700">
-                            Giá mỗi buổi: <span className="font-bold">{parseInt(selectedLop.gia_moi_buoi || 0).toLocaleString('vi-VN')} đ</span>
+                          <p className="text-blue-700">
+                            Số buổi khóa: <span className="font-bold">{selectedLop.so_buoi_hoc || 0} buổi</span>
                           </p>
-                          <p className="text-green-700">
-                            Số buổi: <span className="font-bold">{formData.so_buoi_da_hoc || 0}</span>
-                          </p>
-                          <p className="text-green-800 font-bold text-base pt-2 border-t border-green-300">
-                            Tổng học phí: {parseInt(formData.so_tien || 0).toLocaleString('vi-VN')} đ
+                          <p className="text-blue-700">
+                            Học phí khóa: <span className="font-bold">{parseInt(selectedLop.gia_toan_khoa || 0).toLocaleString('vi-VN')} đ</span>
                           </p>
                         </div>
                       </div>
                     )}
                     
+                    {/* Số tiền - chỉ hiển thị, không sửa */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                        <DollarSign size={14} /> Số tiền <span className="text-red-500">*</span>
+                        <DollarSign size={14} /> Số tiền học phí
                       </label>
                       <input
                         type="text"
                         value={formatSoTien(formData.so_tien)}
-                        onChange={(e) => setFormData({ ...formData, so_tien: parseSoTien(e.target.value) })}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-gray-100 cursor-not-allowed"
+                        disabled
+                      />
+                    </div>
+
+                    {/* Hạn thanh toán */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <Calendar size={14} /> Hạn thanh toán
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.ngay_den_han || ''}
+                        onChange={(e) => setFormData({ ...formData, ngay_den_han: e.target.value })}
                         className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Nhập số tiền"
-                        required
                       />
                     </div>
                   </>
@@ -764,29 +755,10 @@ export default function HocPhiManagement({ user }) {
                 {/* Thông tin học phí */}
                 <div className="bg-gray-50 rounded-xl p-4 mb-6">
                   <h4 className="font-bold text-gray-900 mb-3">Thông tin học phí</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
                       <p className="text-xs text-gray-500">Số tiền</p>
                       <p className="font-bold text-red-700">{parseInt(detailModal.data.so_tien || 0).toLocaleString('vi-VN')} đ</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Số buổi đã học</p>
-                      <p className="font-medium">{detailModal.data.so_buoi_da_hoc || 0} buổi</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Tháng</p>
-                      <p className="font-medium">
-                        {(() => {
-                          const thangStr = String(detailModal.data.thang || '')
-                          if (thangStr.includes('/')) {
-                            return thangStr
-                          }
-                          const date = detailModal.data.ngay_tao ? new Date(detailModal.data.ngay_tao) : new Date()
-                          const month = detailModal.data.thang || (date.getMonth() + 1)
-                          const year = date.getFullYear()
-                          return `${String(month).padStart(2, '0')}/${year}`
-                        })()}
-                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Trạng thái</p>
@@ -807,6 +779,10 @@ export default function HocPhiManagement({ user }) {
                     <div>
                       <p className="text-xs text-gray-500">Ngày tạo</p>
                       <p className="font-medium">{detailModal.data.ngay_tao || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Hạn thanh toán</p>
+                      <p className="font-medium">{detailModal.data.ngay_den_han || 'N/A'}</p>
                     </div>
                     {detailModal.data.ngay_thanh_toan && (
                       <div>

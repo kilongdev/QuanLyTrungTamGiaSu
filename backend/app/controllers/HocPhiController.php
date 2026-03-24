@@ -27,22 +27,24 @@ class HocPhiController {
             return;
         }
         
-        // Kiểm tra trùng lặp học phí (cùng đăng ký và cùng tháng/năm)
-        $thang = date('m');
-        $nam = date('Y');
+        // Kiểm tra trùng lặp học phí (mỗi đăng ký lớp chỉ được tạo 1 lần)
         $existingHocPhi = Database::queryOne(
-            "SELECT hoc_phi_id FROM hoc_phi 
-             WHERE dang_ky_id = ? 
-             AND MONTH(ngay_tao) = ? 
-             AND YEAR(ngay_tao) = ?",
-            [$data['dang_ky_id'], $thang, $nam]
+            "SELECT hoc_phi_id FROM hoc_phi WHERE dang_ky_id = ?",
+            [$data['dang_ky_id']]
         );
         
         if ($existingHocPhi) {
-            $this->sendResponse(false, 'Học phí cho lớp này trong tháng này đã tồn tại', null, 400);
+            $this->sendResponse(false, 'Học phí cho học sinh ở lớp này đã tồn tại', null, 400);
             return;
         }
         
+        // Nếu không có hạn thanh toán, mặc định 30 ngày sau
+        $ngayDenHan = $data['ngay_den_han'] ?? null;
+        if (empty($ngayDenHan)) {
+            $ngayDenHan = date('Y-m-d', strtotime('+30 days'));
+        }
+        
+        $data['ngay_den_han'] = $ngayDenHan;
         $id = $this->model->create($data);
         
         // Gửi thông báo cho phụ huynh
@@ -107,6 +109,10 @@ class HocPhiController {
         if (isset($data['so_tien'])) {
             $updateData[] = "so_tien = :so_tien";
             $params[':so_tien'] = $data['so_tien'];
+        }
+        if (isset($data['ngay_den_han'])) {
+            $updateData[] = "ngay_den_han = :ngay_den_han";
+            $params[':ngay_den_han'] = $data['ngay_den_han'];
         }
         
         if (!empty($updateData)) {

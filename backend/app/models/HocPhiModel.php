@@ -20,6 +20,7 @@ class HocPhiModel extends BaseModel {
                        hp.so_buoi_da_hoc,
                        hp.trang_thai_thanh_toan as trang_thai,
                        hp.ngay_tao,
+                       hp.ngay_den_han,
                        hp.ngay_thanh_toan,
                        DATE_FORMAT(hp.ngay_tao, '%m/%Y') as thang,
                        hs.ho_ten as ten_hocsinh,
@@ -37,14 +38,15 @@ class HocPhiModel extends BaseModel {
     }
 
     public function create($data) {
-        $sql = "INSERT INTO {$this->table} (dang_ky_id, so_tien, so_buoi_da_hoc, trang_thai_thanh_toan, ngay_tao) 
-                VALUES (:dang_ky_id, :so_tien, :so_buoi_da_hoc, :trang_thai, NOW())";
+        $sql = "INSERT INTO {$this->table} (dang_ky_id, so_tien, so_buoi_da_hoc, trang_thai_thanh_toan, ngay_den_han, ngay_tao) 
+                VALUES (:dang_ky_id, :so_tien, :so_buoi_da_hoc, :trang_thai, :ngay_den_han, NOW())";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([
             ':dang_ky_id' => $data['dang_ky_id'],
             ':so_tien' => $data['so_tien'],
             ':so_buoi_da_hoc' => $data['so_buoi_da_hoc'] ?? 0,
-            ':trang_thai' => $data['trang_thai_thanh_toan'] ?? 'chua_thanh_toan'
+            ':trang_thai' => $data['trang_thai_thanh_toan'] ?? 'chua_thanh_toan',
+            ':ngay_den_han' => $data['ngay_den_han'] ?? null
         ]);
         return $this->conn->lastInsertId();
     }

@@ -62,5 +62,13 @@ export const luongGiaSuAPI = {
       headers: getAuthHeaders()
     });
     return response.json();
+  },
+
+  checkOverdue: async () => {
+    const response = await fetch(`${API_BASE}?route=/luonggiasu/check-overdue`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    return response.json();
   }
 };
