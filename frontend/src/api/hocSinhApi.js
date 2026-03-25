@@ -4,8 +4,10 @@
 
 // Sử dụng biến môi trường từ Vite hoặc fallback về localhost
 // const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
-const API_URL = "http://localhost:5001";
+// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
+//const API_URL = "http://localhost:5001/public";
 
+const API_URL = "http://localhost:5001";
 /**
  * Gửi request đến API
  */
