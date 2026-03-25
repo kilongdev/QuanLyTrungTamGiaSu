@@ -17,7 +17,7 @@ import {
   ClockIcon,
   BookCheck,
 } from "lucide-react";
-import { dangKyLopAPI } from "../api/dangKyLopApi";
+import { dangKyAPI } from "../api/dangkyApi";
 import { lichHocAPI } from "../api/lichhocApi";
 import { hocSinhAPI } from "../api/hocSinhApi";
 import { cn } from "@/lib/utils";
@@ -68,14 +68,14 @@ export default function DangKyLopManagement({ user }) {
     setLoading(true);
     try {
       if (user?.role === "admin") {
-        const res = await dangKyLopAPI.getAll();
+        const res = await dangKyAPI.getAll();
         setDangKys(res?.data || []);
       } else if (user?.role !== "gia_su") {
         const phuHuynhId =
           user?.id || user?.phu_huynh_id || user?.tai_khoan_id || "1";
 
         if (activeTab === "lich_su") {
-          const res = await dangKyLopAPI.getByPhuHuynh(phuHuynhId);
+          const res = await dangKyAPI.getByPhuHuynh(phuHuynhId);
           setDangKys(res?.data || []);
         } else {
           const resLop = await lichHocAPI.getLopHocs();
@@ -97,39 +97,6 @@ export default function DangKyLopManagement({ user }) {
     }
   };
 
-  // popup
-  // const handleUpdateStatus = (id, trang_thai_moi) => {
-  //   const actionName =
-  //     trang_thai_moi === "da_duyet"
-  //       ? "Duyệt"
-  //       : trang_thai_moi === "tu_choi"
-  //         ? "Từ chối"
-  //         : "Hủy";
-  //   setConfirmModal({
-  //     show: true,
-  //     message: `Bạn có chắc chắn muốn ${actionName} đơn đăng ký này?`,
-  //     onConfirm: async () => {
-  //       try {
-  //         await dangKyLopAPI.updateStatus(id, trang_thai_moi);
-  //         setConfirmModal({ show: false, message: "", onConfirm: null });
-  //         setAlertModal({
-  //           show: true,
-  //           message: `Đã ${actionName} đơn thành công!`,
-  //           type: "success",
-  //         });
-  //         fetchData();
-  //       } catch (error) {
-  //         setAlertModal({
-  //           show: true,
-  //           message: error.message || "Có lỗi xảy ra!",
-  //           type: "error",
-  //         });
-  //       }
-  //     },
-  //   });
-  // };
-
-  // toast
   const handleUpdateStatus = (id, trang_thai_moi) => {
     const actionName =
       trang_thai_moi === "da_duyet"
@@ -149,7 +116,7 @@ export default function DangKyLopManagement({ user }) {
         );
 
         try {
-          await dangKyLopAPI.updateStatus(id, trang_thai_moi);
+          await dangKyAPI.updateStatus(id, trang_thai_moi);
 
           toast.success(`Đã ${actionName.toLowerCase()} đơn thành công!`, {
             id: loadingToast,
@@ -162,38 +129,6 @@ export default function DangKyLopManagement({ user }) {
     });
   };
 
-  //   if (!selectedHocSinhId) {
-  //     setAlertModal({
-  //       show: true,
-  //       message: "Vui lòng chọn học sinh để đăng ký!",
-  //       type: "error",
-  //     });
-  //     return;
-  //   }
-
-  //   try {
-  //     await dangKyLopAPI.create({
-  //       hoc_sinh_id: selectedHocSinhId,
-  //       lop_hoc_id: selectedLop.lop_hoc_id,
-  //     });
-  //     setShowDangKyModal(false);
-  //     setAlertModal({
-  //       show: true,
-  //       message: "Đăng ký thành công! Vui lòng chờ trung tâm duyệt đơn.",
-  //       type: "success",
-  //     });
-  //     setSelectedHocSinhId("");
-
-  //     setActiveTab("lich_su");
-  //   } catch (error) {
-  //     setAlertModal({
-  //       show: true,
-  //       message: error.message || "Lỗi đăng ký!",
-  //       type: "error",
-  //     });
-  //   }
-  // };
-  //toast
   const handleDangKySubmit = async (e) => {
     e.preventDefault();
 
@@ -207,27 +142,19 @@ export default function DangKyLopManagement({ user }) {
 
     if (Object.keys(newErrors).length > 0) return;
 
-    const res = await dangKyLopAPI.create({
-      hoc_sinh_id: selectedHocSinhId,
-      lop_hoc_id: selectedLop.lop_hoc_id,
-    });
+    try {
+      await dangKyAPI.create({
+        hoc_sinh_id: selectedHocSinhId,
+        lop_hoc_id: selectedLop.lop_hoc_id,
+      });
 
-    console.log("Res yêu cầu: ", res);
-
-    if (!selectedHocSinhId || !selectedLop?.lop_hoc_id) {
-      toast.error("Thiếu dữ liệu!");
-      return;
-    }
-
-    if (res.status === "success") {
       toast.success("Đăng ký thành công!");
-
       setSelectedHocSinhId("");
       setErrors({});
       setShowDangKyModal(false);
       setActiveTab("lich_su");
-    } else {
-      toast.error(res.message || "Đăng ký thất bại!");
+    } catch (error) {
+      toast.error(error.message || "Lỗi đăng ký!");
     }
   };
 
@@ -329,7 +256,7 @@ export default function DangKyLopManagement({ user }) {
         )}
 
         {alertModal.show && (
-          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[70]">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
             <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl p-6 text-center">
               <div
                 className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${alertModal.type === "success" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}
@@ -348,7 +275,7 @@ export default function DangKyLopManagement({ user }) {
                 onClick={() =>
                   setAlertModal({ show: false, message: "", type: "success" })
                 }
-                className="w-full py-2 mt-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800"
+                className="w-full py-2.5 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800"
               >
                 Đóng
               </button>
@@ -855,13 +782,9 @@ export default function DangKyLopManagement({ user }) {
                   className="flex flex-col md:flex-row justify-between md:items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors gap-4"
                 >
                   <div>
-                    {/* <p className="font-bold text-gray-800 text-lg mb-1">
-                      {dk.ten_lop || `MSL: ${dk.lop_hoc_id}`}
-                    </p> */}
-                    <h4 className="font-bold text-[20px]">
-                      MSL:{" "}
-                      <span className="text-blue-700">{dk.lop_hoc_id}</span>
-                    </h4>
+                    <p className="font-bold text-gray-800 text-lg mb-1">
+                      {dk.ten_lop || `Lớp #${dk.lop_hoc_id}`}
+                    </p>
                     <p className="text-sm text-gray-500 flex items-center gap-2">
                       <User size={14} className="text-blue-500" /> Bé{" "}
                       {dk.ten_hoc_sinh} • <Clock size={14} />{" "}
@@ -890,19 +813,14 @@ export default function DangKyLopManagement({ user }) {
                     )}
                     {dk.trang_thai === "da_duyet" && (
                       <button
-                        // onClick={() =>
-                        //   setAlertModal({
-                        //     show: true,
-                        //     message:
-                        //       'Lớp này đã được duyệt. Vui lòng sang mục "Yêu Cầu Hỗ Trợ" để gửi đơn xin rút lớp!',
-                        //     type: "success",
-                        //   })
-                        // }
-                        onClick={() => {
-                          toast.warning(
-                            `Lớp này đã được duyệt. Vui lòng sang mục "Yêu Cầu Hỗ Trợ" để gửi đơn xin rút lớp!`,
-                          );
-                        }}
+                        onClick={() =>
+                          setAlertModal({
+                            show: true,
+                            message:
+                              'Lớp này đã được duyệt. Vui lòng sang mục "Yêu Cầu Hỗ Trợ" để gửi đơn xin rút lớp!',
+                            type: "success",
+                          })
+                        }
                         className="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition-colors"
                       >
                         Xin rút lớp
