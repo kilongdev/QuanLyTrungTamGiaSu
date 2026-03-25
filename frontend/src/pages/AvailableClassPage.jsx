@@ -30,7 +30,7 @@ const AvailableClassPage = () => {
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const itemPerPage = 10;
+  const itemPerPage = 12;
   const totalPages = Math.ceil(total / itemPerPage);
 
   // Lấy lớp học
