@@ -189,8 +189,8 @@ function ChildrenContent() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <button className="px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium">
-          ➕ Thêm con
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium">
+          + Thêm con
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

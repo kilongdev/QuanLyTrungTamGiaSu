@@ -2,9 +2,11 @@
 require_once __DIR__ . '/../models/YeuCau.php';
 require_once __DIR__ . '/../models/ThongBaoModel.php';
 
-class YeuCauController {
+class YeuCauController
+{
 
-    public function create() {
+    public function create()
+    {
         $data = json_decode(file_get_contents("php://input"), true);
 
         if (empty($data['nguoi_tao_id']) || empty($data['loai_nguoi_tao']) || empty($data['phan_loai']) || empty($data['tieu_de']) || empty($data['noi_dung'])) {
@@ -24,7 +26,7 @@ class YeuCauController {
                     "Có một yêu cầu hỗ trợ mới từ {$data['loai_nguoi_tao']}: {$data['tieu_de']}. Vui lòng kiểm tra và xử lý.",
                     'yeu_cau'
                 );
-                
+
                 http_response_code(201);
                 echo json_encode(["status" => "success", "message" => "Đã gửi yêu cầu thành công! Vui lòng chờ phản hồi."]);
             }
@@ -86,25 +88,18 @@ class YeuCauController {
 
     public function getAll()
     {
-        // Nhận diện nếu Gia sư đang gọi API
-        $giaSuId = $_GET['gia_su_id'] ?? null;
-        if ($giaSuId) {
-            $data = YeuCau::getYeuCauMoiGiaSu($giaSuId);
-            echo json_encode(["status" => "success", "data" => $data]);
-            return;
-        }
-
-        // Dành cho Admin gọi
         $data = YeuCau::getAll();
         echo json_encode(["status" => "success", "data" => $data]);
     }
 
-    public function getByNguoiTao($nguoi_tao_id, $loai_nguoi_tao) {
+    public function getByNguoiTao($nguoi_tao_id, $loai_nguoi_tao)
+    {
         $data = YeuCau::getByNguoiTao($nguoi_tao_id, $loai_nguoi_tao);
         echo json_encode(["status" => "success", "data" => $data]);
     }
 
-    public function updateStatus($id) {
+    public function updateStatus($id)
+    {
         $data = json_decode(file_get_contents("php://input"), true);
 
         if (empty($data['trang_thai']) || empty($data['nguoi_xu_ly_id'])) {
@@ -115,17 +110,10 @@ class YeuCauController {
 
         try {
             $yeuCau = YeuCau::getById($id);
+
             YeuCau::updateStatus($id, $data);
 
-            // NẾU GIA SƯ CHẤP NHẬN NHẬN LỚP -> Cập nhật luôn bảng lop_hoc
-            if ($data['trang_thai'] === 'da_duyet' && !empty($yeuCau['lop_hoc_id']) && !empty($yeuCau['gia_su_id'])) {
-                Database::execute("UPDATE lop_hoc SET gia_su_id = :gia_su_id, trang_thai = 'sap_mo' WHERE lop_hoc_id = :lop_hoc_id", [
-                    ':gia_su_id' => $yeuCau['gia_su_id'],
-                    ':lop_hoc_id' => $yeuCau['lop_hoc_id']
-                ]);
-            }
-
-            // Thông báo cho người tạo yêu cầu (Admin)
+            // Thông báo cho người tạo yêu cầu về kết quả xử lý
             if ($yeuCau && !empty($yeuCau['nguoi_tao_id']) && !empty($yeuCau['loai_nguoi_tao'])) {
                 $statusMessages = [
                     'da_duyet' => 'đã được chấp nhận',
@@ -141,14 +129,15 @@ class YeuCauController {
                 );
             }
 
-            echo json_encode(["status" => "success", "message" => "Đã phản hồi yêu cầu thành công!"]);
+            echo json_encode(["status" => "success", "message" => "Đã cập nhật trạng thái yêu cầu!"]);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(["status" => "error", "message" => "Lỗi cập nhật: " . $e->getMessage()]);
         }
     }
 
-    public function update($id) {
+    public function update($id)
+    {
         $data = json_decode(file_get_contents("php://input"), true);
 
         if (empty($data['phan_loai']) || empty($data['tieu_de']) || empty($data['noi_dung'])) {
@@ -159,7 +148,7 @@ class YeuCauController {
 
         try {
             $result = YeuCau::update($id, $data);
-            
+
             if ($result) {
                 echo json_encode(["status" => "success", "message" => "Đã cập nhật nội dung yêu cầu thành công!"]);
             } else {
@@ -172,7 +161,8 @@ class YeuCauController {
         }
     }
 
-    public function delete($id) {
+    public function delete($id)
+    {
         try {
             YeuCau::delete($id);
             echo json_encode(["status" => "success", "message" => "Đã xóa yêu cầu thành công!"]);

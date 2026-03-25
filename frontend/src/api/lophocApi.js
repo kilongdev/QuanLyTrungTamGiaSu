@@ -2,7 +2,7 @@
  * API cho quản lý lớp học
  */
 
-const API_URL = "http://localhost:5001/public";
+const API_URL = "http://localhost:5001";
 
 /**
  * Gửi request đến API
