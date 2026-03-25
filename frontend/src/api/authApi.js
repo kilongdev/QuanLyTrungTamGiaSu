@@ -2,8 +2,8 @@
  * Xử lý đăng nhập, đăng ký, JWT cho Admin, Gia Sư, Phụ Huynh
  */
 
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
-const API_URL = "http://localhost:5001/public";
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
+//const API_URL = "http://localhost:5001/public";
 
 /**
  * Gửi request đến API

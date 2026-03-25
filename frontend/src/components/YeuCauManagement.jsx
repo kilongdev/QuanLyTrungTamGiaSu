@@ -60,6 +60,7 @@ export default function YeuCauManagement({ user }) {
       setYeuCaus(response.data || []);
     } catch (error) {
       console.error("Lỗi khi tải danh sách yêu cầu:", error);
+      toast.error("Không thể tải danh sách yêu cầu");
     } finally {
       setLoading(false);
     }
@@ -76,25 +77,21 @@ export default function YeuCauManagement({ user }) {
             nguoi_xu_ly_id: user?.id || "1",
             ghi_chu_xu_ly: formData.ghi_chu_xu_ly,
           });
-          // alert("Cập nhật trạng thái yêu cầu thành công!");
-          toast.update("Cập nhật trạng thái yêu cầu thành công!");
+          toast.success("Cập nhật trạng thái yêu cầu thành công!");
         } else {
           await yeuCauAPI.update(editingId, {
             phan_loai: formData.phan_loai,
             tieu_de: formData.tieu_de,
             noi_dung: formData.noi_dung,
           });
-          // alert("Chỉnh sửa nội dung yêu cầu thành công!");
-          toast.update("Chỉnh sửa nội dung yêu cầu thành công!");
+          toast.success("Chỉnh sửa nội dung yêu cầu thành công!");
         }
       } else {
         if (!formData.tieu_de || !formData.noi_dung) {
-          alert("Vui lòng nhập đủ tiêu đề và nội dung");
-
+          toast.warning("Vui lòng nhập đủ tiêu đề và nội dung");
           return;
         }
         await yeuCauAPI.create(formData);
-        // alert("Gửi yêu cầu thành công!");
         toast.success("Gửi yêu cầu thành công!");
       }
 
@@ -103,8 +100,7 @@ export default function YeuCauManagement({ user }) {
       fetchYeuCaus();
     } catch (error) {
       console.error("Lỗi khi lưu yêu cầu:", error);
-      // alert(error.message || "Có lỗi xảy ra khi lưu yêu cầu");
-      toast.warning("Có lỗi xảy ra khi lưu yêu cầu");
+      toast.error(error.message || "Có lỗi xảy ra khi lưu yêu cầu");
     }
   };
 
@@ -116,6 +112,7 @@ export default function YeuCauManagement({ user }) {
       ghi_chu_xu_ly: yeuCau.ghi_chu_xu_ly || "",
       tieu_de: yeuCau.tieu_de,
       noi_dung: yeuCau.noi_dung,
+      phan_loai: yeuCau.phan_loai || "mo_lop",
     });
     setShowModal(true);
   };
@@ -124,12 +121,10 @@ export default function YeuCauManagement({ user }) {
     if (!confirm("Bạn có chắc chắn muốn xóa yêu cầu này?")) return;
     try {
       await yeuCauAPI.delete(id);
-      // alert("Xóa yêu cầu thành công!");
-      toast.delete("Xóa yêu cầu thành công!");
+      toast.success("Xóa yêu cầu thành công!");
       fetchYeuCaus();
     } catch (error) {
-      alert(error.message || "Không thể xóa yêu cầu này");
-      toast.warning("Không thể xóa yêu cầu này");
+      toast.error(error.message || "Không thể xóa yêu cầu này");
     }
   };
 
