@@ -1,7 +1,7 @@
 /**
  * API cho quản lý gia sư
  */
-const API_URL = "http://localhost:5001/public";
+const API_URL = "http://localhost:5001";
 /**
  * Gửi request đến API
  */
