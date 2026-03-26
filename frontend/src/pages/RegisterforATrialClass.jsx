@@ -5,11 +5,11 @@ import { Input } from "@/components/ui/input";
 import { ArrowRight } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { yeuCauAPI } from "@/api/yeuCauAPI";
 import { lopHocAPI } from "@/api/lophocApi";
 import { monHocAPI } from "@/api/monhocApi";
+import { yeuCauAPI } from "@/api/yeucauApi";
 
 const RegisterforATrialClass = () => {
   const [searchParams] = useSearchParams();
@@ -20,6 +20,8 @@ const RegisterforATrialClass = () => {
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("");
   const [gradeOptions, setGradeOptions] = useState([]);
+
+  const navigate = useNavigate();
 
   const {
     register,
@@ -132,6 +134,7 @@ const RegisterforATrialClass = () => {
           response.message ||
             "Đăng ký học thành công! Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.",
         );
+        navigate("/");
       } else {
         throw new Error(response.message || "Có lỗi xảy ra khi đăng ký");
       }
