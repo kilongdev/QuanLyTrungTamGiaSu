@@ -97,6 +97,7 @@ export default function DangKyLopManagement({ user }) {
     }
   };
 
+  // popup
   const handleUpdateStatus = (id, trang_thai_moi) => {
     const actionName =
       trang_thai_moi === "da_duyet"
@@ -104,31 +105,99 @@ export default function DangKyLopManagement({ user }) {
         : trang_thai_moi === "tu_choi"
           ? "Từ chối"
           : "Hủy";
-
     setConfirmModal({
       show: true,
       message: `Bạn có chắc chắn muốn ${actionName} đơn đăng ký này?`,
       onConfirm: async () => {
-        setConfirmModal({ show: false, message: "", onConfirm: null });
-
-        const loadingToast = toast.loading(
-          `Đang ${actionName.toLowerCase()} đơn...`,
-        );
-
         try {
-          await dangKyAPI.updateStatus(id, trang_thai_moi);
-
-          toast.success(`Đã ${actionName.toLowerCase()} đơn thành công!`, {
-            id: loadingToast,
+          await dangKyLopAPI.updateStatus(id, trang_thai_moi);
+          setConfirmModal({ show: false, message: "", onConfirm: null });
+          setAlertModal({
+            show: true,
+            message: `Đã ${actionName} đơn thành công!`,
+            type: "success",
           });
           fetchData();
         } catch (error) {
-          toast.error(error.message || "Có lỗi xảy ra!", { id: loadingToast });
+          setAlertModal({
+            show: true,
+            message: error.message || "Có lỗi xảy ra!",
+            type: "error",
+          });
         }
       },
     });
   };
 
+  // toast
+  // const handleUpdateStatus = (id, trang_thai_moi) => {
+  //   const actionName =
+  //     trang_thai_moi === "da_duyet"
+  //       ? "Duyệt"
+  //       : trang_thai_moi === "tu_choi"
+  //         ? "Từ chối"
+  //         : "Hủy";
+
+  //   setConfirmModal({
+  //     show: true,
+  //     message: `Bạn có chắc chắn muốn ${actionName} đơn đăng ký này?`,
+  //     onConfirm: async () => {
+  //       setConfirmModal({ show: false, message: "", onConfirm: null });
+
+  //       const loadingToast = toast.loading(
+  //         `Đang ${actionName.toLowerCase()} đơn...`,
+  //       );
+
+  //       try {
+  //         await dangKyLopAPI.updateStatus(id, trang_thai_moi);
+
+  //         toast.success(`Đã ${actionName.toLowerCase()} đơn thành công!`, {
+  //           id: loadingToast,
+  //         });
+  //         fetchData();
+  //       } catch (error) {
+  //         toast.error(error.message || "Có lỗi xảy ra!", { id: loadingToast });
+  //       }
+  //     },
+  //   });
+  // };
+
+  //popup
+  // const handleDangKySubmit = async (e) => {
+  //   e.preventDefault();
+  //   if (!selectedHocSinhId) {
+  //     setAlertModal({
+  //       show: true,
+  //       message: "Vui lòng chọn học sinh để đăng ký!",
+  //       type: "error",
+  //     });
+  //     return;
+  //   }
+
+  //   try {
+  //     await dangKyLopAPI.create({
+  //       hoc_sinh_id: selectedHocSinhId,
+  //       lop_hoc_id: selectedLop.lop_hoc_id,
+  //     });
+  //     setShowDangKyModal(false);
+  //     setAlertModal({
+  //       show: true,
+  //       message: "Đăng ký thành công! Vui lòng chờ trung tâm duyệt đơn.",
+  //       type: "success",
+  //     });
+  //     setSelectedHocSinhId("");
+
+  //     setActiveTab("lich_su");
+  //   } catch (error) {
+  //     setAlertModal({
+  //       show: true,
+  //       message: error.message || "Lỗi đăng ký!",
+  //       type: "error",
+  //     });
+  //   }
+  // };
+
+  //toast
   const handleDangKySubmit = async (e) => {
     e.preventDefault();
 
@@ -138,23 +207,37 @@ export default function DangKyLopManagement({ user }) {
       newErrors.selectedHocSinhId = "Vui lòng chọn học sinh!";
     }
 
+    if (!selectedLop?.lop_hoc_id) {
+      toast.error("Thiếu thông tin lớp học!");
+      return;
+    }
+
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) return;
 
     try {
-      await dangKyAPI.create({
+      const res = await dangKyLopAPI.create({
         hoc_sinh_id: selectedHocSinhId,
         lop_hoc_id: selectedLop.lop_hoc_id,
       });
 
-      toast.success("Đăng ký thành công!");
-      setSelectedHocSinhId("");
-      setErrors({});
-      setShowDangKyModal(false);
-      setActiveTab("lich_su");
+      console.log("Res yêu cầu:", res);
+
+      if (res.status === "success") {
+        toast.success(res.message || "Đăng ký thành công!");
+
+        setSelectedHocSinhId("");
+        setErrors({});
+        setShowDangKyModal(false);
+        setActiveTab("lich_su");
+      } else {
+        toast.error(res.message || "Đăng ký thất bại!");
+      }
     } catch (error) {
-      toast.error(error.message || "Lỗi đăng ký!");
+      console.error("Lỗi API:", error);
+
+      toast.error(error.message || "Không thể kết nối đến server!");
     }
   };
 
