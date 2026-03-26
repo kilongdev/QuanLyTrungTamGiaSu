@@ -99,4 +99,34 @@ export const lopHocAPI = {
         request(`/lophoc/delete/${id}`, {
             method: 'DELETE',
         }),
+
+    /**
+     * Lấy danh sách học sinh của một lớp học
+     * @param {number} lopHocId - ID lớp học
+     */
+    getStudentsByClass: (lopHocId) => 
+        request(`/lophoc/${lopHocId}/students`, {
+            method: 'GET',
+        }),
+
+    /**
+     * Thêm học sinh vào lớp học
+     * @param {number} lopHocId - ID lớp học
+     * @param {number} hocSinhId - ID học sinh
+     */
+    addStudent: (lopHocId, hocSinhId) => 
+        request(`/lophoc/${lopHocId}/add-student`, {
+            method: 'POST',
+            body: JSON.stringify({ hoc_sinh_id: hocSinhId }),
+        }),
+
+    /**
+     * Xóa học sinh khỏi lớp học
+     * @param {number} lopHocId - ID lớp học
+     * @param {number} hocSinhId - ID học sinh
+     */
+    removeStudent: (lopHocId, hocSinhId) => 
+        request(`/lophoc/${lopHocId}/remove-student/${hocSinhId}`, {
+            method: 'DELETE',
+        }),
 };

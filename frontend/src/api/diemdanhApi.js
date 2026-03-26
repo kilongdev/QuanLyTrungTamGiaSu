@@ -32,8 +32,26 @@ export const diemDanhAPI = {
         method: 'GET',
     }),
 
+    /**
+     * Lấy danh sách điểm danh theo ID lớp học
+     * @param {number} lopHocId - ID lớp học
+     */
+    getByClass: (lopHocId) => request(`/diemdanh/lophoc/${lopHocId}`, {
+        method: 'GET',
+    }),
+
     saveDanhSach: (data) => request('/diemdanh/save', {
         method: 'POST',
         body: JSON.stringify(data),
+    }),
+
+    /**
+     * Save attendance for today - auto creates schedule if needed
+     * @param {number} lop_hoc_id - Class ID
+     * @param {array} danh_sach - Array of {hoc_sinh_id, tinh_trang}
+     */
+    saveAttendanceForToday: (lop_hoc_id, danh_sach) => request(`/diemdanh/lophoc/${lop_hoc_id}/save-today`, {
+        method: 'POST',
+        body: JSON.stringify({ lop_hoc_id, danh_sach }),
     }),
 };

@@ -138,4 +138,131 @@ class LopHocController {
             echo json_encode(["status" => "error", "message" => "Không tìm thấy lớp học"]);
         }
     }
+
+    public function getStudentsByClass($id) {
+        if (empty($id)) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Thiếu ID lớp học"]);
+            return;
+        }
+
+        try {
+            require_once __DIR__ . '/../models/DangKyLop.php';
+            $students = DangKyLop::getHocSinhDaDuyetByLop($id);
+            echo json_encode(["status" => "success", "data" => $students]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+        }
+    }
+
+    public function addStudent($id) {
+        if (empty($id)) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Thiếu ID lớp học"]);
+            return;
+        }
+
+        $data = json_decode(file_get_contents("php://input"), true);
+        if (empty($data['hoc_sinh_id'])) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Thiếu ID học sinh"]);
+            return;
+        }
+
+        try {
+            require_once __DIR__ . '/../models/DangKyLop.php';
+            
+            // Check if already registered with approved status
+            $checkSql = "SELECT dang_ky_id, trang_thai FROM dang_ky_lop WHERE hoc_sinh_id = :hs_id AND lop_hoc_id = :lop_id";
+            $exist = Database::query($checkSql, [
+                ':hs_id' => $data['hoc_sinh_id'],
+                ':lop_id' => $id
+            ]);
+
+            if ($exist && $exist[0]['trang_thai'] === 'da_duyet') {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Học sinh này đã được thêm vào lớp"]);
+                return;
+            }
+
+            // Lấy thông tin lớp
+            $checkCapacity = "SELECT so_luong_hien_tai, so_luong_toi_da FROM lop_hoc WHERE lop_hoc_id = :lop_hoc_id";
+            $lop = Database::query($checkCapacity, [':lop_hoc_id' => $id]);
+            
+            if (!$lop) {
+                http_response_code(404);
+                echo json_encode(["status" => "error", "message" => "Không tìm thấy lớp học này"]);
+                return;
+            }
+            
+            if ($lop[0]['so_luong_hien_tai'] >= $lop[0]['so_luong_toi_da']) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Lớp học này đã đủ số lượng tối đa học sinh"]);
+                return;
+            }
+
+            // Nếu đã có bản ghi với trạng thái không phải da_duyet, cập nhật thành da_duyet
+            if ($exist) {
+                $updateSql = "UPDATE dang_ky_lop SET trang_thai = 'da_duyet', ngay_duyet = CURRENT_TIMESTAMP 
+                              WHERE dang_ky_id = :id";
+                $result = Database::execute($updateSql, [':id' => $exist[0]['dang_ky_id']]);
+            } else {
+                // Tạo bản ghi mới với trạng thái da_duyet (tự động duyệt từ admin)
+                $insertSql = "INSERT INTO dang_ky_lop (hoc_sinh_id, lop_hoc_id, trang_thai, ngay_duyet) 
+                              VALUES (:hoc_sinh_id, :lop_hoc_id, 'da_duyet', CURRENT_TIMESTAMP)";
+                $result = Database::execute($insertSql, [
+                    ':hoc_sinh_id' => $data['hoc_sinh_id'],
+                    ':lop_hoc_id' => $id
+                ]);
+            }
+            
+            if ($result) {
+                // Cập nhật số lượng học sinh hiện tại của lớp
+                Database::execute(
+                    "UPDATE lop_hoc SET so_luong_hien_tai = so_luong_hien_tai + 1 WHERE lop_hoc_id = :lop_id",
+                    [':lop_id' => $id]
+                );
+                
+                http_response_code(201);
+                echo json_encode(["status" => "success", "message" => "Thêm học sinh vào lớp thành công"]);
+            }
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+        }
+    }
+
+    public function removeStudent($id, $studentId) {
+        if (empty($id) || empty($studentId)) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Thiếu ID lớp học hoặc ID học sinh"]);
+            return;
+        }
+
+        try {
+            require_once __DIR__ . '/../models/DangKyLop.php';
+
+            // Get the registration record to get current status
+            $checkSql = "SELECT dang_ky_id, trang_thai FROM dang_ky_lop WHERE lop_hoc_id = :lop_id AND hoc_sinh_id = :hs_id";
+            $record = Database::query($checkSql, [
+                ':lop_id' => $id,
+                ':hs_id' => $studentId
+            ]);
+
+            if (!$record) {
+                http_response_code(404);
+                echo json_encode(["status" => "error", "message" => "Không tìm thấy đăng ký này"]);
+                return;
+            }
+
+            // Update status to da_huy instead of deleting
+            DangKyLop::updateStatus($record[0]['dang_ky_id'], 'da_huy');
+
+            echo json_encode(["status" => "success", "message" => "Đã xóa học sinh khỏi lớp"]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+        }
+    }
 }
