@@ -23,7 +23,11 @@ class LichHoc {
     }
 
     public static function getAll() {
-        $sql = "SELECT * FROM lich_hoc ORDER BY ngay_hoc DESC, gio_bat_dau ASC";
+        $sql = "SELECT lh.*, lh_c.ten_lop, gs.ho_ten as ten_gia_su
+                FROM lich_hoc lh
+                LEFT JOIN lop_hoc lh_c ON lh.lop_hoc_id = lh_c.lop_hoc_id
+                LEFT JOIN gia_su gs ON lh_c.gia_su_id = gs.gia_su_id
+                ORDER BY lh.ngay_hoc DESC, lh.gio_bat_dau ASC";
         return Database::query($sql);
     }
 
@@ -40,11 +44,13 @@ class LichHoc {
     public static function getByPhuHuynhId($phu_huynh_id) {
         $sql = "SELECT lh.*, lh.trang_thai as trang_thai_buoi_hoc,
                        lh_c.ten_lop, lh_c.mon_hoc_id,
-                       hs.ho_ten as ten_hoc_sinh
+                       hs.ho_ten as ten_hoc_sinh,
+                       gs.ho_ten as ten_gia_su
                 FROM lich_hoc lh
                 JOIN lop_hoc lh_c ON lh.lop_hoc_id = lh_c.lop_hoc_id
                 JOIN dang_ky_lop dkl ON lh_c.lop_hoc_id = dkl.lop_hoc_id
                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                LEFT JOIN gia_su gs ON lh_c.gia_su_id = gs.gia_su_id
                 WHERE hs.phu_huynh_id = :phu_huynh_id 
                   AND dkl.trang_thai = 'da_duyet'
                 ORDER BY lh.ngay_hoc ASC, lh.gio_bat_dau ASC";
@@ -79,24 +85,23 @@ class LichHoc {
     public static function checkConflict($lop_hoc_id, $ngay_hoc, $gio_bat_dau, $gio_ket_thuc, $lich_hoc_id_tru_ra = null) {
         $sqlGiaSu = "SELECT gia_su_id FROM lop_hoc WHERE lop_hoc_id = :lop_hoc_id";
         $lop = Database::query($sqlGiaSu, [':lop_hoc_id' => $lop_hoc_id]);
-        
-        if (!$lop || empty($lop)) return false; 
-        $gia_su_id = $lop[0]['gia_su_id'];
+        $gia_su_id = ($lop && !empty($lop)) ? $lop[0]['gia_su_id'] : null;
+
         $sql = "SELECT lh.lich_hoc_id 
                 FROM lich_hoc lh
                 JOIN lop_hoc lh_c ON lh.lop_hoc_id = lh_c.lop_hoc_id
-                WHERE lh_c.gia_su_id = :gia_su_id 
-                  AND lh.ngay_hoc = :ngay_hoc
-                  AND (
-                      (lh.gio_bat_dau < :gio_ket_thuc AND lh.gio_ket_thuc > :gio_bat_dau)
-                  )";
+                WHERE lh.ngay_hoc = :ngay_hoc
+                  AND (lh.gio_bat_dau < :gio_ket_thuc AND lh.gio_ket_thuc > :gio_bat_dau)
+                  AND (lh.lop_hoc_id = :lop_hoc_id " . ($gia_su_id ? " OR lh_c.gia_su_id = :gia_su_id" : "") . ")";
         
         $params = [
-            ':gia_su_id' => $gia_su_id,
             ':ngay_hoc' => $ngay_hoc,
             ':gio_bat_dau' => $gio_bat_dau,
-            ':gio_ket_thuc' => $gio_ket_thuc
+            ':gio_ket_thuc' => $gio_ket_thuc,
+            ':lop_hoc_id' => $lop_hoc_id
         ];
+
+        if ($gia_su_id) $params[':gia_su_id'] = $gia_su_id;
 
         if ($lich_hoc_id_tru_ra) {
             $sql .= " AND lh.lich_hoc_id != :lich_hoc_id_tru_ra";
