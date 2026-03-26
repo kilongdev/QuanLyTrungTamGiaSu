@@ -207,19 +207,27 @@ export default function DangKyLopManagement({ user }) {
 
     if (Object.keys(newErrors).length > 0) return;
 
-    try {
-      await dangKyLopAPI.create({
-        hoc_sinh_id: selectedHocSinhId,
-        lop_hoc_id: selectedLop.lop_hoc_id,
-      });
+    const res = await dangKyLopAPI.create({
+      hoc_sinh_id: selectedHocSinhId,
+      lop_hoc_id: selectedLop.lop_hoc_id,
+    });
 
+    console.log("Res yêu cầu: ", res);
+
+    if (!selectedHocSinhId || !selectedLop?.lop_hoc_id) {
+      toast.error("Thiếu dữ liệu!");
+      return;
+    }
+
+    if (res.status === "success") {
       toast.success("Đăng ký thành công!");
+
       setSelectedHocSinhId("");
       setErrors({});
       setShowDangKyModal(false);
       setActiveTab("lich_su");
-    } catch (error) {
-      toast.error(error.message || "Lỗi đăng ký!");
+    } else {
+      toast.error(res.message || "Đăng ký thất bại!");
     }
   };
 
