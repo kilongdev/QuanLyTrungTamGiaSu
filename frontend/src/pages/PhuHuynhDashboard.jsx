@@ -137,7 +137,7 @@ function DashboardContent() {
       {/* Current Tutors */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-gray-800">👨‍🏫 Gia sư hiện tại</h3>
+          <h3 className="font-bold text-gray-800">Gia sư hiện tại</h3>
           <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
             Xem tất cả
           </button>
@@ -164,7 +164,7 @@ function DashboardContent() {
 
       {/* Upcoming Classes */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h3 className="font-bold text-gray-800 mb-4">📅 Lịch học sắp tới</h3>
+        <h3 className="font-bold text-gray-800 mb-4"> Lịch học sắp tới</h3>
         <div className="space-y-3">
           <UpcomingClass
             subject="Toán"
@@ -251,8 +251,11 @@ function FindTutorContent() {
     <div className="space-y-6">
       {/* Search Form */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h3 className="font-bold text-gray-800 mb-4">🔍 Tìm gia sư phù hợp</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <h3 className="font-bold text-gray-800 mb-4 flex gap-2">
+          <Search />
+          Tìm gia sư phù hợp
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 items-end">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Môn học
@@ -292,10 +295,12 @@ function FindTutorContent() {
               <option>Bình Thạnh</option>
             </select>
           </div>
+          <div>
+            <button className="w-full px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-medium active:scale-[0.98]">
+              Tìm kiếm
+            </button>
+          </div>
         </div>
-        <button className="px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-medium">
-          Tìm kiếm
-        </button>
       </div>
 
       {/* Results */}
@@ -509,7 +514,7 @@ function UpcomingClass({ subject, tutor, time, child }) {
           {subject} - {child}
         </p>
         <p className="text-gray-500 text-sm">
-          👨‍🏫 {tutor} • {time}
+          {tutor} • {time}
         </p>
       </div>
     </div>

@@ -110,7 +110,7 @@ export default function DangKyLopManagement({ user }) {
       message: `Bạn có chắc chắn muốn ${actionName} đơn đăng ký này?`,
       onConfirm: async () => {
         try {
-          await dangKyLopAPI.updateStatus(id, trang_thai_moi);
+          await dangKyAPI.updateStatus(id, trang_thai_moi);
           setConfirmModal({ show: false, message: "", onConfirm: null });
           setAlertModal({
             show: true,
@@ -149,7 +149,7 @@ export default function DangKyLopManagement({ user }) {
   //       );
 
   //       try {
-  //         await dangKyLopAPI.updateStatus(id, trang_thai_moi);
+  //         await dangKyAPI.updateStatus(id, trang_thai_moi);
 
   //         toast.success(`Đã ${actionName.toLowerCase()} đơn thành công!`, {
   //           id: loadingToast,
@@ -175,7 +175,7 @@ export default function DangKyLopManagement({ user }) {
   //   }
 
   //   try {
-  //     await dangKyLopAPI.create({
+  //     await dangKyAPI.create({
   //       hoc_sinh_id: selectedHocSinhId,
   //       lop_hoc_id: selectedLop.lop_hoc_id,
   //     });
@@ -217,7 +217,7 @@ export default function DangKyLopManagement({ user }) {
     if (Object.keys(newErrors).length > 0) return;
 
     try {
-      const res = await dangKyLopAPI.create({
+      const res = await dangKyAPI.create({
         hoc_sinh_id: selectedHocSinhId,
         lop_hoc_id: selectedLop.lop_hoc_id,
       });
@@ -339,7 +339,7 @@ export default function DangKyLopManagement({ user }) {
         )}
 
         {alertModal.show && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
+          <div className="fixed inset-0 bg-black/40 bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
             <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl p-6 text-center">
               <div
                 className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${alertModal.type === "success" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}
@@ -358,7 +358,7 @@ export default function DangKyLopManagement({ user }) {
                 onClick={() =>
                   setAlertModal({ show: false, message: "", type: "success" })
                 }
-                className="w-full py-2.5 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800"
+                className="w-full py-2.5 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 mt-3"
               >
                 Đóng
               </button>
@@ -382,7 +382,7 @@ export default function DangKyLopManagement({ user }) {
                 </button>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-4 ">
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Mã đơn:</span>
                   <span className="font-bold text-gray-800">
@@ -741,7 +741,7 @@ export default function DangKyLopManagement({ user }) {
                 </div>
                 <input
                   type="text"
-                  placeholder="Tìm môn học (Toán, Lý...), tên gia sư hoặc tên lớp..."
+                  placeholder="Tìm theo môn học (Toán, Lý...), tên gia sư hoặc tên lớp..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="block w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl leading-5 bg-white text-gray-900 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow shadow-sm"
@@ -942,7 +942,8 @@ export default function DangKyLopManagement({ user }) {
                 <div className="grid grid-cols-2 gap-y-2 text-sm">
                   <span className="text-gray-500">MSL</span>
                   <span className="font-medium text-gray-800">
-                    {selectedLop.ten_lop || selectedLop.lop_hoc_id}
+                    {/* {selectedLop.ten_lop || selectedLop.lop_hoc_id} */}
+                    {selectedLop.lop_hoc_id}
                   </span>
 
                   <span className="text-gray-500">Môn</span>
