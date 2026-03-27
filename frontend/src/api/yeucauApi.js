@@ -2,9 +2,7 @@
  * API cho quản lý yêu cầu (guest đăng ký lớp, gửi yêu cầu)
  */
 
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost/QuanLyTrungTamGiaSu/backend/public";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 /**
  * Gửi request đến API
