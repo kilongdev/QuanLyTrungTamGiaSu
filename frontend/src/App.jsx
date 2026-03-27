@@ -9,7 +9,7 @@ import {
 import Layouts from "./Layouts/Layouts";
 import Homepage from "./pages/HomePage";
 import Tutorpage from "./pages/TutorPage";
-import Introduce from "./pages/Introduce";
+// import Introduce from "./pages/Introduce";
 import FeesPage from "./pages/FeesPage";
 import ContactPage from "./pages/ContactPage";
 import AvailableClassPage from "./pages/AvailableClassPage";
@@ -118,7 +118,7 @@ function AppContent() {
           <Route path="/" element={<Homepage />} />
           <Route path="/phu-huynh" element={<PhuHuynhPage />} />
           <Route path="/dich-vu-gia-su" element={<Tutorpage />} />
-          <Route path="/ve-chung-toi" element={<Introduce />} />
+          {/* <Route path="/ve-chung-toi" element={<Introduce />} /> */}
           <Route path="/hoc-phi-gia-su" element={<FeesPage />} />
           <Route path="/lien-he" element={<ContactPage />} />
           <Route path="/lop-hien-co" element={<AvailableClassPage />} />
