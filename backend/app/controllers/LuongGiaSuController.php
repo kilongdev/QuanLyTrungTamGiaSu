@@ -98,6 +98,17 @@ class LuongGiaSuController {
         $thang = (int)$data['thang'];
         $nam = (int)$data['nam'];
         
+        // Kiểm tra đã có lương cho tháng này chưa
+        $existingLuong = Database::queryOne(
+            "SELECT luong_id FROM luong_gia_su WHERE lop_hoc_id = ? AND thang = ? AND nam = ?",
+            [$lopHocId, $thang, $nam]
+        );
+        
+        if ($existingLuong) {
+            $this->sendResponse(false, 'Lương cho tháng này đã tồn tại', null, 400);
+            return;
+        }
+        
         $lopHoc = Database::queryOne(
             "SELECT lop_hoc_id, ten_lop, gia_su_id, gia_toan_khoa, gia_moi_buoi, loai_chi_tra, gia_tri_chi_tra
              FROM lop_hoc WHERE lop_hoc_id = ?",
@@ -109,21 +120,52 @@ class LuongGiaSuController {
             return;
         }
         
-        $soBuoiDay = (int)($data['so_buoi_day'] ?? 0);
-        $tongTienThu = (int)($data['tong_tien_thu'] ?? 0);
-        $tienTraGiaSu = 0;
-        $loaiChiTra = $lopHoc['loai_chi_tra'] ?? 'co_dinh';
-        $giaTriApDung = (float)($lopHoc['gia_tri_chi_tra'] ?? 0);
-        $giaToanKhoa = (float)($lopHoc['gia_toan_khoa'] ?? 0);
+        // Tính so_buoi_day từ số lượt học sinh có mặt trong tháng
+        $soBuoiDay = Database::queryOne(
+            "SELECT COUNT(*) as count FROM diem_danh dd
+             JOIN lich_hoc lh ON dd.lich_hoc_id = lh.lich_hoc_id
+             WHERE lh.lop_hoc_id = ? AND dd.tinh_trang = 'co_mat'
+             AND MONTH(lh.ngay_hoc) = ? AND YEAR(lh.ngay_hoc) = ?",
+            [$lopHocId, $thang, $nam]
+        );
+        $soBuoiDay = (int)($soBuoiDay['count'] ?? 0);
         
+        // Tính tong_tien_thu từ học phí đã thanh toán trong tháng
+        $tongTienThu = Database::queryOne(
+            "SELECT COALESCE(SUM(hp.so_tien), 0) as total FROM hoc_phi hp
+             JOIN dang_ky_lop dkl ON hp.dang_ky_id = dkl.dang_ky_id
+             WHERE dkl.lop_hoc_id = ? AND hp.thang = ? AND hp.nam = ?
+             AND hp.trang_thai_thanh_toan = 'da_thanh_toan'",
+            [$lopHocId, $thang, $nam]
+        );
+        $tongTienThu = (float)($tongTienThu['total'] ?? 0);
+        
+        $tienTraGiaSu = 0;
+        $loaiChiTra = $lopHoc['loai_chi_tra'] ?? 'tien_cu_the';
+        $giaTriApDung = (float)($lopHoc['gia_tri_chi_tra'] ?? 0);
+        $giaMoiBuoi = (float)($lopHoc['gia_moi_buoi'] ?? 0);
+        $soBuoiHoc = (int)($lopHoc['so_buoi_hoc'] ?? 1);
+        
+        // Công thức tính lương:
+        // - phan_tram: tien_tra_gia_su = so_buoi_day × gia_moi_buoi × (gia_tri_chi_tra / 100)
+        // - tien_cu_the: tien_tra_gia_su = so_buoi_day × (gia_tri_chi_tra / so_buoi_hoc)
         if ($loaiChiTra === 'phan_tram') {
-            $tienTraGiaSu = $giaToanKhoa * ($giaTriApDung / 100);
+            $donGiaBuoiGiaSu = $giaMoiBuoi * ($giaTriApDung / 100);
+            $tienTraGiaSu = $soBuoiDay * $donGiaBuoiGiaSu;
         } else {
-            $tienTraGiaSu = $giaTriApDung;
+            // tien_cu_the: giá mỗi buổi = giá trị chi trả / số buổi học của lớp
+            $donGiaBuoiGiaSu = $soBuoiHoc > 0 ? ($giaTriApDung / $soBuoiHoc) : 0;
+            $tienTraGiaSu = $soBuoiDay * $donGiaBuoiGiaSu;
+        }
+        
+        // Nếu không có ngày đến hạn, mặc định là 30 ngày sau
+        $ngayDenHan = $data['ngay_den_han'] ?? null;
+        if (empty($ngayDenHan)) {
+            $ngayDenHan = date('Y-m-d', strtotime('+30 days'));
         }
         
         $salaryData = [
-            'gia_su_id' => $data['gia_su_id'],
+            'gia_su_id' => $lopHoc['gia_su_id'],
             'lop_hoc_id' => $lopHocId,
             'thang' => $thang,
             'nam' => $nam,
@@ -132,7 +174,8 @@ class LuongGiaSuController {
             'tien_tra_gia_su' => $tienTraGiaSu,
             'loai_chi_tra' => $loaiChiTra,
             'gia_tri_ap_dung' => $giaTriApDung,
-            'trang_thai_thanh_toan' => $data['trang_thai_thanh_toan'] ?? 'chua_thanh_toan'
+            'trang_thai_thanh_toan' => 'chua_thanh_toan',
+            'ngay_den_han' => $ngayDenHan
         ];
         
         $id = $this->model->create($salaryData);
@@ -140,16 +183,16 @@ class LuongGiaSuController {
         // Gửi thông báo cho gia sư
         $giaSuInfo = Database::queryOne(
             "SELECT ho_ten FROM gia_su WHERE gia_su_id = ?",
-            [$data['gia_su_id']]
+            [$lopHoc['gia_su_id']]
         );
         
         if ($giaSuInfo) {
             ThongBaoModel::guiThongBao(
-                $data['gia_su_id'],
+                $lopHoc['gia_su_id'],
                 'gia_su',
                 'Lương mới được tạo',
-                "Bạn có lương {$this->formatCurrency($tienTraGiaSu)}đ cho lớp {$lopHoc['ten_lop']} - Tháng {$thang}/{$nam}.",
-                'luong'
+                "Bạn có lương {$this->formatCurrency($tienTraGiaSu)}đ cho lớp {$lopHoc['ten_lop']} - Tháng {$thang}/{$nam} ({$soBuoiDay} lượt dạy).",
+                'khac'
             );
             
             // Thông báo cho admin
@@ -157,14 +200,16 @@ class LuongGiaSuController {
                 1,
                 'admin',
                 'Lương gia sư mới được tạo',
-                "Lương {$this->formatCurrency($tienTraGiaSu)}đ cho gia sư {$giaSuInfo['ho_ten']} - Lớp {$lopHoc['ten_lop']} - Tháng {$thang}/{$nam}.",
-                'luong'
+                "Lương {$this->formatCurrency($tienTraGiaSu)}đ cho gia sư {$giaSuInfo['ho_ten']} - Lớp {$lopHoc['ten_lop']} - Tháng {$thang}/{$nam} ({$soBuoiDay} lượt dạy).",
+                'khac'
             );
         }
         
         $this->sendResponse(true, 'Tính lương thành công', [
             'id' => $id,
+            'so_buoi_day' => $soBuoiDay,
             'tien_tra_gia_su' => $tienTraGiaSu,
+            'tong_tien_thu' => $tongTienThu,
             'loai_chi_tra' => $loaiChiTra,
             'gia_tri_ap_dung' => $giaTriApDung
         ]);
@@ -227,6 +272,10 @@ class LuongGiaSuController {
                     }
                 }
             }
+            if (isset($data['ngay_den_han'])) {
+                $updateFields[] = "ngay_den_han = ?";
+                $params[] = $data['ngay_den_han'];
+            }
             if (isset($data['thang'])) {
                 $updateFields[] = "thang = ?";
                 $params[] = $data['thang'];
@@ -254,6 +303,64 @@ class LuongGiaSuController {
             
             Database::execute("DELETE FROM luong_gia_su WHERE luong_id = ?", [$id]);
             $this->sendResponse(true, 'Xóa lương thành công');
+        } catch (Exception $e) {
+            $this->sendResponse(false, 'Lỗi: ' . $e->getMessage(), null, 500);
+        }
+    }
+
+    /**
+     * Kiểm tra và cập nhật lương quá hạn
+     * Gọi API này định kỳ (cron job) hoặc khi load trang
+     */
+    public function checkOverdue() {
+        try {
+            $today = date('Y-m-d');
+            
+            // Tìm các lương quá hạn (chưa thanh toán và đã qua ngày đáo hạn)
+            $overdueSalaries = Database::query(
+                "SELECT lg.*, gs.ho_ten as ten_giasu, gs.gia_su_id, lh.ten_lop
+                 FROM luong_gia_su lg
+                 JOIN gia_su gs ON lg.gia_su_id = gs.gia_su_id
+                 LEFT JOIN lop_hoc lh ON lg.lop_hoc_id = lh.lop_hoc_id
+                 WHERE lg.ngay_den_han < ? 
+                 AND lg.trang_thai_thanh_toan = 'chua_thanh_toan'",
+                [$today]
+            );
+            
+            $updatedCount = 0;
+            
+            foreach ($overdueSalaries as $luong) {
+                // Cập nhật trạng thái thành quá hạn
+                Database::execute(
+                    "UPDATE luong_gia_su SET trang_thai_thanh_toan = 'qua_han' WHERE luong_id = ?",
+                    [$luong['luong_id']]
+                );
+                
+                // Gửi thông báo cho gia sư
+                ThongBaoModel::guiThongBao(
+                    $luong['gia_su_id'],
+                    'gia_su',
+                    'Lương quá hạn thanh toán',
+                    "Lương {$this->formatCurrency($luong['tien_tra_gia_su'])}đ cho lớp {$luong['ten_lop']} - Tháng {$luong['thang']}/{$luong['nam']} đã quá hạn thanh toán (hạn: {$luong['ngay_den_han']}).",
+                    'khac'
+                );
+                
+                // Gửi thông báo cho admin
+                ThongBaoModel::guiThongBao(
+                    1,
+                    'admin',
+                    'Lương gia sư quá hạn',
+                    "Lương {$this->formatCurrency($luong['tien_tra_gia_su'])}đ cho gia sư {$luong['ten_giasu']} - Lớp {$luong['ten_lop']} - Tháng {$luong['thang']}/{$luong['nam']} đã quá hạn thanh toán.",
+                    'khac'
+                );
+                
+                $updatedCount++;
+            }
+            
+            $this->sendResponse(true, "Đã kiểm tra và cập nhật {$updatedCount} lương quá hạn", [
+                'updated_count' => $updatedCount,
+                'today' => $today
+            ]);
         } catch (Exception $e) {
             $this->sendResponse(false, 'Lỗi: ' . $e->getMessage(), null, 500);
         }
