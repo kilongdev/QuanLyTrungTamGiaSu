@@ -97,6 +97,7 @@ export default function DangKyLopManagement({ user }) {
     }
   };
 
+  // popup
   const handleUpdateStatus = (id, trang_thai_moi) => {
     const actionName =
       trang_thai_moi === "da_duyet"
@@ -104,31 +105,99 @@ export default function DangKyLopManagement({ user }) {
         : trang_thai_moi === "tu_choi"
           ? "Từ chối"
           : "Hủy";
-
     setConfirmModal({
       show: true,
       message: `Bạn có chắc chắn muốn ${actionName} đơn đăng ký này?`,
       onConfirm: async () => {
-        setConfirmModal({ show: false, message: "", onConfirm: null });
-
-        const loadingToast = toast.loading(
-          `Đang ${actionName.toLowerCase()} đơn...`,
-        );
-
         try {
           await dangKyAPI.updateStatus(id, trang_thai_moi);
-
-          toast.success(`Đã ${actionName.toLowerCase()} đơn thành công!`, {
-            id: loadingToast,
+          setConfirmModal({ show: false, message: "", onConfirm: null });
+          setAlertModal({
+            show: true,
+            message: `Đã ${actionName} đơn thành công!`,
+            type: "success",
           });
           fetchData();
         } catch (error) {
-          toast.error(error.message || "Có lỗi xảy ra!", { id: loadingToast });
+          setAlertModal({
+            show: true,
+            message: error.message || "Có lỗi xảy ra!",
+            type: "error",
+          });
         }
       },
     });
   };
 
+  // toast
+  // const handleUpdateStatus = (id, trang_thai_moi) => {
+  //   const actionName =
+  //     trang_thai_moi === "da_duyet"
+  //       ? "Duyệt"
+  //       : trang_thai_moi === "tu_choi"
+  //         ? "Từ chối"
+  //         : "Hủy";
+
+  //   setConfirmModal({
+  //     show: true,
+  //     message: `Bạn có chắc chắn muốn ${actionName} đơn đăng ký này?`,
+  //     onConfirm: async () => {
+  //       setConfirmModal({ show: false, message: "", onConfirm: null });
+
+  //       const loadingToast = toast.loading(
+  //         `Đang ${actionName.toLowerCase()} đơn...`,
+  //       );
+
+  //       try {
+  //         await dangKyAPI.updateStatus(id, trang_thai_moi);
+
+  //         toast.success(`Đã ${actionName.toLowerCase()} đơn thành công!`, {
+  //           id: loadingToast,
+  //         });
+  //         fetchData();
+  //       } catch (error) {
+  //         toast.error(error.message || "Có lỗi xảy ra!", { id: loadingToast });
+  //       }
+  //     },
+  //   });
+  // };
+
+  //popup
+  // const handleDangKySubmit = async (e) => {
+  //   e.preventDefault();
+  //   if (!selectedHocSinhId) {
+  //     setAlertModal({
+  //       show: true,
+  //       message: "Vui lòng chọn học sinh để đăng ký!",
+  //       type: "error",
+  //     });
+  //     return;
+  //   }
+
+  //   try {
+  //     await dangKyAPI.create({
+  //       hoc_sinh_id: selectedHocSinhId,
+  //       lop_hoc_id: selectedLop.lop_hoc_id,
+  //     });
+  //     setShowDangKyModal(false);
+  //     setAlertModal({
+  //       show: true,
+  //       message: "Đăng ký thành công! Vui lòng chờ trung tâm duyệt đơn.",
+  //       type: "success",
+  //     });
+  //     setSelectedHocSinhId("");
+
+  //     setActiveTab("lich_su");
+  //   } catch (error) {
+  //     setAlertModal({
+  //       show: true,
+  //       message: error.message || "Lỗi đăng ký!",
+  //       type: "error",
+  //     });
+  //   }
+  // };
+
+  //toast
   const handleDangKySubmit = async (e) => {
     e.preventDefault();
 
@@ -138,23 +207,37 @@ export default function DangKyLopManagement({ user }) {
       newErrors.selectedHocSinhId = "Vui lòng chọn học sinh!";
     }
 
+    if (!selectedLop?.lop_hoc_id) {
+      toast.error("Thiếu thông tin lớp học!");
+      return;
+    }
+
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) return;
 
     try {
-      await dangKyAPI.create({
+      const res = await dangKyAPI.create({
         hoc_sinh_id: selectedHocSinhId,
         lop_hoc_id: selectedLop.lop_hoc_id,
       });
 
-      toast.success("Đăng ký thành công!");
-      setSelectedHocSinhId("");
-      setErrors({});
-      setShowDangKyModal(false);
-      setActiveTab("lich_su");
+      console.log("Res yêu cầu:", res);
+
+      if (res.status === "success") {
+        toast.success(res.message || "Đăng ký thành công!");
+
+        setSelectedHocSinhId("");
+        setErrors({});
+        setShowDangKyModal(false);
+        setActiveTab("lich_su");
+      } else {
+        toast.error(res.message || "Đăng ký thất bại!");
+      }
     } catch (error) {
-      toast.error(error.message || "Lỗi đăng ký!");
+      console.error("Lỗi API:", error);
+
+      toast.error(error.message || "Không thể kết nối đến server!");
     }
   };
 
@@ -196,7 +279,7 @@ export default function DangKyLopManagement({ user }) {
   const filteredLopHocs = lopHocs.filter((lop) => {
     const searchLower = searchTerm.toLowerCase();
     const tenLop = lop.ten_lop ? lop.ten_lop.toLowerCase() : "";
-    const monHoc = lop.ten_mon_hoc ? lop.ten_mon_hoc.toLowerCase() : ""; 
+    const monHoc = lop.ten_mon_hoc ? lop.ten_mon_hoc.toLowerCase() : "";
     const tenGiaSu = lop.ten_gia_su ? lop.ten_gia_su.toLowerCase() : "";
 
     return (
@@ -256,7 +339,7 @@ export default function DangKyLopManagement({ user }) {
         )}
 
         {alertModal.show && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
+          <div className="fixed inset-0 bg-black/40 bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
             <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl p-6 text-center">
               <div
                 className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${alertModal.type === "success" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}
@@ -275,7 +358,7 @@ export default function DangKyLopManagement({ user }) {
                 onClick={() =>
                   setAlertModal({ show: false, message: "", type: "success" })
                 }
-                className="w-full py-2.5 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800"
+                className="w-full py-2.5 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 mt-3"
               >
                 Đóng
               </button>
@@ -288,19 +371,23 @@ export default function DangKyLopManagement({ user }) {
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
               <div className="bg-blue-50 px-6 py-4 border-b border-blue-100 flex justify-between items-center">
-                <h3 className="font-bold text-lg text-blue-900">Chi tiết đăng ký</h3>
-                <button 
+                <h3 className="font-bold text-lg text-blue-900">
+                  Chi tiết đăng ký
+                </h3>
+                <button
                   onClick={() => setDetailModal({ show: false, data: null })}
                   className="text-gray-400 hover:text-gray-700 transition"
                 >
                   <X size={20} />
                 </button>
               </div>
-              
-              <div className="p-6 space-y-4">
+
+              <div className="p-6 space-y-4 ">
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Mã đơn:</span>
-                  <span className="font-bold text-gray-800">#{detailModal.data.dang_ky_id}</span>
+                  <span className="font-bold text-gray-800">
+                    #{detailModal.data.dang_ky_id}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Trạng thái:</span>
@@ -308,31 +395,44 @@ export default function DangKyLopManagement({ user }) {
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Học sinh:</span>
-                  <span className="font-medium text-gray-800">{detailModal.data.ten_hoc_sinh}</span>
+                  <span className="font-medium text-gray-800">
+                    {detailModal.data.ten_hoc_sinh}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Lớp:</span>
-                  <span className="font-medium text-blue-600">{detailModal.data.ten_lop || `Lớp #${detailModal.data.lop_hoc_id}`}</span>
+                  <span className="font-medium text-blue-600">
+                    {detailModal.data.ten_lop ||
+                      `Lớp #${detailModal.data.lop_hoc_id}`}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Môn học:</span>
-                  <span className="font-medium text-gray-800">{detailModal.data.ten_mon_hoc || "Đang cập nhật"}</span>
+                  <span className="font-medium text-gray-800">
+                    {detailModal.data.ten_mon_hoc || "Đang cập nhật"}
+                  </span>
                 </div>
-                
+
                 {/* THÊM KHỐI LỚP VÀ GIA SƯ */}
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Khối lớp:</span>
-                  <span className="font-medium text-gray-800">{detailModal.data.khoi_lop || "Đang cập nhật"}</span>
+                  <span className="font-medium text-gray-800">
+                    {detailModal.data.khoi_lop || "Đang cập nhật"}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Gia sư:</span>
-                  <span className="font-medium text-gray-800">{detailModal.data.ten_gia_su || "Chưa phân công"}</span>
+                  <span className="font-medium text-gray-800">
+                    {detailModal.data.ten_gia_su || "Chưa phân công"}
+                  </span>
                 </div>
 
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Số buổi:</span>
                   <span className="font-medium text-gray-800">
-                    {detailModal.data.so_buoi_hoc ? `${detailModal.data.so_buoi_hoc} buổi` : "Đang cập nhật"}
+                    {detailModal.data.so_buoi_hoc
+                      ? `${detailModal.data.so_buoi_hoc} buổi`
+                      : "Đang cập nhật"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
@@ -344,8 +444,8 @@ export default function DangKyLopManagement({ user }) {
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Học phí:</span>
                   <span className="font-bold text-red-600 text-base">
-                    {detailModal.data.gia_toan_khoa 
-                      ? `${Number(detailModal.data.gia_toan_khoa).toLocaleString("vi-VN")} đ` 
+                    {detailModal.data.gia_toan_khoa
+                      ? `${Number(detailModal.data.gia_toan_khoa).toLocaleString("vi-VN")} đ`
                       : "Đang cập nhật"}
                   </span>
                 </div>
@@ -353,11 +453,13 @@ export default function DangKyLopManagement({ user }) {
                 <div className="flex justify-between items-center pb-1">
                   <span className="text-gray-500 text-sm">Ngày gửi đơn:</span>
                   <span className="font-medium text-gray-800">
-                    {new Date(detailModal.data.ngay_dang_ky).toLocaleString("vi-VN")}
+                    {new Date(detailModal.data.ngay_dang_ky).toLocaleString(
+                      "vi-VN",
+                    )}
                   </span>
                 </div>
               </div>
-              
+
               <div className="bg-gray-50 px-6 py-4 flex justify-end">
                 <button
                   onClick={() => setDetailModal({ show: false, data: null })}
@@ -521,7 +623,9 @@ export default function DangKyLopManagement({ user }) {
                         <td className="p-3 text-center flex justify-center items-center gap-2">
                           {/* NÚT CHI TIẾT CỦA ADMIN */}
                           <button
-                            onClick={() => setDetailModal({ show: true, data: dk })}
+                            onClick={() =>
+                              setDetailModal({ show: true, data: dk })
+                            }
                             className="px-3 py-1.5 bg-white text-gray-700 hover:bg-gray-100 text-xs font-bold rounded border border-gray-300 transition-colors shadow-sm flex items-center gap-1"
                             title="Xem chi tiết đơn"
                           >
@@ -631,7 +735,7 @@ export default function DangKyLopManagement({ user }) {
                 </div>
                 <input
                   type="text"
-                  placeholder="Tìm môn học (Toán, Lý...), tên gia sư hoặc tên lớp..."
+                  placeholder="Tìm theo môn học (Toán, Lý...), tên gia sư hoặc tên lớp..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="block w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl leading-5 bg-white text-gray-900 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow shadow-sm"
@@ -832,7 +936,8 @@ export default function DangKyLopManagement({ user }) {
                 <div className="grid grid-cols-2 gap-y-2 text-sm">
                   <span className="text-gray-500">MSL</span>
                   <span className="font-medium text-gray-800">
-                    {selectedLop.ten_lop || selectedLop.lop_hoc_id}
+                    {/* {selectedLop.ten_lop || selectedLop.lop_hoc_id} */}
+                    {selectedLop.lop_hoc_id}
                   </span>
 
                   <span className="text-gray-500">Môn</span>

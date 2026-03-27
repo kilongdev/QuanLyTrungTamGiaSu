@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Yêu Cầu Routes
  * Quản lý yêu cầu
@@ -12,3 +13,6 @@ Router::post('/yeucau/create', [new YeuCauController(), 'create']);
 Router::put('/yeucau/status/{id}', [new YeuCauController(), 'updateStatus']);
 Router::put('/yeucau/update/{id}', [new YeuCauController(), 'update']);
 Router::delete('/yeucau/delete/{id}', [new YeuCauController(), 'delete']);
+
+
+Router::post('/yeucau/create-guest', [new YeuCauController(), 'createGuest']);

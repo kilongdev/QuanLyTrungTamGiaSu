@@ -1,63 +1,83 @@
-import { useState, useEffect } from 'react'
-import DashboardLayout from '../Layouts/DashboardLayout'
-import { LayoutDashboard, Users, GraduationCap, Search, Calendar, CreditCard, UserCircle, ClipboardList, BookOpen } from 'lucide-react' // Đã thêm BookOpen
-import YeuCauManagement from '../components/YeuCauManagement'
-import LichHocManagement from '../components/LichHocManagement'
-import DangKyLopManagement from '../components/DangKyLopManagement' 
+import { useState, useEffect } from "react";
+import DashboardLayout from "../Layouts/DashboardLayout";
+import {
+  LayoutDashboard,
+  Users,
+  GraduationCap,
+  Search,
+  Calendar,
+  CreditCard,
+  UserCircle,
+  ClipboardList,
+  BookOpen,
+} from "lucide-react"; // Đã thêm BookOpen
+import YeuCauManagement from "../components/YeuCauManagement";
+import LichHocManagement from "../components/LichHocManagement";
+import DangKyLopManagement from "../components/DangKyLopManagement";
 
 export default function PhuHuynhDashboard({ user, onLogout }) {
-  const [activeMenu, setActiveMenu] = useState('dashboard')
-  const [showEditProfile, setShowEditProfile] = useState(false)
+  const [activeMenu, setActiveMenu] = useState("dashboard");
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   useEffect(() => {
     // Log token để kiểm tra
-    const token = localStorage.getItem('token')
-    console.log('=== PHỤ HUYNH DASHBOARD ===')
-    console.log('User:', user)
-    console.log('Token:', token)
-  }, [user])
+    const token = localStorage.getItem("token");
+    console.log("=== PHỤ HUYNH DASHBOARD ===");
+    console.log("User:", user);
+    console.log("Token:", token);
+  }, [user]);
 
   const menuItems = [
-    { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
-    { id: 'children', label: 'Con của tôi', icon: Users },
-    { id: 'tutors', label: 'Gia sư của con', icon: GraduationCap },
-    { id: 'find-tutor', label: 'Tìm gia sư', icon: Search },
-    { id: 'dang-ky-lop', label: 'Tìm & Đăng Ký Lớp', icon: BookOpen },
-    { id: 'schedule', label: 'Lịch học', icon: Calendar },
-    { id: 'requests', label: 'Yêu cầu hỗ trợ', icon: ClipboardList },
-    { id: 'payments', label: 'Thanh toán', icon: CreditCard },
-    { id: 'profile', label: 'Hồ sơ', icon: UserCircle },
-  ]
+    { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
+    { id: "children", label: "Con của tôi", icon: Users },
+    { id: "tutors", label: "Gia sư của con", icon: GraduationCap },
+    { id: "find-tutor", label: "Tìm gia sư", icon: Search },
+    { id: "dang-ky-lop", label: "Tìm & Đăng Ký Lớp", icon: BookOpen },
+    { id: "schedule", label: "Lịch học", icon: Calendar },
+    { id: "requests", label: "Yêu cầu hỗ trợ", icon: ClipboardList },
+    { id: "payments", label: "Thanh toán", icon: CreditCard },
+    { id: "profile", label: "Hồ sơ", icon: UserCircle },
+  ];
 
   const getPageTitle = () => {
-    const item = menuItems.find(m => m.id === activeMenu)
-    return item ? item.label : 'Tổng quan'
-  }
+    const item = menuItems.find((m) => m.id === activeMenu);
+    return item ? item.label : "Tổng quan";
+  };
 
   const renderContent = () => {
     switch (activeMenu) {
-      case 'dashboard':
-        return <DashboardContent />
-      case 'children':
-        return <ChildrenContent />
-      case 'tutors':
-        return <TutorsContent />
-      case 'find-tutor':
-        return <FindTutorContent />
-      case 'dang-ky-lop': 
-        return <DangKyLopManagement user={user} />
-      case 'schedule':
-        return <LichHocManagement user={user} />
-      case 'requests': 
-        return <YeuCauManagement user={user} />
-      case 'payments':
-        return <PlaceholderContent title="Thanh toán" description="Quản lý thanh toán học phí" />
-      case 'profile':
-        return <PlaceholderContent title="Hồ sơ" description="Cập nhật thông tin cá nhân" />
+      case "dashboard":
+        return <DashboardContent />;
+      case "children":
+        return <ChildrenContent />;
+      case "tutors":
+        return <TutorsContent />;
+      case "find-tutor":
+        return <FindTutorContent />;
+      case "dang-ky-lop":
+        return <DangKyLopManagement user={user} />;
+      case "schedule":
+        return <LichHocManagement user={user} />;
+      case "requests":
+        return <YeuCauManagement user={user} />;
+      case "payments":
+        return (
+          <PlaceholderContent
+            title="Thanh toán"
+            description="Quản lý thanh toán học phí"
+          />
+        );
+      case "profile":
+        return (
+          <PlaceholderContent
+            title="Hồ sơ"
+            description="Cập nhật thông tin cá nhân"
+          />
+        );
       default:
-        return <DashboardContent />
+        return <DashboardContent />;
     }
-  }
+  };
 
   return (
     <DashboardLayout
@@ -72,7 +92,7 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
     >
       {renderContent()}
     </DashboardLayout>
-  )
+  );
 }
 
 // Dashboard Overview Content
@@ -81,7 +101,7 @@ function DashboardContent() {
     <div className="space-y-6">
       {/* Children Quick View */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ChildCard 
+        <ChildCard
           name="Nguyễn Văn An"
           grade="Lớp 9"
           age="14 tuổi"
@@ -102,11 +122,13 @@ function DashboardContent() {
       {/* Current Tutors */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-gray-800">👨‍🏫 Gia sư hiện tại</h3>
-          <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">Xem tất cả</button>
+          <h3 className="font-bold text-gray-800">Gia sư hiện tại</h3>
+          <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+            Xem tất cả
+          </button>
         </div>
         <div className="space-y-3">
-          <TutorItem 
+          <TutorItem
             name="Trần Minh Tuấn"
             subject="Toán"
             rating="4.9"
@@ -114,7 +136,7 @@ function DashboardContent() {
             initial="T"
             gradient="from-blue-500 to-purple-500"
           />
-          <TutorItem 
+          <TutorItem
             name="Lê Thị Hương"
             subject="Tiếng Anh"
             rating="4.8"
@@ -127,15 +149,15 @@ function DashboardContent() {
 
       {/* Upcoming Classes */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h3 className="font-bold text-gray-800 mb-4">📅 Lịch học sắp tới</h3>
+        <h3 className="font-bold text-gray-800 mb-4"> Lịch học sắp tới</h3>
         <div className="space-y-3">
-          <UpcomingClass 
+          <UpcomingClass
             subject="Toán"
             tutor="Trần Minh Tuấn"
             time="Thứ 2, 08:00 - 09:30"
             child="An"
           />
-          <UpcomingClass 
+          <UpcomingClass
             subject="Tiếng Anh"
             tutor="Lê Thị Hương"
             time="Thứ 3, 15:00 - 16:30"
@@ -144,7 +166,7 @@ function DashboardContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // Children Content
@@ -152,12 +174,12 @@ function ChildrenContent() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <button className="px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium">
-          ➕ Thêm con
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium">
+          + Thêm con
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ChildCard 
+        <ChildCard
           name="Nguyễn Văn An"
           grade="Lớp 9"
           age="14 tuổi"
@@ -170,7 +192,7 @@ function ChildrenContent() {
         />
       </div>
     </div>
-  )
+  );
 }
 
 // Tutors Content
@@ -180,7 +202,7 @@ function TutorsContent() {
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <h3 className="font-bold text-gray-800 mb-4">Danh sách gia sư</h3>
         <div className="space-y-4">
-          <TutorDetailCard 
+          <TutorDetailCard
             name="Trần Minh Tuấn"
             subject="Toán"
             rating="4.9"
@@ -191,7 +213,7 @@ function TutorsContent() {
             initial="T"
             gradient="from-blue-500 to-purple-500"
           />
-          <TutorDetailCard 
+          <TutorDetailCard
             name="Lê Thị Hương"
             subject="Tiếng Anh"
             rating="4.8"
@@ -205,7 +227,7 @@ function TutorsContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // Find Tutor Content
@@ -214,10 +236,15 @@ function FindTutorContent() {
     <div className="space-y-6">
       {/* Search Form */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h3 className="font-bold text-gray-800 mb-4">🔍 Tìm gia sư phù hợp</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <h3 className="font-bold text-gray-800 mb-4 flex gap-2">
+          <Search />
+          Tìm gia sư phù hợp
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 items-end">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Môn học</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Môn học
+            </label>
             <select className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
               <option>Chọn môn học</option>
               <option>Toán</option>
@@ -227,7 +254,9 @@ function FindTutorContent() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Lớp
+            </label>
             <select className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
               <option>Chọn lớp</option>
               <option>Lớp 6</option>
@@ -240,7 +269,9 @@ function FindTutorContent() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Khu vực</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Khu vực
+            </label>
             <select className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
               <option>Chọn khu vực</option>
               <option>Quận 1</option>
@@ -249,27 +280,29 @@ function FindTutorContent() {
               <option>Bình Thạnh</option>
             </select>
           </div>
+          <div>
+            <button className="w-full px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-medium active:scale-[0.98]">
+              Tìm kiếm
+            </button>
+          </div>
         </div>
-        <button className="px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-medium">
-          Tìm kiếm
-        </button>
       </div>
 
       {/* Results */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <h3 className="font-bold text-gray-800 mb-4">Gia sư phù hợp</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TutorSearchCard 
+          <TutorSearchCard
             name="Nguyễn Văn Đức"
-            subjects={['Toán', 'Lý']}
+            subjects={["Toán", "Lý"]}
             rating="4.9"
             experience="6 năm"
             fee="350.000đ/buổi"
             location="Quận 1, 3, 7"
           />
-          <TutorSearchCard 
+          <TutorSearchCard
             name="Phạm Thị Mai"
-            subjects={['Toán']}
+            subjects={["Toán"]}
             rating="4.7"
             experience="4 năm"
             fee="280.000đ/buổi"
@@ -278,20 +311,34 @@ function FindTutorContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // Child Card Component
-function ChildCard({ name, grade, age, subjects, avgScore, sessions, initial, gradient, showDetails = false }) {
+function ChildCard({
+  name,
+  grade,
+  age,
+  subjects,
+  avgScore,
+  sessions,
+  initial,
+  gradient,
+  showDetails = false,
+}) {
   return (
     <div className="bg-white rounded-2xl shadow-sm p-6">
       <div className="flex items-center gap-4 mb-4">
-        <div className={`w-16 h-16 bg-gradient-to-r ${gradient} rounded-full flex items-center justify-center text-white text-2xl font-bold`}>
+        <div
+          className={`w-16 h-16 bg-gradient-to-r ${gradient} rounded-full flex items-center justify-center text-white text-2xl font-bold`}
+        >
           {initial}
         </div>
         <div>
           <p className="font-bold text-gray-800 text-lg">{name}</p>
-          <p className="text-gray-500">{grade} • {age}</p>
+          <p className="text-gray-500">
+            {grade} • {age}
+          </p>
         </div>
       </div>
       <div className="grid grid-cols-3 gap-4 text-center">
@@ -319,45 +366,71 @@ function ChildCard({ name, grade, age, subjects, avgScore, sessions, initial, gr
         </div>
       )}
     </div>
-  )
+  );
 }
 
 // Tutor Item Component
 function TutorItem({ name, subject, rating, experience, initial, gradient }) {
   return (
     <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-      <div className={`w-12 h-12 bg-gradient-to-r ${gradient} rounded-full flex items-center justify-center text-white font-bold`}>
+      <div
+        className={`w-12 h-12 bg-gradient-to-r ${gradient} rounded-full flex items-center justify-center text-white font-bold`}
+      >
         {initial}
       </div>
       <div className="flex-1">
         <p className="font-semibold text-gray-800">{name}</p>
-        <p className="text-gray-500 text-sm">{subject} • ⭐ {rating} • {experience} kinh nghiệm</p>
+        <p className="text-gray-500 text-sm">
+          {subject} • ⭐ {rating} • {experience} kinh nghiệm
+        </p>
       </div>
       <button className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium">
         Nhắn tin
       </button>
     </div>
-  )
+  );
 }
 
 // Tutor Detail Card Component
-function TutorDetailCard({ name, subject, rating, experience, child, schedule, fee, initial, gradient }) {
+function TutorDetailCard({
+  name,
+  subject,
+  rating,
+  experience,
+  child,
+  schedule,
+  fee,
+  initial,
+  gradient,
+}) {
   return (
     <div className="p-4 border border-gray-200 rounded-xl">
       <div className="flex items-center gap-4 mb-3">
-        <div className={`w-14 h-14 bg-gradient-to-r ${gradient} rounded-full flex items-center justify-center text-white font-bold text-xl`}>
+        <div
+          className={`w-14 h-14 bg-gradient-to-r ${gradient} rounded-full flex items-center justify-center text-white font-bold text-xl`}
+        >
           {initial}
         </div>
         <div className="flex-1">
           <p className="font-bold text-gray-800">{name}</p>
-          <p className="text-gray-500 text-sm">{subject} • ⭐ {rating} • {experience} kinh nghiệm</p>
+          <p className="text-gray-500 text-sm">
+            {subject} • ⭐ {rating} • {experience} kinh nghiệm
+          </p>
         </div>
-        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">Đang dạy</span>
+        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+          Đang dạy
+        </span>
       </div>
       <div className="bg-gray-50 rounded-xl p-3 text-sm">
-        <p className="text-gray-600"><strong>Dạy cho:</strong> {child}</p>
-        <p className="text-gray-600"><strong>Lịch:</strong> {schedule}</p>
-        <p className="text-gray-600"><strong>Học phí:</strong> {fee}</p>
+        <p className="text-gray-600">
+          <strong>Dạy cho:</strong> {child}
+        </p>
+        <p className="text-gray-600">
+          <strong>Lịch:</strong> {schedule}
+        </p>
+        <p className="text-gray-600">
+          <strong>Học phí:</strong> {fee}
+        </p>
       </div>
       <div className="mt-3 flex gap-2">
         <button className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors text-sm font-medium">
@@ -368,11 +441,18 @@ function TutorDetailCard({ name, subject, rating, experience, child, schedule, f
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 // Tutor Search Card Component
-function TutorSearchCard({ name, subjects, rating, experience, fee, location }) {
+function TutorSearchCard({
+  name,
+  subjects,
+  rating,
+  experience,
+  fee,
+  location,
+}) {
   return (
     <div className="p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all">
       <div className="flex items-center gap-3 mb-3">
@@ -383,13 +463,20 @@ function TutorSearchCard({ name, subjects, rating, experience, fee, location }) 
           <p className="font-bold text-gray-800">{name}</p>
           <div className="flex gap-1">
             {subjects.map((sub, idx) => (
-              <span key={idx} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{sub}</span>
+              <span
+                key={idx}
+                className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs"
+              >
+                {sub}
+              </span>
             ))}
           </div>
         </div>
       </div>
       <div className="text-sm text-gray-600 space-y-1 mb-3">
-        <p>⭐ {rating} • {experience} kinh nghiệm</p>
+        <p>
+          ⭐ {rating} • {experience} kinh nghiệm
+        </p>
         <p>📍 {location}</p>
         <p className="text-green-600 font-medium">{fee}</p>
       </div>
@@ -397,7 +484,7 @@ function TutorSearchCard({ name, subjects, rating, experience, fee, location }) 
         Liên hệ ngay
       </button>
     </div>
-  )
+  );
 }
 
 // Upcoming Class Component
@@ -408,11 +495,15 @@ function UpcomingClass({ subject, tutor, time, child }) {
         <span className="text-2xl">📚</span>
       </div>
       <div className="flex-1">
-        <p className="font-semibold text-gray-800">{subject} - {child}</p>
-        <p className="text-gray-500 text-sm">👨‍🏫 {tutor} • {time}</p>
+        <p className="font-semibold text-gray-800">
+          {subject} - {child}
+        </p>
+        <p className="text-gray-500 text-sm">
+          {tutor} • {time}
+        </p>
       </div>
     </div>
-  )
+  );
 }
 
 // Placeholder Content Component
@@ -426,5 +517,5 @@ function PlaceholderContent({ title, description }) {
       <p className="text-gray-500 mb-6">{description}</p>
       <p className="text-gray-400 text-sm">Tính năng đang được phát triển...</p>
     </div>
-  )
+  );
 }

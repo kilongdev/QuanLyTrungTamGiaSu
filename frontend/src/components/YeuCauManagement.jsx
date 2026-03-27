@@ -8,6 +8,8 @@ import {
   Trash2,
   Edit2,
   MessageSquare,
+  CheckCircle,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,6 +20,8 @@ export default function YeuCauManagement({ user }) {
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSettings, setShowSettings] = useState(null);
+  const [showModelDelete, setShowModelDelete] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
 
   const currentUserId =
     user?.id ||
@@ -118,13 +122,20 @@ export default function YeuCauManagement({ user }) {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa yêu cầu này?")) return;
+    setDeleteId(id);
+    setShowModelDelete(true);
+  };
+
+  const confirmDelete = async () => {
     try {
-      await yeuCauAPI.delete(id);
+      await yeuCauAPI.delete(deleteId);
       toast.success("Xóa yêu cầu thành công!");
       fetchYeuCaus();
     } catch (error) {
       toast.error(error.message || "Không thể xóa yêu cầu này");
+    } finally {
+      setShowModelDelete(false);
+      setDeleteId(null);
     }
   };
 
@@ -213,7 +224,7 @@ export default function YeuCauManagement({ user }) {
               resetForm();
               setShowModal(true);
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors active:scale-[0.98]"
           >
             <Plus size={18} />
             Thêm yêu cầu mới
@@ -350,6 +361,43 @@ export default function YeuCauManagement({ user }) {
         </div>
       )}
 
+      {/* form delete */}
+      {showModelDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 transform transition-all">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+            <div className="text-center mb-8">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Xác nhận xóa
+              </h3>
+              <p className="text-gray-500 leading-relaxed">
+                Bạn có chắc chắn muốn xóa yêu cầu này? <br />
+                Hành động này{" "}
+                <span className="font-medium text-red-600">
+                  không thể hoàn tác
+                </span>
+                .
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowModelDelete(false)}
+                className="flex-1 px-4 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-3 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-lg shadow-red-200 active:scale-95 transition-all"
+              >
+                Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Modal Form */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">

@@ -1,10 +1,10 @@
 <?php
 class Database
 {
-    private static $host = 'localhost';
-    private static $dbName = 'quanlytrungtamgiasu';
+    private static $host = 'mysql';
+    private static $dbName = 'tutoring_db';
     private static $username = 'root';
-    private static $password = '';
+    private static $password = 'root';
     private static $charset = 'utf8mb4';
     private static $connection = null;
 
@@ -12,9 +12,9 @@ class Database
     {
         if (self::$connection === null) {
             try {
-                $dsn = "mysql:host=" . self::$host . 
-                       ";dbname=" . self::$dbName . 
-                       ";charset=" . self::$charset;
+                $dsn = "mysql:host=" . self::$host .
+                    ";dbname=" . self::$dbName .
+                    ";charset=" . self::$charset;
 
                 $options = [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -29,10 +29,9 @@ class Database
                     self::$password,
                     $options
                 );
-
             } catch (PDOException $e) {
                 error_log("Database Connection Error: " . $e->getMessage());
-                
+
                 http_response_code(500);
                 echo json_encode([
                     'status' => 'error',
