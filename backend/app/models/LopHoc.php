@@ -109,7 +109,16 @@ class LopHoc {
     }
 
     public static function getAll() {
-        $sql = "SELECT lh.*, gs.ho_ten as ten_gia_su, gs.bang_cap, mh.ten_mon_hoc 
+        $sql = "SELECT lh.*, gs.ho_ten as ten_gia_su, gs.bang_cap, mh.ten_mon_hoc,
+                       -- Dùng truy vấn con lấy ngày trong tuần (T2, T3...) ghép với giờ học
+                       (SELECT GROUP_CONCAT(DISTINCT CONCAT(
+                            CASE DAYOFWEEK(ngay_hoc)
+                                WHEN 1 THEN 'CN' WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' 
+                                WHEN 4 THEN 'T4' WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7'
+                            END,
+                            ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
+                        ) SEPARATOR ', ') 
+                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien
                 FROM lop_hoc lh 
                 LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id 
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id 
@@ -160,7 +169,16 @@ class LopHoc {
     }
 
     public static function getById($id) {
-        $sql = "SELECT lh.*, gs.ho_ten as ten_gia_su, gs.bang_cap, mh.ten_mon_hoc 
+        $sql = "SELECT lh.*, gs.ho_ten as ten_gia_su, gs.bang_cap, mh.ten_mon_hoc,
+                       -- Dùng truy vấn con lấy ngày trong tuần (T2, T3...) ghép với giờ học
+                       (SELECT GROUP_CONCAT(DISTINCT CONCAT(
+                            CASE DAYOFWEEK(ngay_hoc)
+                                WHEN 1 THEN 'CN' WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' 
+                                WHEN 4 THEN 'T4' WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7'
+                            END,
+                            ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
+                        ) SEPARATOR ', ') 
+                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien
                 FROM lop_hoc lh 
                 LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id 
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id 

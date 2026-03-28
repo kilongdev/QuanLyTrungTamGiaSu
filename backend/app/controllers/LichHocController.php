@@ -7,70 +7,133 @@ class LichHocController {
 
     public function create() {
         $data = json_decode(file_get_contents("php://input"), true);
+        $is_chu_ky = isset($data['tao_chu_ky']) && $data['tao_chu_ky'] === true;
+        $lop_hoc_id = $data['lop_hoc_id'];
 
-        if (empty($data['lop_hoc_id']) || empty($data['ngay_hoc']) || empty($data['gio_bat_dau']) || empty($data['gio_ket_thuc'])) {
+        // ==========================================
+        // CHỐT CHẶN: KIỂM TRA SỐ LƯỢNG BUỔI CHO CẢ 2 CHẾ ĐỘ
+        // ==========================================
+        $lopHocInfo = Database::queryOne("SELECT so_buoi_hoc FROM lop_hoc WHERE lop_hoc_id = ?", [$lop_hoc_id]);
+        if (!$lopHocInfo || empty($lopHocInfo['so_buoi_hoc'])) {
             http_response_code(400);
-            echo json_encode(["status" => "error", "message" => "Thiếu thông tin ngày, giờ hoặc lớp học"]);
+            echo json_encode(["status" => "error", "message" => "Lớp học chưa được cấu hình tổng số buổi học."]);
             return;
         }
+        $tong_so_buoi = (int)$lopHocInfo['so_buoi_hoc'];
+        $da_tao = Database::queryOne("SELECT COUNT(*) as cnt FROM lich_hoc WHERE lop_hoc_id = ?", [$lop_hoc_id]);
+        $so_buoi_da_tao = (int)$da_tao['cnt'];
+        $so_buoi_can_tao = $tong_so_buoi - $so_buoi_da_tao;
 
-        if (LichHoc::checkConflict($data['lop_hoc_id'], $data['ngay_hoc'], $data['gio_bat_dau'], $data['gio_ket_thuc'])) {
-            http_response_code(409); // Báo lỗi 409 Conflict
-            echo json_encode(["status" => "error", "message" => "Không thể tạo! Gia sư của lớp này đã có lịch dạy bị trùng vào khung giờ trên."]);
-            return;
-        }
-
-        try {
-            $result = LichHoc::create($data);
-            if ($result) {
-                // Lấy thông tin lớp học (gia_su_id, ten_lop)
-                $lopHoc = Database::queryOne(
-                    "SELECT lh.gia_su_id, lh.ten_lop, gs.ho_ten as ten_gia_su 
-                     FROM lop_hoc lh 
-                     LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id 
-                     WHERE lh.lop_hoc_id = ?",
-                    [$data['lop_hoc_id']]
-                );
-                
-                // Thông báo cho gia sư
-                if ($lopHoc && !empty($lopHoc['gia_su_id'])) {
-                    ThongBaoModel::guiThongBao(
-                        $lopHoc['gia_su_id'],
-                        'gia_su',
-                        'Lịch học mới',
-                        "Bạn có lịch dạy mới lớp {$lopHoc['ten_lop']} vào {$data['ngay_hoc']} từ {$data['gio_bat_dau']} đến {$data['gio_ket_thuc']}.",
-                        'lich_hoc'
-                    );
-                }
-                
-                // Lấy danh sách học sinh đã duyệt trong lớp và thông báo cho phụ huynh
-                $hocSinhs = Database::query(
-                    "SELECT hs.hoc_sinh_id, hs.ho_ten as ten_hoc_sinh, hs.phu_huynh_id, ph.ho_ten as ten_phu_huynh
-                     FROM dang_ky_lop dkl
-                     JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
-                     LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
-                     WHERE dkl.lop_hoc_id = ? AND dkl.trang_thai = 'da_duyet'",
-                    [$data['lop_hoc_id']]
-                );
-                
-                foreach ($hocSinhs as $hs) {
-                    if (!empty($hs['phu_huynh_id'])) {
-                        ThongBaoModel::guiThongBao(
-                            $hs['phu_huynh_id'],
-                            'phu_huynh',
-                            'Lịch học mới',
-                            "Học sinh {$hs['ten_hoc_sinh']} có lịch học mới lớp {$lopHoc['ten_lop']} vào {$data['ngay_hoc']} từ {$data['gio_bat_dau']} đến {$data['gio_ket_thuc']}.",
-                            'lich_hoc'
-                        );
-                    }
-                }
-                
-                http_response_code(201);
-                echo json_encode(["status" => "success", "message" => "Đã lên lịch học thành công!"]);
+        if (!$is_chu_ky) {
+            // TẠO 1 BUỔI
+            if (empty($data['ngay_hoc']) || empty($data['gio_bat_dau']) || empty($data['gio_ket_thuc'])) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Thiếu thông tin ngày, giờ hoặc lớp học"]); return;
             }
-        } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(["status" => "error", "message" => "Lỗi: " . $e->getMessage()]);
+            if ($so_buoi_can_tao <= 0) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Lớp này đã xếp đủ {$tong_so_buoi} buổi. Không thể tạo thêm!"]); return;
+            }
+            if (LichHoc::checkConflict($lop_hoc_id, $data['ngay_hoc'], $data['gio_bat_dau'], $data['gio_ket_thuc'])) {
+                http_response_code(409);
+                echo json_encode(["status" => "error", "message" => "Trùng lịch! Khung giờ này gia sư bận hoặc lớp đã có lịch."]); return;
+            }
+            try {
+                if (LichHoc::create($data)) {
+                    $this->sendNotifications($lop_hoc_id, $data['ngay_hoc'], $data['gio_bat_dau'], $data['gio_ket_thuc'], false);
+                    http_response_code(201);
+                    echo json_encode(["status" => "success", "message" => "Đã lên lịch học 1 buổi thành công!"]);
+                }
+            } catch (Exception $e) {
+                http_response_code(500); echo json_encode(["status" => "error", "message" => "Lỗi: " . $e->getMessage()]);
+            }
+        } else {
+            // TẠO CHU KỲ
+            if (empty($data['ngay_bat_dau']) || empty($data['ngay_trong_tuan']) || empty($data['thoi_gian_tung_ngay'])) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Thiếu thông tin chu kỳ"]); return;
+            }
+            if ($so_buoi_can_tao <= 0) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Lớp này đã xếp đủ {$tong_so_buoi} buổi. Không thể tạo thêm!"]); return;
+            }
+
+            try {
+                $current_date = $data['ngay_bat_dau'];
+                $count_created = 0; $count_conflict = 0; $loop_guard = 0;
+                $ngay_trong_tuan = $data['ngay_trong_tuan'];
+                $thoi_gian_tung_ngay = $data['thoi_gian_tung_ngay'];
+
+                while ($count_created < $so_buoi_can_tao && $loop_guard < 365) {
+                    $loop_guard++;
+                    $day_w = (int)date('w', strtotime($current_date));
+                    $thu = ($day_w === 0) ? 8 : $day_w + 1; 
+
+                    if (in_array($thu, $ngay_trong_tuan)) {
+                        $gio_bat_dau = $thoi_gian_tung_ngay[$thu]['gio_bat_dau'];
+                        $gio_ket_thuc = $thoi_gian_tung_ngay[$thu]['gio_ket_thuc'];
+
+                        if (LichHoc::checkConflict($lop_hoc_id, $current_date, $gio_bat_dau, $gio_ket_thuc)) {
+                            $count_conflict++;
+                        } else {
+                            LichHoc::create(['lop_hoc_id' => $lop_hoc_id, 'ngay_hoc' => $current_date, 'gio_bat_dau' => $gio_bat_dau, 'gio_ket_thuc' => $gio_ket_thuc, 'trang_thai' => 'chua_hoc']);
+                            $count_created++;
+                        }
+                    }
+                    $current_date = date('Y-m-d', strtotime($current_date . ' + 1 day'));
+                }
+
+                if ($count_created > 0) $this->sendNotifications($lop_hoc_id, "định kỳ", null, null, true);
+                
+                $msg = "Đã tạo thành công {$count_created} buổi học tự động.";
+                if ($count_conflict > 0) $msg .= " Bỏ qua {$count_conflict} buổi do trùng lịch.";
+                http_response_code(201); echo json_encode(["status" => "success", "message" => $msg]);
+
+            } catch (Exception $e) {
+                http_response_code(500); echo json_encode(["status" => "error", "message" => "Lỗi: " . $e->getMessage()]);
+            }
+        }
+    }
+
+    private function sendNotifications($lop_hoc_id, $ngay_hoc, $gio_bat_dau, $gio_ket_thuc, $is_chu_ky) {
+        $lopHoc = Database::queryOne(
+            "SELECT lh.gia_su_id, lh.ten_lop, gs.ho_ten as ten_gia_su 
+             FROM lop_hoc lh 
+             LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id 
+             WHERE lh.lop_hoc_id = ?", 
+            [$lop_hoc_id]
+        );
+        
+        // Cập nhật text thông báo cho chuẩn
+        $thong_diep_gia_su = $is_chu_ky 
+            ? "Bạn có lịch dạy mới định kỳ lớp {$lopHoc['ten_lop']}. Vui lòng kiểm tra lịch trình."
+            : "Bạn có lịch dạy mới lớp {$lopHoc['ten_lop']} vào {$ngay_hoc} từ {$gio_bat_dau} đến {$gio_ket_thuc}.";
+
+        if ($lopHoc && !empty($lopHoc['gia_su_id'])) {
+            ThongBaoModel::guiThongBao(
+                $lopHoc['gia_su_id'], 'gia_su', 'Lịch học mới', $thong_diep_gia_su, 'lich_hoc'
+            );
+        }
+        
+        $hocSinhs = Database::query(
+            "SELECT hs.phu_huynh_id, hs.ho_ten as ten_hoc_sinh
+             FROM dang_ky_lop dkl JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+             WHERE dkl.lop_hoc_id = ? AND dkl.trang_thai = 'da_duyet'", 
+            [$lop_hoc_id]
+        );
+        
+        $thong_diep_ph = $is_chu_ky
+            ? "Học sinh có lịch học định kỳ mới cho lớp {$lopHoc['ten_lop']}. Vui lòng kiểm tra lịch tuần."
+            : "Học sinh có lịch học mới lớp {$lopHoc['ten_lop']} vào {$ngay_hoc} từ {$gio_bat_dau} đến {$gio_ket_thuc}.";
+
+        foreach ($hocSinhs as $hs) {
+            if (!empty($hs['phu_huynh_id'])) {
+                ThongBaoModel::guiThongBao(
+                    $hs['phu_huynh_id'], 'phu_huynh', 'Lịch học mới', 
+                    str_replace("Học sinh", "Học sinh {$hs['ten_hoc_sinh']}", $thong_diep_ph), 
+                    'lich_hoc'
+                );
+            }
         }
     }
 

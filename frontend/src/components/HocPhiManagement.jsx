@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, Search, X, AlertTriangle, DollarSign, User, Calendar, Bell, Eye } from 'lucide-react'
 import DataPagination from '@/components/ui/DataPagination'
 import { hocPhiAPI } from '@/api/hocPhiApi'
-import { dangKyLopAPI } from '@/api/dangKyLopApi'
+import { dangKyAPI } from "@/api/dangkyApi";
 import { toast } from 'sonner'
 
 export default function HocPhiManagement({ user }) {
@@ -106,7 +106,7 @@ export default function HocPhiManagement({ user }) {
 
   const fetchDangKyList = async () => {
     try {
-      const response = await dangKyLopAPI.getAll()
+      const response = await dangKyAPI.getAll()
       if (response.status === 'success') {
         setDangKyList(response.data || [])
       }

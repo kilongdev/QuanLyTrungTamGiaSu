@@ -104,12 +104,23 @@ class DangKyLop {
     public static function getAll() {
         $sql = "SELECT dkl.*, hs.ho_ten AS ten_hoc_sinh, hs.phu_huynh_id, ph.ho_ten AS ten_phu_huynh,
                        lh.ten_lop, lh.gia_moi_buoi, lh.gia_toan_khoa, lh.loai_chi_tra, lh.gia_tri_chi_tra,
-                       mh.ten_mon_hoc
+                       lh.so_buoi_hoc, lh.khoi_lop, 
+                       gs.ho_ten AS ten_gia_su,
+                       mh.ten_mon_hoc,
+                       (SELECT GROUP_CONCAT(DISTINCT CONCAT(
+                            CASE DAYOFWEEK(ngay_hoc)
+                                WHEN 1 THEN 'CN' WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' 
+                                WHEN 4 THEN 'T4' WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7'
+                            END,
+                            ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
+                        ) SEPARATOR ', ') 
+                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien
                 FROM dang_ky_lop dkl
                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
                 LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
                 JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
+                LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id
                 ORDER BY dkl.trang_thai = 'cho_duyet' DESC, dkl.ngay_dang_ky DESC";
         return Database::query($sql);
     }
@@ -117,13 +128,24 @@ class DangKyLop {
     public static function getByPhuHuynh($phu_huynh_id) {
         $sql = "SELECT dkl.*, hs.ho_ten AS ten_hoc_sinh, hs.phu_huynh_id, ph.ho_ten AS ten_phu_huynh,
                        lh.ten_lop, lh.gia_moi_buoi, lh.gia_toan_khoa, lh.loai_chi_tra, lh.gia_tri_chi_tra,
-                       mh.ten_mon_hoc
+                       lh.so_buoi_hoc, lh.khoi_lop, 
+                       gs.ho_ten AS ten_gia_su,
+                       mh.ten_mon_hoc,
+                       (SELECT GROUP_CONCAT(DISTINCT CONCAT(
+                            CASE DAYOFWEEK(ngay_hoc)
+                                WHEN 1 THEN 'CN' WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' 
+                                WHEN 4 THEN 'T4' WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7'
+                            END,
+                            ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
+                        ) SEPARATOR ', ') 
+                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien
                 FROM dang_ky_lop dkl
                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
                 LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
                 JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
-                WHERE hs.phu_huynh_id = :phu_huynh_id AND dkl.trang_thai = 'da_duyet'
+                LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id
+                WHERE hs.phu_huynh_id = :phu_huynh_id 
                 ORDER BY dkl.ngay_dang_ky DESC";
         return Database::query($sql, [':phu_huynh_id' => $phu_huynh_id]);
     }
