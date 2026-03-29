@@ -644,7 +644,6 @@ export default function LichHocManagement({ user }) {
                                         {isReadOnly ? <Eye className="text-blue-600" size={24}/> : <UserCheck className="text-emerald-600" size={24}/>} 
                                         {isReadOnly ? 'Xem kết quả điểm danh' : 'Điểm danh học sinh'}
                                     </h3>
-                                    <p className="text-sm text-gray-500 mt-1">Buổi học ID: #{selectedLichHocId}</p>
                                 </div>
                                 <button onClick={() => setShowDiemDanhModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={24} className="text-gray-500 hover:text-red-500"/></button>
                             </div>
@@ -1002,7 +1001,6 @@ export default function LichHocManagement({ user }) {
                                         {isReadOnly ? <Eye className="text-blue-600" size={24}/> : <UserCheck className="text-emerald-600" size={24}/>} 
                                         {isReadOnly ? 'Xem kết quả điểm danh' : 'Điểm danh học sinh'}
                                     </h3>
-                                    <p className="text-sm text-gray-500 mt-1">Buổi học ID: #{selectedLichHocId}</p>
                                 </div>
                                 <button onClick={() => setShowDiemDanhModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={24} className="text-gray-500 hover:text-red-500"/></button>
                             </div>

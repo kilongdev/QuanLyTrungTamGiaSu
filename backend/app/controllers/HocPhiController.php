@@ -159,45 +159,105 @@ class HocPhiController {
         }
     }
 
-    public function checkQuaHan() {
-        // Lấy danh sách học phí quá hạn (trạng thái đã tự động cập nhật bởi Model)
-        $sql = "SELECT hp.*, hs.ho_ten as ten_hoc_sinh, hs.phu_huynh_id, lh.ten_lop
-                FROM hoc_phi hp
-                JOIN dang_ky_lop dkl ON hp.dang_ky_id = dkl.dang_ky_id
-                JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
-                JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
-                WHERE hp.trang_thai_thanh_toan = 'qua_han'
-                ORDER BY hp.ngay_tao ASC";
-        
-        $quaHanList = Database::query($sql);
-        $count = 0;
-        
-        foreach ($quaHanList as $hocPhi) {
-            $soNgayQuaHan = floor((strtotime('now') - strtotime($hocPhi['ngay_tao'])) / 86400) - 30;
+    /**
+     * Kiểm tra và cập nhật học phí quá hạn
+     * Gọi API này định kỳ (cron job) hoặc khi load trang
+     */
+    public function checkOverdue() {
+        try {
+            $today = date('Y-m-d');
             
-            // Thông báo cho admin
-            ThongBaoModel::guiThongBao(
-                1,
-                'admin',
-                'Học phí quá hạn',
-                "Học phí {$this->formatCurrency($hocPhi['so_tien'])}đ của HS {$hocPhi['ten_hoc_sinh']} - Lớp {$hocPhi['ten_lop']} đã quá hạn {$soNgayQuaHan} ngày. Vui lòng nhắc nhở phụ huynh.",
-                'hoc_phi'
+            // Reset trạng thái: nếu đang "qua_han" nhưng hạn mới còn trong tương lai -> "chua_thanh_toan"
+            Database::execute(
+                "UPDATE hoc_phi 
+                 SET trang_thai_thanh_toan = 'chua_thanh_toan' 
+                 WHERE trang_thai_thanh_toan = 'qua_han' 
+                 AND ngay_den_han >= ?",
+                [$today]
             );
             
-            // Thông báo cho phụ huynh
-            if (!empty($hocPhi['phu_huynh_id'])) {
+            // Tìm các học phí quá hạn (chưa thanh toán và đã qua ngày đáo hạn)
+            $overduePayments = Database::query(
+                "SELECT hp.*, hs.ho_ten as ten_hoc_sinh, hs.phu_huynh_id, lh.ten_lop
+                 FROM hoc_phi hp
+                 JOIN dang_ky_lop dkl ON hp.dang_ky_id = dkl.dang_ky_id
+                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                 JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
+                 WHERE hp.ngay_den_han < ? 
+                 AND hp.trang_thai_thanh_toan = 'chua_thanh_toan'",
+                [$today]
+            );
+            
+            $updatedCount = 0;
+            
+            foreach ($overduePayments as $hocPhi) {
+                // Cập nhật trạng thái thành quá hạn
+                Database::execute(
+                    "UPDATE hoc_phi SET trang_thai_thanh_toan = 'qua_han' WHERE hoc_phi_id = ?",
+                    [$hocPhi['hoc_phi_id']]
+                );
+                $updatedCount++;
+            }
+            
+            $this->sendResponse(true, "Đã kiểm tra và cập nhật {$updatedCount} học phí quá hạn", [
+                'updated_count' => $updatedCount,
+                'today' => $today
+            ]);
+        } catch (Exception $e) {
+            $this->sendResponse(false, 'Lỗi: ' . $e->getMessage(), null, 500);
+        }
+    }
+
+    /**
+     * Gửi thông báo nhắc nhở cho các học phí đã quá hạn
+     */
+    public function sendOverdueNotifications() {
+        try {
+            $today = date('Y-m-d');
+            
+            // Lấy danh sách học phí đã quá hạn
+            $overduePayments = Database::query(
+                "SELECT hp.*, hs.ho_ten as ten_hoc_sinh, hs.phu_huynh_id, lh.ten_lop
+                 FROM hoc_phi hp
+                 JOIN dang_ky_lop dkl ON hp.dang_ky_id = dkl.dang_ky_id
+                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                 JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
+                 WHERE hp.trang_thai_thanh_toan = 'qua_han'"
+            );
+            
+            $count = 0;
+            
+            foreach ($overduePayments as $hocPhi) {
+                // Thông báo cho phụ huynh
+                if (!empty($hocPhi['phu_huynh_id'])) {
+                    ThongBaoModel::guiThongBao(
+                        $hocPhi['phu_huynh_id'],
+                        'phu_huynh',
+                        'Nhắc nhở: Học phí quá hạn thanh toán',
+                        "Học phí {$this->formatCurrency($hocPhi['so_tien'])}đ cho học sinh {$hocPhi['ten_hoc_sinh']} - lớp {$hocPhi['ten_lop']} đã quá hạn thanh toán (hạn: {$hocPhi['ngay_den_han']}). Vui lòng thanh toán sớm.",
+                        'hoc_phi'
+                    );
+                }
+                
+                // Thông báo cho admin
                 ThongBaoModel::guiThongBao(
-                    $hocPhi['phu_huynh_id'],
-                    'phu_huynh',
-                    'Học phí quá hạn',
-                    "Học phí {$this->formatCurrency($hocPhi['so_tien'])}đ cho học sinh {$hocPhi['ten_hoc_sinh']} - lớp {$hocPhi['ten_lop']} đã quá hạn {$soNgayQuaHan} ngày. Vui lòng thanh toán sớm để tránh ảnh hưởng đến việc học của con.",
+                    1,
+                    'admin',
+                    'Nhắc nhở: Học phí quá hạn',
+                    "Học phí {$this->formatCurrency($hocPhi['so_tien'])}đ của HS {$hocPhi['ten_hoc_sinh']} - Lớp {$hocPhi['ten_lop']} đã quá hạn thanh toán (hạn: {$hocPhi['ngay_den_han']}).",
                     'hoc_phi'
                 );
+                
+                $count++;
             }
-            $count++;
+            
+            $this->sendResponse(true, "Đã gửi {$count} thông báo nhắc nhở học phí quá hạn", [
+                'count' => $count,
+                'today' => $today
+            ]);
+        } catch (Exception $e) {
+            $this->sendResponse(false, 'Lỗi: ' . $e->getMessage(), null, 500);
         }
-        
-        $this->sendResponse(true, "Đã gửi {$count} thông báo học phí quá hạn", ['count' => $count]);
     }
 
     public function getDetail($id) {

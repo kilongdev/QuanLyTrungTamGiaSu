@@ -296,7 +296,6 @@ export default function PhuHuynhManagement() {
                     <td className="px-6 py-4">
                       <div>
                         <p className="font-semibold text-gray-900">{parent.ho_ten}</p>
-                        <p className="text-xs text-gray-500">ID: {parent.phu_huynh_id}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -369,7 +368,6 @@ export default function PhuHuynhManagement() {
                 <div className="bg-blue-800 text-white p-5 flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-bold">{detailModal.data.ho_ten}</h3>
-                    <p className="text-blue-100 text-sm">ID: {detailModal.data.phu_huynh_id}</p>
                   </div>
                   <button 
                     onClick={closeModal}

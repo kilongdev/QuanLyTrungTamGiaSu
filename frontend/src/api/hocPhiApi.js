@@ -50,8 +50,16 @@ export const hocPhiAPI = {
     return response.json();
   },
 
-  checkQuaHan: async () => {
-    const response = await fetch(`${API_BASE}?route=/hocphi/check-quahan`, {
+  checkOverdue: async () => {
+    const response = await fetch(`${API_BASE}?route=/hocphi/check-overdue`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
+  sendOverdueNotifications: async () => {
+    const response = await fetch(`${API_BASE}?route=/hocphi/send-overdue-notifications`, {
       method: 'GET',
       headers: getAuthHeaders()
     });

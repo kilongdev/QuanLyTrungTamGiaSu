@@ -307,9 +307,6 @@ export default function DashboardOverview({ onNavigate }) {
                     <p className="font-semibold text-gray-800">Lớp {lop.khoi_lop} - {getMonHocName(lop.mon_hoc_id)}</p>
                     <p className="text-gray-500 text-sm">👨‍🏫 {getGiaSuName(lop.gia_su_id)}</p>
                   </div>
-                  <div className="text-right">
-                    <span className="text-sm font-medium text-gray-500 bg-gray-200 px-3 py-1 rounded-full">ID: {lop.lop_hoc_id}</span>
-                  </div>
                 </div>
               ))}
             </div>
