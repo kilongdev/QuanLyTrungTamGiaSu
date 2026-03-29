@@ -69,13 +69,12 @@ export default function HocPhiManagement({ user }) {
   const handleConfirmSendQuaHan = async () => {
     setQuaHanModal(prev => ({ ...prev, loading: true }))
     try {
-      const result = await hocPhiAPI.checkQuaHan()
+      const result = await hocPhiAPI.sendOverdueNotifications()
       if (result.success) {
         setQuaHanModal({ isOpen: false, loading: false, count: result.data?.count || 0 })
         toast.success(result.message || 'Đã gửi thông báo học phí quá hạn!')
-        fetchHocPhiData()
       } else {
-        toast.error(result.message || 'Lỗi kiểm tra')
+        toast.error(result.message || 'Lỗi gửi thông báo')
         setQuaHanModal(prev => ({ ...prev, loading: false }))
       }
     } catch (error) {
@@ -119,6 +118,9 @@ export default function HocPhiManagement({ user }) {
   const fetchHocPhiData = async () => {
     try {
       setLoading(true)
+      // Kiểm tra và cập nhật học phí quá hạn trước
+      await hocPhiAPI.checkOverdue()
+      // Sau đó lấy dữ liệu
       const data = await hocPhiAPI.getAll()
       if (data.success) {
         setHocPhiData(data.data || [])
@@ -697,7 +699,7 @@ export default function HocPhiManagement({ user }) {
                   </h3>
                   <div className="mt-2">
                     <p className="text-sm text-gray-600">
-                      Hệ thống sẽ gửi thông báo đến <span className="font-bold text-yellow-600">phụ huynh</span> của các học sinh có học phí quá hạn (trên 30 ngày chưa thanh toán).
+                      Hệ thống sẽ gửi thông báo đến <span className="font-bold text-yellow-600">phụ huynh</span> của các học sinh có học phí quá hạn.
                     </p>
                     <p className="text-sm text-gray-500 mt-2">
                       Đồng thời thông báo cũng sẽ được gửi đến <span className="font-bold">admin</span>.

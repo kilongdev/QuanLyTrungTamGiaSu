@@ -6,14 +6,6 @@ class HocPhiModel extends BaseModel {
     protected $primaryKey = 'hoc_phi_id';
 
     public function findAll() {
-        // Tự động cập nhật trạng thái quá hạn cho các học phí > 30 ngày
-        $this->conn->exec("
-            UPDATE hoc_phi 
-            SET trang_thai_thanh_toan = 'qua_han' 
-            WHERE trang_thai_thanh_toan = 'chua_thanh_toan' 
-            AND DATEDIFF(CURDATE(), ngay_tao) > 30
-        ");
-        
         $sql = "SELECT hp.hoc_phi_id,
                        hp.dang_ky_id,
                        hp.so_tien,

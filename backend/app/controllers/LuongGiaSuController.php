@@ -316,6 +316,15 @@ class LuongGiaSuController {
         try {
             $today = date('Y-m-d');
             
+            // Reset trạng thái: nếu đang "qua_han" nhưng hạn mới còn trong tương lai -> "chua_thanh_toan"
+            Database::execute(
+                "UPDATE luong_gia_su 
+                 SET trang_thai_thanh_toan = 'chua_thanh_toan' 
+                 WHERE trang_thai_thanh_toan = 'qua_han' 
+                 AND ngay_den_han >= ?",
+                [$today]
+            );
+            
             // Tìm các lương quá hạn (chưa thanh toán và đã qua ngày đáo hạn)
             $overdueSalaries = Database::query(
                 "SELECT lg.*, gs.ho_ten as ten_giasu, gs.gia_su_id, lh.ten_lop
