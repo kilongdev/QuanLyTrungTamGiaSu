@@ -131,7 +131,7 @@ export default function DashboardNavbar({ user, onLogout, pageTitle, sidebarColl
     return date.toLocaleDateString('vi-VN')
   }
   return (
-    <header className="bg-gray-50 fixed top-0 left-0 right-0 z-50">
+    <header className="bg-white fixed top-0 left-0 right-0 z-50">
       <div className="h-16 flex items-center justify-between">
         {/* Left - Toggle Button & Logo */}
         <div className="flex items-center h-full">
