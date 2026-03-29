@@ -17,6 +17,7 @@ class LuongGiaSuModel extends BaseModel {
                        GROUP_CONCAT(DISTINCT lh.ten_lop SEPARATOR ', ') as cac_lop,
                        MAX(lgs.trang_thai_thanh_toan) as trang_thai_thanh_toan,
                        SUM(CASE WHEN lgs.trang_thai_thanh_toan = 'chua_thanh_toan' THEN 1 ELSE 0 END) as so_lop_chua_thanh_toan,
+                       SUM(CASE WHEN lgs.trang_thai_thanh_toan = 'qua_han' THEN 1 ELSE 0 END) as so_lop_qua_han,
                        SUM(CASE WHEN lgs.trang_thai_thanh_toan = 'da_thanh_toan' THEN 1 ELSE 0 END) as so_lop_da_thanh_toan,
                        MAX(lgs.ngay_tao) as ngay_tao,
                        CONCAT(LPAD(lgs.thang, 2, '0'), '/', lgs.nam) as thang_nam
@@ -44,8 +45,8 @@ class LuongGiaSuModel extends BaseModel {
     }
 
     public function create($data) {
-        $sql = "INSERT INTO {$this->table} (gia_su_id, lop_hoc_id, thang, nam, so_buoi_day, tong_tien_thu, tien_tra_gia_su, loai_chi_tra, gia_tri_ap_dung, trang_thai_thanh_toan, ngay_tao) 
-                VALUES (:gs_id, :lop_id, :thang, :nam, :so_buoi, :tong_thu, :tien_tra, :loai, :gia_tri, 'chua_thanh_toan', NOW())";
+        $sql = "INSERT INTO {$this->table} (gia_su_id, lop_hoc_id, thang, nam, so_buoi_day, tong_tien_thu, tien_tra_gia_su, loai_chi_tra, gia_tri_ap_dung, trang_thai_thanh_toan, ngay_den_han, ngay_tao) 
+                VALUES (:gs_id, :lop_id, :thang, :nam, :so_buoi, :tong_thu, :tien_tra, :loai, :gia_tri, 'chua_thanh_toan', :ngay_den_han, NOW())";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([
             ':gs_id' => $data['gia_su_id'],
@@ -56,7 +57,8 @@ class LuongGiaSuModel extends BaseModel {
             ':tong_thu' => $data['tong_tien_thu'] ?? 0,
             ':tien_tra' => $data['tien_tra_gia_su'] ?? 0,
             ':loai' => $data['loai_chi_tra'] ?? 'co_dinh',
-            ':gia_tri' => $data['gia_tri_ap_dung'] ?? 0
+            ':gia_tri' => $data['gia_tri_ap_dung'] ?? 0,
+            ':ngay_den_han' => $data['ngay_den_han'] ?? null
         ]);
         return $this->conn->lastInsertId();
     }

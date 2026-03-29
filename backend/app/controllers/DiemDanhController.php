@@ -27,8 +27,77 @@ class DiemDanhController {
             );
             
             foreach ($data['danh_sach'] as $hoc_sinh) {
-                $hoc_sinh['lich_hoc_id'] = $lich_hoc_id; 
+                $hoc_sinh['lich_hoc_id'] = $lich_hoc_id;
+                
+                // Lấy trạng thái cũ trước khi lưu
+                $oldStatus = Database::queryOne(
+                    "SELECT tinh_trang FROM diem_danh WHERE lich_hoc_id = ? AND hoc_sinh_id = ?",
+                    [$lich_hoc_id, $hoc_sinh['hoc_sinh_id']]
+                );
+                $oldTinhTrang = $oldStatus ? $oldStatus['tinh_trang'] : null;
+                $newTinhTrang = $hoc_sinh['tinh_trang'];
+                
+                // Lưu điểm danh
                 DiemDanh::save($hoc_sinh);
+                
+                // Chỉ cập nhật lương khi có thay đổi trạng thái liên quan đến có mặt
+                $wasPresent = ($oldTinhTrang === 'co_mat');
+                $isPresent = ($newTinhTrang === 'co_mat');
+                
+                if ($wasPresent !== $isPresent && !empty($lichHoc['lop_hoc_id'])) {
+                    $thang = date('n', strtotime($lichHoc['ngay_hoc']));
+                    $nam = date('Y', strtotime($lichHoc['ngay_hoc']));
+                    
+                    // Lấy thông tin lớp học để tính lương
+                    $lopHoc = Database::queryOne(
+                        "SELECT gia_su_id, gia_moi_buoi, so_buoi_hoc, loai_chi_tra, gia_tri_chi_tra FROM lop_hoc WHERE lop_hoc_id = ?",
+                        [$lichHoc['lop_hoc_id']]
+                    );
+                    
+                    if ($lopHoc) {
+                        // Kiểm tra xem đã có bản ghi lương cho tháng này chưa
+                        $luongHienTai = Database::queryOne(
+                            "SELECT luong_id, so_buoi_day FROM luong_gia_su 
+                             WHERE lop_hoc_id = ? AND thang = ? AND nam = ?",
+                            [$lichHoc['lop_hoc_id'], $thang, $nam]
+                        );
+                        
+                        $giaMoiBuoi = (float)($lopHoc['gia_moi_buoi'] ?? 0);
+                        $soBuoiHoc = (int)($lopHoc['so_buoi_hoc'] ?? 1);
+                        $loaiChiTra = $lopHoc['loai_chi_tra'] ?? 'tien_cu_the';
+                        $giaTriApDung = (float)($lopHoc['gia_tri_chi_tra'] ?? 0);
+                        
+                        // Công thức tính đơn giá buổi cho gia sư
+                        if ($loaiChiTra === 'phan_tram') {
+                            $donGiaBuoiGiaSu = $giaMoiBuoi * ($giaTriApDung / 100);
+                        } else {
+                            // tien_cu_the: giá mỗi buổi = giá trị chi trả / số buổi học
+                            $donGiaBuoiGiaSu = $soBuoiHoc > 0 ? ($giaTriApDung / $soBuoiHoc) : 0;
+                        }
+                        
+                        if ($luongHienTai) {
+                            // +1 nếu mới có mặt, -1 nếu từ có mặt thành vắng
+                            $soBuoiMoi = $luongHienTai['so_buoi_day'] + ($isPresent ? 1 : -1);
+                            $soBuoiMoi = max(0, $soBuoiMoi); // Không cho âm
+                            $tienTraGiaSu = $soBuoiMoi * $donGiaBuoiGiaSu;
+                            
+                            // Cập nhật số buổi dạy và tiền lương
+                            Database::execute(
+                                "UPDATE luong_gia_su SET so_buoi_day = ?, tien_tra_gia_su = ? WHERE luong_id = ?",
+                                [$soBuoiMoi, $tienTraGiaSu, $luongHienTai['luong_id']]
+                            );
+                        } else if ($isPresent) {
+                            // Chỉ tạo mới nếu học sinh có mặt
+                            $tienTraGiaSu = $donGiaBuoiGiaSu;
+                            
+                            Database::execute(
+                                "INSERT INTO luong_gia_su (gia_su_id, lop_hoc_id, thang, nam, so_buoi_day, tien_tra_gia_su, loai_chi_tra, gia_tri_ap_dung, trang_thai_thanh_toan)
+                                 VALUES (?, ?, ?, ?, 1, ?, ?, ?, 'chua_thanh_toan')",
+                                [$lopHoc['gia_su_id'], $lichHoc['lop_hoc_id'], $thang, $nam, $tienTraGiaSu, $loaiChiTra, $giaTriApDung]
+                            );
+                        }
+                    }
+                }
                 
                 // Gửi thông báo cho phụ huynh về tình trạng điểm danh
                 if (!empty($hoc_sinh['hoc_sinh_id'])) {
