@@ -2,6 +2,7 @@
  * API cho quản lý lớp học
  */
 
+//const API_URL = "http://localhost:5001";
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
 
 /**
@@ -55,13 +56,21 @@ export const lopHocAPI = {
         }),
 
     /**
-     * Lấy chi tiết lớp học theo ID
-     * @param {number} id - ID lớp học
-     */
-    getById: (id) => 
-        request(`/lophoc/${id}`, {
-            method: 'GET',
-        }),
+   * Lấy danh sách lớp học theo ID gia sư
+   */
+  getByGiaSu: (giaSuId) =>
+    request(`/lophoc?gia_su_id=${giaSuId}`, {
+      method: "GET",
+    }),
+
+  /**
+   * Lấy chi tiết lớp học theo ID
+   * @param {number} id - ID lớp học
+   */
+  getById: (id) =>
+    request(`/lophoc/${id}`, {
+      method: "GET",
+    }),
 
     /**
      * Tạo lớp học mới

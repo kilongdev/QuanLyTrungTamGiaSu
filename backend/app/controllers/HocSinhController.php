@@ -5,6 +5,16 @@ class HocSinhController
 {
     public static function index(): void
     {
+        $giaSuId = $_GET['gia_su_id'] ?? null;
+        if ($giaSuId) {
+            $data = HocSinh::getByGiaSuId($giaSuId);
+            echo json_encode([
+                'status' => 'success',
+                'data' => $data
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        
         $page = (int)($_GET['page'] ?? 1);
         $limit = (int)($_GET['limit'] ?? 10);
         $offset = ($page - 1) * $limit;

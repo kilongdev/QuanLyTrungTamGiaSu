@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react'
 import DashboardLayout from '../Layouts/DashboardLayout'
 import { LayoutDashboard, Calendar, BookOpen, GraduationCap, Mail, Wallet, UserCircle, Users, ClipboardList } from 'lucide-react'
 import YeuCauManagement from '../components/YeuCauManagement'
-import LichHocManagement from '../components/LichHocManagement'
+import LichDayGiaSu from '../components/LichDayGiaSu'
+import HoSoGiaSu from '../components/HoSoGiaSu'
+import LopDangDay from '../components/LopDangDay'
+import DanhSachHocSinh from '../components/DanhSachHocSinh'
+import YeuCauMoi from '../components/YeuCauMoi'
+import ThuNhapGiaSu from '@/components/ThuNhapGiaSu'
 
 export default function GiaSuDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState(() => localStorage.getItem('giasu_active_item') || 'dashboard')
@@ -42,19 +47,19 @@ export default function GiaSuDashboard({ user, onLogout }) {
       case 'dashboard':
         return <DashboardContent />
       case 'schedule':
-        return <LichHocManagement user={user} />
+        return <LichDayGiaSu user={user} />
       case 'classes':
-        return <PlaceholderContent title="Lớp đang dạy" description="Xem và quản lý các lớp bạn đang dạy" />
+        return <LopDangDay user={user} />
       case 'students':
-        return <PlaceholderContent title="Học sinh" description="Thông tin học sinh của bạn" />
+        return <DanhSachHocSinh user={user} />
       case 'requests':
-        return <PlaceholderContent title="Yêu cầu mới" description="Các yêu cầu dạy mới từ phụ huynh" />
+        return <YeuCauMoi user={user} />
       case 'manage-requests':
         return <YeuCauManagement user={user} /> 
       case 'income':
-        return <PlaceholderContent title="Thu nhập" description="Theo dõi thu nhập và thanh toán" />
+        return <ThuNhapGiaSu user={user} />
       case 'profile':
-        return <PlaceholderContent title="Hồ sơ" description="Cập nhật thông tin cá nhân và kinh nghiệm" />
+        return <HoSoGiaSu user={user} />
       default:
         return <DashboardContent />
     }

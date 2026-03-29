@@ -81,4 +81,14 @@ class YeuCau {
         $result = Database::query($sql, [':id' => $id]);
         return $result ? $result[0] : null;
     }
+
+    public static function getYeuCauMoiGiaSu($giaSuId) {
+        $sql = "SELECT yc.*, lh.ten_lop, lh.so_buoi_hoc, lh.gia_toan_khoa, lh.gia_moi_buoi, lh.loai_chi_tra, lh.khoi_lop, mh.ten_mon_hoc 
+                FROM yeu_cau yc 
+                JOIN lop_hoc lh ON yc.lop_hoc_id = lh.lop_hoc_id 
+                LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id 
+                WHERE yc.gia_su_id = :gia_su_id 
+                  AND yc.trang_thai = 'cho_duyet'";
+        return Database::query($sql, [':gia_su_id' => $giaSuId]);
+    }
 }

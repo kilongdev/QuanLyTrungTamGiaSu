@@ -34,7 +34,67 @@ class YeuCauController {
         }
     }
 
-    public function getAll() {
+    // test if don't have account
+    public function createGuest()
+    {
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        if (
+            empty($data['ho_ten']) ||
+            empty($data['so_dien_thoai']) ||
+            empty($data['lop_hoc_id'])
+        ) {
+            http_response_code(400);
+            echo json_encode([
+                "status" => "error",
+                "message" => "Thiếu thông tin bắt buộc"
+            ]);
+            return;
+        }
+        $ghiChu = $data['ghi_chu'] ?? '';
+
+        $noiDung = "
+            Họ tên: {$data['ho_ten']}
+            SĐT: {$data['so_dien_thoai']}
+            Email: {$data['email']}
+            Ghi chú: {$ghiChu}
+        ";
+        $yeuCau = [
+            "nguoi_tao_id" => 0,
+            "loai_nguoi_tao" => "guest",
+            "phan_loai" => "dang_ky_lop",
+            "tieu_de" => "Yêu cầu đăng ký lớp",
+            "noi_dung" => $noiDung,
+            "lop_hoc_id" => $data['lop_hoc_id']
+        ];
+
+        try {
+            YeuCau::create($yeuCau);
+
+            echo json_encode([
+                "status" => "success",
+                "message" => "Đăng ký học thành công! Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất."
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                "status" => "error",
+                "message" => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getAll()
+    {
+        // Nhận diện nếu Gia sư đang gọi API
+        $giaSuId = $_GET['gia_su_id'] ?? null;
+        if ($giaSuId) {
+            $data = YeuCau::getYeuCauMoiGiaSu($giaSuId);
+            echo json_encode(["status" => "success", "data" => $data]);
+            return;
+        }
+
+        // Dành cho Admin gọi
         $data = YeuCau::getAll();
         echo json_encode(["status" => "success", "data" => $data]);
     }
@@ -49,36 +109,39 @@ class YeuCauController {
 
         if (empty($data['trang_thai']) || empty($data['nguoi_xu_ly_id'])) {
             http_response_code(400);
-            echo json_encode(["status" => "error", "message" => "Vui lòng cung cấp trạng thái và ID người xử lý (Admin)"]);
+            echo json_encode(["status" => "error", "message" => "Vui lòng cung cấp trạng thái và ID người xử lý"]);
             return;
         }
 
         try {
-            // Lấy thông tin yêu cầu từ DB để biết người tạo
             $yeuCau = YeuCau::getById($id);
-            
             YeuCau::updateStatus($id, $data);
-            
-            // Thông báo cho người tạo yêu cầu về kết quả xử lý
+
+            // NẾU GIA SƯ CHẤP NHẬN NHẬN LỚP -> Cập nhật luôn bảng lop_hoc
+            if ($data['trang_thai'] === 'da_duyet' && !empty($yeuCau['lop_hoc_id']) && !empty($yeuCau['gia_su_id'])) {
+                Database::execute("UPDATE lop_hoc SET gia_su_id = :gia_su_id, trang_thai = 'sap_mo' WHERE lop_hoc_id = :lop_hoc_id", [
+                    ':gia_su_id' => $yeuCau['gia_su_id'],
+                    ':lop_hoc_id' => $yeuCau['lop_hoc_id']
+                ]);
+            }
+
+            // Thông báo cho người tạo yêu cầu (Admin)
             if ($yeuCau && !empty($yeuCau['nguoi_tao_id']) && !empty($yeuCau['loai_nguoi_tao'])) {
                 $statusMessages = [
-                    'cho_duyet' => 'đang chờ duyệt',
-                    'dang_xu_ly' => 'đang được xử lý',
-                    'da_duyet' => 'đã được duyệt',
-                    'tu_choi' => 'bị từ chối',
-                    'da_hoan_thanh' => 'đã hoàn thành'
+                    'da_duyet' => 'đã được chấp nhận',
+                    'tu_choi' => 'đã bị từ chối'
                 ];
                 $trangThaiText = $statusMessages[$data['trang_thai']] ?? $data['trang_thai'];
                 ThongBaoModel::guiThongBao(
                     $yeuCau['nguoi_tao_id'],
                     $yeuCau['loai_nguoi_tao'],
-                    'Cập nhật yêu cầu hỗ trợ',
-                    "Yêu cầu hỗ trợ '{$yeuCau['tieu_de']}' của bạn {$trangThaiText}.",
+                    'Phản hồi nhận lớp',
+                    "Yêu cầu giao lớp '{$yeuCau['tieu_de']}' {$trangThaiText}.",
                     'yeu_cau'
                 );
             }
-            
-            echo json_encode(["status" => "success", "message" => "Đã cập nhật trạng thái yêu cầu!"]);
+
+            echo json_encode(["status" => "success", "message" => "Đã phản hồi yêu cầu thành công!"]);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(["status" => "error", "message" => "Lỗi cập nhật: " . $e->getMessage()]);
