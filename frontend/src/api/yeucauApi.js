@@ -72,6 +72,14 @@ export const yeuCauAPI = {
       method: "GET",
     }),
 
+    /**
+   * Lấy danh sách yêu cầu nhận lớp mới cho Gia sư
+   */
+  getYeuCauMoi: (giaSuId) =>
+    request(`/yeucau?gia_su_id=${giaSuId}`, {
+      method: "GET",
+    }),
+    
   /**
    * Lấy yêu cầu theo người tạo
    */

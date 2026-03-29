@@ -111,4 +111,22 @@ class HocSinh
     {
         return Database::execute("DELETE FROM hoc_sinh WHERE hoc_sinh_id = ?", [$id]);
     }
+
+    public static function getByGiaSuId(string $giaSuId): array
+    {
+        return Database::query(
+            "SELECT hs.hoc_sinh_id, hs.ho_ten, hs.ngay_sinh, hs.khoi_lop,
+                    ph.ho_ten as phu_huynh_ten, ph.so_dien_thoai as phu_huynh_sdt, ph.email as phu_huynh_email,
+                    -- Gom tên tất cả các lớp mà học sinh này đang học với gia sư này
+                    GROUP_CONCAT(lh.ten_lop SEPARATOR ', ') as cac_lop_dang_hoc
+             FROM hoc_sinh hs
+             INNER JOIN dang_ky_lop dkl ON hs.hoc_sinh_id = dkl.hoc_sinh_id
+             INNER JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
+             LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
+             WHERE lh.gia_su_id = ? AND dkl.trang_thai = 'da_duyet'
+             GROUP BY hs.hoc_sinh_id
+             ORDER BY hs.ho_ten ASC",
+            [$giaSuId]
+        );
+    }
 }

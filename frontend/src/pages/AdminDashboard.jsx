@@ -10,7 +10,7 @@ import HocSinhManagement from '../components/HocSinhManagement';
 import GiaSuManagement from '../components/GiaSuManagement';
 import LichHocManagement from '../components/LichHocManagement';
 import YeuCauManagement from '../components/YeuCauManagement';
-import DangKyLopManagement from '../components/DangKyLopManagement'; // Module đăng ký lớp tụi mình vừa làm
+import DangKyLopManagement from '../components/DangKyLopManagement'; 
 
 export default function AdminDashboard() {
   const [user, setUser] = useState(null);
