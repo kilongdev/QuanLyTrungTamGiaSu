@@ -300,7 +300,6 @@ export default function HocSinhManagement() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <p className="font-semibold text-gray-900">{student.ho_ten}</p>
-                        <p className="text-xs text-gray-500">ID: {student.hoc_sinh_id}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -412,7 +411,7 @@ export default function HocSinhManagement() {
                     <option value="">-- Chọn phụ huynh --</option>
                     {allParents.map((parent) => (
                       <option key={parent.phu_huynh_id} value={parent.phu_huynh_id}>
-                        {parent.ho_ten} (ID: {parent.phu_huynh_id})
+                        {parent.ho_ten}
                       </option>
                     ))}
                   </select>
@@ -503,7 +502,7 @@ export default function HocSinhManagement() {
                 <div className="bg-blue-800 text-white p-5 flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-bold">{detailModal.data.ho_ten}</h3>
-                    <p className="text-blue-100 text-sm">ID: {detailModal.data.hoc_sinh_id} • Khối: {detailModal.data.khoi_lop || 'N/A'}</p>
+                    <p className="text-blue-100 text-sm">Khối: {detailModal.data.khoi_lop || 'N/A'}</p>
                   </div>
                   <button 
                     onClick={() => setDetailModal({ isOpen: false, data: null, loading: false })}

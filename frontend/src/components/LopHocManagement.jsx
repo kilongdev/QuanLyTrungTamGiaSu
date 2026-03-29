@@ -606,8 +606,7 @@ export default function LopHocManagement() {
                             <p className="text-gray-600">Tối đa {lopHoc.so_luong_toi_da || 1} học sinh</p>
                           </div>
 
-                          <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
-                            <span className="text-xs text-gray-400">ID: {lopHoc.lop_hoc_id}</span>
+                          <div className="pt-2 border-t border-gray-100 flex justify-end items-center">
                             <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full ${getTrangThaiColor(lopHoc.trang_thai)}`}>
                               {getTrangThaiLabel(lopHoc.trang_thai)}
                             </span>

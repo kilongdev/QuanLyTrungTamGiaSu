@@ -293,7 +293,6 @@ export default function GiaSuManagement() {
                     <td className="px-6 py-4">
                       <div>
                         <p className="font-semibold text-gray-900">{tutor.ho_ten}</p>
-                        <p className="text-xs text-gray-500">ID: {tutor.gia_su_id}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -365,7 +364,6 @@ export default function GiaSuManagement() {
                 <div className="bg-blue-800 text-white p-5 flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-bold">{detailModal.data.ho_ten}</h3>
-                    <p className="text-blue-100 text-sm">ID: {detailModal.data.gia_su_id}</p>
                   </div>
                   <button 
                     onClick={closeModal}
