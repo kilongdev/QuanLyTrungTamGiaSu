@@ -30,11 +30,16 @@ class Router
 
     public static function dispatch(): void
     {
+        // Cấu hình CORS để cho phép Frontend (port 3000) truy cập
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
         $method = $_SERVER['REQUEST_METHOD'];
         $uri = self::getUri();
 
         if ($method === 'OPTIONS') {
-            http_response_code(200);
+            http_response_code(204); // Trả về 204 No Content cho request preflight
             exit();
         }
 
@@ -72,18 +77,22 @@ class Router
         ];
         
         foreach ($basePaths as $basePath) {
-            if (strpos($uri, $basePath) === 0) {
+            // So sánh không phân biệt chữ hoa chữ thường để tránh lỗi trên Windows/XAMPP
+            if (stripos($uri, $basePath) === 0) {
                 $uri = substr($uri, strlen($basePath));
                 break;
             }
         }
 
-        // Loại bỏ /api prefix nếu có
-        if (strpos($uri, '/api') === 0) {
+        // Loại bỏ /api prefix nếu có (ví dụ: gọi /api/phuhuynh/profile)
+        if (stripos($uri, '/api') === 0) {
             $uri = substr($uri, 4); // Loại bỏ '/api'
         }
 
-        return $uri ?: '/';
+        // Loại bỏ dấu gạch chéo ở cuối (trailing slash) để khớp với route pattern
+        $uri = rtrim($uri, '/');
+
+        return $uri === '' ? '/' : $uri;
     }
 
     private static function matchRoute(string $pattern, string $uri): array|false
@@ -108,6 +117,15 @@ class Router
             // Instantiate class nếu là class name string
             if (is_string($class)) {
                 $instance = new $class();
+                
+                if (!method_exists($instance, $method)) {
+                    http_response_code(500);
+                    echo json_encode([
+                        'status' => 'error', 
+                        'message' => "Method '$method' không tồn tại trong class '$class'"
+                    ], JSON_UNESCAPED_UNICODE);
+                    return;
+                }
                 call_user_func_array([$instance, $method], $positionalParams);
             } else {
                 call_user_func_array([$class, $method], $positionalParams);

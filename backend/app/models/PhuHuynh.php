@@ -14,16 +14,13 @@ class PhuHuynh
         }
 
         $countParams = $params;
-        $params[] = $limit;
-        $params[] = $offset;
 
-        $data = Database::query(
-            "SELECT phu_huynh_id, ho_ten, so_dien_thoai, email, dia_chi, trang_thai, ngay_dang_ky
-             FROM phu_huynh $where 
-             ORDER BY ngay_dang_ky DESC 
-             LIMIT ? OFFSET ?",
-            $params
-        );
+        $sql = "SELECT phu_huynh_id, ho_ten, so_dien_thoai, email, dia_chi, trang_thai, ngay_dang_ky
+                FROM phu_huynh $where 
+                ORDER BY ngay_dang_ky DESC 
+                LIMIT $limit OFFSET $offset";
+
+        $data = Database::query($sql, $countParams);
 
         $total = Database::queryOne("SELECT COUNT(*) as count FROM phu_huynh $where", $countParams)['count'];
 
@@ -128,11 +125,50 @@ class PhuHuynh
 
         if ($parent) {
             $parent['hoc_sinh'] = Database::query(
-                "SELECT hoc_sinh_id, ho_ten, ngay_sinh, khoi_lop FROM hoc_sinh WHERE phu_huynh_id = ?",
+                "SELECT hs.hoc_sinh_id, hs.ho_ten, hs.ngay_sinh, hs.khoi_lop,
+                    (SELECT COUNT(*) FROM dang_ky_lop dkl WHERE dkl.hoc_sinh_id = hs.hoc_sinh_id AND dkl.trang_thai = 'da_duyet') as subjects_count,
+                    (SELECT COUNT(*) FROM diem_danh dd WHERE dd.hoc_sinh_id = hs.hoc_sinh_id AND dd.tinh_trang = 'co_mat') as sessions_count,
+                    (SELECT GROUP_CONCAT(DISTINCT mh.ten_mon_hoc SEPARATOR ', ')
+                     FROM dang_ky_lop dkl
+                     JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
+                     JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
+                     WHERE dkl.hoc_sinh_id = hs.hoc_sinh_id AND dkl.trang_thai = 'da_duyet') as subjects_list
+                 FROM hoc_sinh hs WHERE hs.phu_huynh_id = ?",
                 [$userId]
             );
         }
 
         return $parent;
+    }
+
+    public static function getCurrentTutors(int $phuHuynhId): array
+    {
+        $sql = "SELECT DISTINCT gs.gia_su_id, gs.ho_ten, gs.chuyen_mon, gs.diem_danh_gia_trung_binh, gs.kinh_nghiem
+                FROM gia_su gs
+                JOIN lop_hoc lh ON gs.gia_su_id = lh.gia_su_id
+                JOIN dang_ky_lop dkl ON lh.lop_hoc_id = dkl.lop_hoc_id
+                JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                WHERE hs.phu_huynh_id = ? AND lh.trang_thai = 'dang_hoc' AND dkl.trang_thai = 'da_duyet'";
+        
+        return Database::query($sql, [$phuHuynhId]);
+    }
+
+    public static function getUpcomingClasses(int $phuHuynhId, int $limit = 5): array
+    {
+        $sql = "SELECT lh_chi_tiet.lich_hoc_id, mh.ten_mon_hoc, gs.ho_ten AS ten_gia_su, lh.khoi_lop,
+                       lh_chi_tiet.ngay_hoc, lh_chi_tiet.gio_bat_dau, lh_chi_tiet.gio_ket_thuc, hs.ho_ten AS ten_hoc_sinh
+                FROM lich_hoc lh_chi_tiet
+                JOIN lop_hoc lh ON lh_chi_tiet.lop_hoc_id = lh.lop_hoc_id
+                JOIN dang_ky_lop dkl ON lh.lop_hoc_id = dkl.lop_hoc_id
+                JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id
+                LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
+                WHERE hs.phu_huynh_id = ? 
+                AND lh_chi_tiet.ngay_hoc >= CURDATE()
+                AND dkl.trang_thai = 'da_duyet'
+                ORDER BY lh_chi_tiet.ngay_hoc ASC, lh_chi_tiet.gio_bat_dau ASC
+                LIMIT $limit";
+        
+        return Database::query($sql, [$phuHuynhId]);
     }
 }

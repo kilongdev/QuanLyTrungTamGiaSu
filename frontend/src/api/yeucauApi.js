@@ -2,7 +2,7 @@
  * API cho quản lý yêu cầu (guest đăng ký lớp, gửi yêu cầu)
  */
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_URL = "http://localhost:8080/QuanLyTrungTamGiaSu/backend/public";
 
 /**
  * Gửi request đến API
@@ -75,12 +75,8 @@ export const yeuCauAPI = {
   /**
    * Lấy yêu cầu theo người tạo
    */
-  // getByNguoiTao: (id, loai) =>
-  //   request(`/yeucau/${loai}/${id}`, {
-  //     method: "GET",
-  //   }),
   getByNguoiTao: (id, loai) =>
-    request(`/yeucau/nguoitao/${id}/${loai}`, {
+    request(`/yeucau/${loai}/${id}`, {
       method: "GET",
     }),
 
@@ -93,17 +89,11 @@ export const yeuCauAPI = {
       body: JSON.stringify(data),
     }),
 
-  update: (id, data) =>
-    request(`/yeucau/update/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
-
   /**
    * Xóa yêu cầu
    */
   delete: (id) =>
-    request(`/yeucau/delete/${id}`, {
+    request(`/yeucau/${id}`, {
       method: "DELETE",
     }),
 };

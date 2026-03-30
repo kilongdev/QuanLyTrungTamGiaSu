@@ -1,16 +1,29 @@
 <?php
+require_once __DIR__ . '/Env.php';
+
 class Database
 {
-    private static $host = 'mysql';
-    private static $dbName = 'tutoring_db';
-    private static $username = 'root';
-    private static $password = 'root';
+    private static $host = null;
+    private static $dbName = null;
+    private static $username = null;
+    private static $password = null;
     private static $charset = 'utf8mb4';
     private static $connection = null;
+
+    private static function initConfig(): void
+    {
+        if (self::$host === null) {
+            self::$host = Env::get('DB_HOST', 'localhost');
+            self::$dbName = Env::get('DB_NAME', 'quanlytrungtamgiasu');
+            self::$username = Env::get('DB_USER', 'root');
+            self::$password = Env::get('DB_PASS', '');
+        }
+    }
 
     public static function getConnection(): PDO
     {
         if (self::$connection === null) {
+            self::initConfig();
             try {
                 $dsn = "mysql:host=" . self::$host .
                     ";dbname=" . self::$dbName .
@@ -31,6 +44,10 @@ class Database
                 );
             } catch (PDOException $e) {
                 error_log("Database Connection Error: " . $e->getMessage());
+
+                // Đảm bảo có CORS header ngay cả khi lỗi DB
+                header("Access-Control-Allow-Origin: *");
+                header('Content-Type: application/json; charset=utf-8');
 
                 http_response_code(500);
                 echo json_encode([

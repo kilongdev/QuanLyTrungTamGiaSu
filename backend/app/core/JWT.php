@@ -4,6 +4,7 @@ class JWT
     private static $secretKey = null;
     private static $expireTime = 3600;
     private static $initialized = false;
+    private static $leeway = 60; // Thêm 60s để tránh lỗi lệch giờ hệ thống
 
     private static function init(): void
     {
@@ -11,6 +12,11 @@ class JWT
         
         $envPath = __DIR__ . '/../../.env';
         
+        // Nếu không tìm thấy .env ở thư mục gốc, thử tìm ở thư mục hiện tại (phòng hờ cấu hình XAMPP)
+        if (!file_exists($envPath)) {
+            $envPath = __DIR__ . '/../.env';
+        }
+
         if (!file_exists($envPath)) {
             $key = bin2hex(random_bytes(32));
             file_put_contents($envPath, "JWT_SECRET_KEY=$key\nJWT_EXPIRE_TIME=86400\n");
@@ -24,7 +30,8 @@ class JWT
             }
         }
         
-        self::$secretKey = $_ENV['JWT_SECRET_KEY'] ?? bin2hex(random_bytes(32));
+        // Cố định Secret Key: Nếu không có trong .env, hãy dùng một chuỗi cố định thay vì random mỗi request
+        self::$secretKey = $_ENV['JWT_SECRET_KEY'] ?? 'your_default_fixed_secret_key_for_dev';
         self::$expireTime = (int)($_ENV['JWT_EXPIRE_TIME'] ?? 86400);
         self::$initialized = true;
     }
@@ -76,12 +83,15 @@ class JWT
         $validSignature = self::base64UrlEncode($signature);
 
         if ($base64Signature !== $validSignature) {
+            error_log("JWT Error: Signature mismatch");
             return false;
         }
 
         $payload = json_decode(self::base64UrlDecode($base64Payload), true);
 
-        if (isset($payload['exp']) && $payload['exp'] < time()) {
+        // Kiểm tra thời gian hết hạn với leeway
+        if (isset($payload['exp']) && ($payload['exp'] + self::$leeway) < time()) {
+            error_log("JWT Error: Token expired. Exp: " . $payload['exp'] . " Current: " . time());
             return false;
         }
 

@@ -2,8 +2,7 @@
  * API cho quản lý Phụ Huynh
  */
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
+const API_URL = "http://localhost:8080/QuanLyTrungTamGiaSu/backend/public";
 
 /**
  * Gửi request đến API
@@ -64,5 +63,29 @@ export const phuHuynhAPI = {
   delete: (id) =>
     request(`/phuhuynh/delete/${id}`, {
       method: "DELETE",
+    }),
+  getDashboardData: () =>
+    request(`/phuhuynh/dashboard`, {
+      method: "GET",
+    }),
+  getProfile: () =>
+    request(`/phuhuynh/profile`, {
+      method: "GET",
+    }),
+  getNotifications: () =>
+    request(`/phuhuynh/notifications`, {
+      method: "GET",
+    }),
+  getChildDetails: (id) =>
+    request(`/phuhuynh/child/${id}`, {
+      method: "GET",
+    }),
+  getMyStudents: () =>
+    request(`/phuhuynh/my-students`, {
+      method: "GET",
+    }),
+  getMyTutors: () =>
+    request(`/phuhuynh/my-tutors`, {
+      method: "GET",
     }),
 };

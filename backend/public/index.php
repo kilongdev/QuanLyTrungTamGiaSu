@@ -1,4 +1,7 @@
 <?php
+// Thiết lập múi giờ đồng bộ để tránh lỗi hết hạn Token JWT
+date_default_timezone_set('Asia/Ho_Chi_Minh');
+
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -57,10 +60,11 @@ try {
 
     // Dispatch the route
     Router::dispatch();
-} catch (Exception $e) {
+
+} catch (Throwable $e) {
     // Clear any buffered output
     ob_end_clean();
-
+    
     // Return error as JSON
     http_response_code(500);
     echo json_encode([
