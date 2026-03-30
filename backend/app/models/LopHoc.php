@@ -186,4 +186,28 @@ class LopHoc {
         $result = Database::query($sql, [':id' => $id]);
         return $result ? $result[0] : null;
     }
+
+    public static function getByGiaSuId($giaSuId) {
+        $sql = "SELECT lh.*, mh.ten_mon_hoc,
+                       -- Lấy lịch học dự kiến
+                       (SELECT GROUP_CONCAT(DISTINCT CONCAT(
+                            CASE DAYOFWEEK(ngay_hoc)
+                                WHEN 1 THEN 'CN' WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' 
+                                WHEN 4 THEN 'T4' WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7'
+                            END,
+                            ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
+                        ) SEPARATOR ', ') 
+                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien
+                FROM lop_hoc lh 
+                LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id 
+                WHERE lh.gia_su_id = :gia_su_id
+                ORDER BY 
+                    CASE lh.trang_thai 
+                        WHEN 'dang_hoc' THEN 1 
+                        WHEN 'sap_mo' THEN 2 
+                        ELSE 3 
+                    END, 
+                    lh.ngay_tao DESC";
+        return Database::query($sql, [':gia_su_id' => $giaSuId]);
+    }
 }

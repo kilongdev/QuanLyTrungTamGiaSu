@@ -6,7 +6,15 @@ require_once __DIR__ . '/../core/Database.php';
 class LopHocController {
 
     public function index() {
-        $lopHocs = LopHoc::getAll();
+        // Kiểm tra xem có truyền gia_su_id lên không
+        $giaSuId = $_GET['gia_su_id'] ?? null;
+        
+        if ($giaSuId) {
+            $lopHocs = LopHoc::getByGiaSuId($giaSuId);
+        } else {
+            $lopHocs = LopHoc::getAll();
+        }
+        
         echo json_encode(["status" => "success", "data" => $lopHocs]);
     }
 
