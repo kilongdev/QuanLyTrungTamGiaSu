@@ -17,6 +17,7 @@ import {
   ClockIcon,
   BookCheck,
 } from "lucide-react";
+import axios from "axios";
 import { dangKyAPI } from "../api/dangkyApi";
 import { lichHocAPI } from "../api/lichhocApi";
 import { hocSinhAPI } from "../api/hocSinhApi";
@@ -78,13 +79,11 @@ export default function DangKyLopManagement({ user }) {
           const res = await dangKyAPI.getByPhuHuynh(phuHuynhId);
           setDangKys(res?.data || []);
         } else {
-          const resLop = await lichHocAPI.getLopHocs();
-          const availableClasses = (resLop?.data || []).filter(
-            (l) =>
-              (l.trang_thai === "sap_mo" || l.trang_thai === "dang_hoc") &&
-              l.so_luong_hien_tai < l.so_luong_toi_da,
-          );
-          setLopHocs(availableClasses);
+          // Sử dụng API chính xác bạn cung cấp
+          const apiUrl = 'http://localhost:8080/QuanLyTrungTamGiaSu/backend/public/lophoc/';
+          const resLop = await axios.get(apiUrl);
+          
+          setLopHocs(resLop.data?.data || []);
 
           const resHs = await hocSinhAPI.getByPhuHuynh(phuHuynhId);
           setHocSinhs(resHs?.data || []);
@@ -758,12 +757,12 @@ export default function DangKyLopManagement({ user }) {
                   >
                     <div className="from-blue-50 to-indigo-50 p-5 mt-4 pt-4 border-b border-gray-100">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-2xl">
-                          MSL:{" "}
-                          <span className="text-blue-700">
-                            {lop.lop_hoc_id}
-                          </span>
+                        <h4 className="font-bold text-xl line-clamp-1" title={lop.ten_lop}>
+                          {lop.ten_lop || `Lớp #${lop.lop_hoc_id}`}
                         </h4>
+                        <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                          MSL: {lop.lop_hoc_id}
+                        </span>
                       </div>
 
                       <p className="text-sm flex items-center gap-1.5 mt-3">
@@ -771,7 +770,7 @@ export default function DangKyLopManagement({ user }) {
                           <BookCheck size={18} />
                           Môn:
                         </span>
-                        <span>{lop.ten_mon_hoc || "Đang cập nhật"}</span>
+                        <span>{lop.ten_mon_hoc}</span>
                       </p>
 
                       <p className="text-sm text-gray-700 flex items-center gap-1.5 mt-1.5">

@@ -1,7 +1,5 @@
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
-// const API_URL = "http://localhost:5001/public";
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
-const API_URL = "http://localhost:5001";
+const API_URL = "http://localhost:8080/QuanLyTrungTamGiaSu/backend/public";
+
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem("token");
   const headers = { ...options.headers };
@@ -71,6 +69,14 @@ export const lichHocAPI = {
     request(`/lichhoc/update/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
+    }),
+
+  /**
+   * Lấy lịch học theo ID học sinh
+   */
+  getByHocSinh: (hocSinhId) =>
+    request(`/lichhoc/hocsinh/${hocSinhId}`, {
+      method: "GET",
     }),
 
   getLopHocs: () => request("/lophoc", { method: "GET" }),

@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../controllers/LopHocController.php';
 
+Router::get('/lophoc/available', [new LopHocController(), 'getAvailable']);
 Router::get('/lophoc', [new LopHocController(), 'index']);
 Router::get('/lophoc/{id}', [new LopHocController(), 'show']);
 Router::post('/lophoc/create', [new LopHocController(), 'create']);

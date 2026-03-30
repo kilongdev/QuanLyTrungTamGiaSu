@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th3 10, 2026 lúc 10:22 AM
+-- Thời gian đã tạo: Th3 26, 2026 lúc 09:51 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.2.12
 
@@ -41,7 +41,7 @@ CREATE TABLE `admin` (
 --
 
 INSERT INTO `admin` (`admin_id`, `ho_ten`, `email`, `mat_khau`, `so_dien_thoai`, `ngay_tao`) VALUES
-(1, 'Admin 1', 'admin1@giasu.vn', '123', '0900000001', '2026-01-27 15:30:57'),
+(1, 'Kim Long', 'admin1@giasu.vn', '$2y$10$/3xFTXe59GDPHv5byZuBfOScDkhb1H2Nq2L/BSNd4M8jO6d.7r5o.', '0338740832', '2026-01-27 15:30:57'),
 (2, 'Admin 2', 'admin2@giasu.vn', '123', '0900000002', '2026-01-27 15:30:57'),
 (3, 'Admin 3', 'admin3@giasu.vn', '123', '0900000003', '2026-01-27 15:30:57'),
 (4, 'Admin 4', 'admin4@giasu.vn', '123', '0900000004', '2026-01-27 15:30:57'),
@@ -110,7 +110,7 @@ CREATE TABLE `dang_ky_lop` (
 --
 
 INSERT INTO `dang_ky_lop` (`dang_ky_id`, `hoc_sinh_id`, `lop_hoc_id`, `trang_thai`, `ngay_dang_ky`, `ngay_duyet`) VALUES
-(1, 1, 1, 'da_duyet', '2026-01-27 15:34:24', NULL),
+(1, 1, 1, 'da_huy', '2026-01-27 15:34:24', NULL),
 (2, 2, 2, 'da_duyet', '2026-01-27 15:34:24', NULL),
 (3, 3, 3, 'da_duyet', '2026-01-27 15:34:24', NULL),
 (4, 4, 4, 'da_duyet', '2026-01-27 15:34:24', NULL),
@@ -119,7 +119,10 @@ INSERT INTO `dang_ky_lop` (`dang_ky_id`, `hoc_sinh_id`, `lop_hoc_id`, `trang_tha
 (7, 7, 7, 'da_duyet', '2026-01-27 15:34:24', NULL),
 (8, 8, 8, 'da_duyet', '2026-01-27 15:34:24', NULL),
 (9, 9, 9, 'da_duyet', '2026-01-27 15:34:24', NULL),
-(10, 10, 10, 'da_duyet', '2026-01-27 15:34:24', NULL);
+(10, 10, 10, 'da_duyet', '2026-01-27 15:34:24', NULL),
+(11, 13, 11, 'da_duyet', '2026-03-23 13:39:11', '2026-03-23 13:51:01'),
+(12, 13, 1, 'tu_choi', '2026-03-23 13:44:01', NULL),
+(13, 13, 2, 'tu_choi', '2026-03-23 13:46:33', NULL);
 
 -- --------------------------------------------------------
 
@@ -131,6 +134,7 @@ CREATE TABLE `danh_gia` (
   `danh_gia_id` int(11) NOT NULL,
   `phu_huynh_id` int(11) NOT NULL,
   `gia_su_id` int(11) NOT NULL,
+  `lop_hoc_id` int(11) DEFAULT NULL,
   `diem_so` int(11) DEFAULT NULL CHECK (`diem_so` between 1 and 5),
   `noi_dung` text DEFAULT NULL,
   `ngay_danh_gia` datetime DEFAULT current_timestamp()
@@ -140,17 +144,17 @@ CREATE TABLE `danh_gia` (
 -- Đang đổ dữ liệu cho bảng `danh_gia`
 --
 
-INSERT INTO `danh_gia` (`danh_gia_id`, `phu_huynh_id`, `gia_su_id`, `diem_so`, `noi_dung`, `ngay_danh_gia`) VALUES
-(1, 1, 1, 5, 'Rất tốt', '2026-01-27 15:36:02'),
-(2, 2, 2, 4, 'Tốt', '2026-01-27 15:36:02'),
-(3, 3, 3, 5, 'Dạy dễ hiểu', '2026-01-27 15:36:02'),
-(4, 4, 4, 4, 'Ổn', '2026-01-27 15:36:02'),
-(5, 5, 5, 3, 'Bình thường', '2026-01-27 15:36:02'),
-(6, 6, 6, 5, 'Rất nhiệt tình', '2026-01-27 15:36:02'),
-(7, 7, 7, 5, 'Rất giỏi', '2026-01-27 15:36:02'),
-(8, 8, 8, 4, 'Tốt', '2026-01-27 15:36:02'),
-(9, 9, 9, 4, 'Ổn', '2026-01-27 15:36:02'),
-(10, 10, 10, 5, 'Xuất sắc', '2026-01-27 15:36:02');
+INSERT INTO `danh_gia` (`danh_gia_id`, `phu_huynh_id`, `gia_su_id`, `lop_hoc_id`, `diem_so`, `noi_dung`, `ngay_danh_gia`) VALUES
+(1, 1, 1, NULL, 5, 'Rất tốt', '2026-01-27 15:36:02'),
+(2, 2, 2, NULL, 4, 'Tốt', '2026-01-27 15:36:02'),
+(3, 3, 3, NULL, 5, 'Dạy dễ hiểu', '2026-01-27 15:36:02'),
+(4, 4, 4, NULL, 4, 'Ổn', '2026-01-27 15:36:02'),
+(5, 5, 5, NULL, 3, 'Bình thường', '2026-01-27 15:36:02'),
+(6, 6, 6, NULL, 5, 'Rất nhiệt tình', '2026-01-27 15:36:02'),
+(7, 7, 7, NULL, 5, 'Rất giỏi', '2026-01-27 15:36:02'),
+(8, 8, 8, NULL, 4, 'Tốt', '2026-01-27 15:36:02'),
+(9, 9, 9, NULL, 4, 'Ổn', '2026-01-27 15:36:02'),
+(10, 10, 10, NULL, 5, 'Xuất sắc', '2026-01-27 15:36:02');
 
 -- --------------------------------------------------------
 
@@ -248,9 +252,9 @@ CREATE TABLE `gia_su` (
 --
 
 INSERT INTO `gia_su` (`gia_su_id`, `ho_ten`, `ngay_sinh`, `gioi_tinh`, `so_dien_thoai`, `email`, `mat_khau`, `dia_chi`, `anh_dai_dien`, `bang_cap`, `chung_chi`, `gioi_thieu`, `kinh_nghiem`, `so_tai_khoan_ngan_hang`, `diem_danh_gia_trung_binh`, `trang_thai`, `ngay_dang_ky`) VALUES
-(1, 'Nguyễn Văn A', NULL, NULL, '0920000001', 'gs1@gmail.com', '123', NULL, NULL, 'Cử nhân', NULL, NULL, '3 năm', NULL, 0.00, 'da_duyet', '2026-01-27 15:31:32'),
+(1, 'Nguyễn Văn A', NULL, NULL, '0920000021', 'gs1@gmail.com', '123', NULL, NULL, 'Cử nhân', NULL, NULL, '3 năm', NULL, 0.00, 'da_duyet', '2026-01-27 15:31:32'),
 (2, 'Lê Văn C', NULL, NULL, '0920000002', 'gs2@gmail.com', '123', NULL, NULL, 'Cử nhân', NULL, NULL, '4 năm', NULL, 0.00, 'da_duyet', '2026-01-27 15:31:32'),
-(3, 'Lý Gia T', NULL, NULL, '0920000003', 'gs3@gmail.com', '123', NULL, NULL, 'Thạc sĩ', NULL, NULL, '5 năm', NULL, 0.00, 'da_duyet', '2026-01-27 15:31:32'),
+(3, 'Lý Gia T', NULL, NULL, '0920000003', 'gs3@gmail.com', '123', NULL, NULL, 'Thạc sĩ 1', NULL, NULL, '5 năm', NULL, 0.00, 'da_duyet', '2026-01-27 15:31:32'),
 (4, 'Nguyễn Văn D', NULL, NULL, '0920000004', 'gs4@gmail.com', '123', NULL, NULL, 'Thạc sĩ', NULL, NULL, '6 năm', NULL, 0.00, 'da_duyet', '2026-01-27 15:31:32'),
 (5, 'Nguyễn Văn G', NULL, NULL, '0920000005', 'gs5@gmail.com', '123', NULL, NULL, 'Cử nhân', NULL, NULL, '2 năm', NULL, 0.00, 'da_duyet', '2026-01-27 15:31:32'),
 (6, 'Hoàng Sỹ T', NULL, NULL, '0920000006', 'gs6@gmail.com', '123', NULL, NULL, 'Cử nhân', NULL, NULL, '3 năm', NULL, 0.00, 'da_duyet', '2026-01-27 15:31:32'),
@@ -300,8 +304,12 @@ INSERT INTO `gia_su_mon_hoc` (`gia_su_mon_hoc_id`, `gia_su_id`, `mon_hoc_id`, `t
 CREATE TABLE `hoc_phi` (
   `hoc_phi_id` int(11) NOT NULL,
   `dang_ky_id` int(11) NOT NULL,
+  `thang` int(11) NOT NULL,
+  `nam` int(11) NOT NULL,
   `so_tien` decimal(10,2) NOT NULL,
   `so_buoi_da_hoc` int(11) DEFAULT 0,
+  `ngay_den_han` date DEFAULT NULL,
+  `so_lan_nhac` int(11) DEFAULT 0,
   `trang_thai_thanh_toan` enum('chua_thanh_toan','da_thanh_toan','qua_han') DEFAULT 'chua_thanh_toan',
   `ngay_thanh_toan` date DEFAULT NULL,
   `ngay_tao` datetime DEFAULT current_timestamp()
@@ -311,17 +319,17 @@ CREATE TABLE `hoc_phi` (
 -- Đang đổ dữ liệu cho bảng `hoc_phi`
 --
 
-INSERT INTO `hoc_phi` (`hoc_phi_id`, `dang_ky_id`, `so_tien`, `so_buoi_da_hoc`, `trang_thai_thanh_toan`, `ngay_thanh_toan`, `ngay_tao`) VALUES
-(1, 1, 3000000.00, 10, 'da_thanh_toan', NULL, '2026-01-27 15:35:17'),
-(2, 2, 3200000.00, 8, 'da_thanh_toan', NULL, '2026-01-27 15:35:17'),
-(3, 3, 3500000.00, 6, 'chua_thanh_toan', NULL, '2026-01-27 15:35:17'),
-(4, 4, 3600000.00, 5, 'chua_thanh_toan', NULL, '2026-01-27 15:35:17'),
-(5, 5, 2800000.00, 4, 'da_thanh_toan', NULL, '2026-01-27 15:35:17'),
-(6, 6, 3000000.00, 7, 'da_thanh_toan', NULL, '2026-01-27 15:35:17'),
-(7, 7, 4000000.00, 9, 'qua_han', NULL, '2026-01-27 15:35:17'),
-(8, 8, 3800000.00, 6, 'chua_thanh_toan', NULL, '2026-01-27 15:35:17'),
-(9, 9, 2900000.00, 10, 'da_thanh_toan', NULL, '2026-01-27 15:35:17'),
-(10, 10, 3100000.00, 3, 'chua_thanh_toan', NULL, '2026-01-27 15:35:17');
+INSERT INTO `hoc_phi` (`hoc_phi_id`, `dang_ky_id`, `thang`, `nam`, `so_tien`, `so_buoi_da_hoc`, `ngay_den_han`, `so_lan_nhac`, `trang_thai_thanh_toan`, `ngay_thanh_toan`, `ngay_tao`) VALUES
+(1, 1, 1, 2025, 3000000.00, 10, NULL, 0, 'da_thanh_toan', NULL, '2026-01-27 15:35:17'),
+(2, 2, 1, 2025, 3200000.00, 8, NULL, 0, 'da_thanh_toan', NULL, '2026-01-27 15:35:17'),
+(3, 3, 1, 2025, 3500000.00, 6, NULL, 0, 'qua_han', NULL, '2026-01-27 15:35:17'),
+(4, 4, 1, 2025, 3600000.00, 5, NULL, 0, 'qua_han', NULL, '2026-01-27 15:35:17'),
+(5, 5, 1, 2025, 2800000.00, 4, NULL, 0, 'da_thanh_toan', NULL, '2026-01-27 15:35:17'),
+(6, 6, 1, 2025, 3000000.00, 7, NULL, 0, 'da_thanh_toan', NULL, '2026-01-27 15:35:17'),
+(7, 7, 1, 2025, 4000000.00, 9, NULL, 0, 'qua_han', NULL, '2026-01-27 15:35:17'),
+(8, 8, 1, 2025, 3800000.00, 6, NULL, 0, 'qua_han', NULL, '2026-01-27 15:35:17'),
+(9, 9, 1, 2025, 2900000.00, 10, NULL, 0, 'da_thanh_toan', NULL, '2026-01-27 15:35:17'),
+(10, 10, 1, 2025, 3100000.00, 3, NULL, 0, 'qua_han', NULL, '2026-01-27 15:35:17');
 
 -- --------------------------------------------------------
 
@@ -343,7 +351,7 @@ CREATE TABLE `hoc_sinh` (
 --
 
 INSERT INTO `hoc_sinh` (`hoc_sinh_id`, `phu_huynh_id`, `ho_ten`, `ngay_sinh`, `khoi_lop`, `ngay_tao`) VALUES
-(1, 1, 'Học sinh 1', '2012-01-01', '6', '2026-01-27 15:33:04'),
+(1, 13, 'Kim Long HS', '2012-01-01', '6', '2026-01-27 15:33:04'),
 (2, 2, 'Học sinh 2', '2011-01-01', '7', '2026-01-27 15:33:04'),
 (3, 3, 'Học sinh 3', '2010-01-01', '8', '2026-01-27 15:33:04'),
 (4, 4, 'Học sinh 4', '2012-02-01', '6', '2026-01-27 15:33:04'),
@@ -354,7 +362,56 @@ INSERT INTO `hoc_sinh` (`hoc_sinh_id`, `phu_huynh_id`, `ho_ten`, `ngay_sinh`, `k
 (9, 9, 'Học sinh 9', '2010-03-01', '8', '2026-01-27 15:33:04'),
 (10, 10, 'Học sinh 10', '2012-04-01', '6', '2026-01-27 15:33:04'),
 (11, 11, 'AAAA', '2005-04-21', '1', '2026-03-06 08:59:23'),
-(13, 13, 'AAA111', '2005-04-21', '1', '2026-03-06 09:15:23');
+(13, 13, 'AAA11122', '2005-04-21', '1', '2026-03-06 09:15:23');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `lich_dinh_ky`
+--
+
+CREATE TABLE `lich_dinh_ky` (
+  `lich_dinh_ky_id` int(11) NOT NULL,
+  `lop_hoc_id` int(11) NOT NULL,
+  `thu_trong_tuan` tinyint(1) NOT NULL COMMENT '1=CN,2=T2,3=T3,4=T4,5=T5,6=T6,7=T7',
+  `gio_bat_dau` time NOT NULL,
+  `gio_ket_thuc` time NOT NULL,
+  `ngay_bat_dau` date NOT NULL,
+  `ngay_ket_thuc` date DEFAULT NULL,
+  `trang_thai` enum('hoat_dong','dung') DEFAULT 'hoat_dong',
+  `ngay_tao` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `lich_dinh_ky`
+--
+
+INSERT INTO `lich_dinh_ky` (`lich_dinh_ky_id`, `lop_hoc_id`, `thu_trong_tuan`, `gio_bat_dau`, `gio_ket_thuc`, `ngay_bat_dau`, `ngay_ket_thuc`, `trang_thai`, `ngay_tao`) VALUES
+(1, 1, 2, '18:00:00', '19:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(2, 1, 4, '18:00:00', '19:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(3, 1, 6, '18:00:00', '19:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(4, 2, 2, '18:00:00', '19:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(5, 2, 4, '18:00:00', '19:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(6, 3, 3, '17:00:00', '18:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(7, 3, 5, '17:00:00', '18:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(8, 3, 7, '17:00:00', '18:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(9, 4, 2, '19:00:00', '20:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(10, 4, 5, '19:00:00', '20:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(11, 5, 3, '17:30:00', '19:00:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(12, 5, 6, '17:30:00', '19:00:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(13, 6, 2, '17:00:00', '18:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(14, 6, 4, '17:00:00', '18:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(15, 6, 6, '17:00:00', '18:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(16, 7, 3, '18:30:00', '20:00:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(17, 7, 5, '18:30:00', '20:00:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(18, 8, 2, '18:00:00', '19:30:00', '2026-01-27', '2026-04-21', 'hoat_dong', '2026-03-24 09:38:19'),
+(19, 8, 4, '18:00:00', '19:30:00', '2026-01-27', '2026-04-21', 'hoat_dong', '2026-03-24 09:38:19'),
+(20, 9, 4, '15:00:00', '16:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(21, 9, 7, '15:00:00', '16:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(22, 10, 3, '16:00:00', '17:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(23, 10, 6, '16:00:00', '17:30:00', '2026-01-27', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(24, 11, 3, '18:00:00', '19:30:00', '2026-03-10', NULL, 'hoat_dong', '2026-03-24 09:38:19'),
+(25, 11, 5, '18:00:00', '19:30:00', '2026-03-10', NULL, 'hoat_dong', '2026-03-24 09:38:19');
 
 -- --------------------------------------------------------
 
@@ -365,27 +422,46 @@ INSERT INTO `hoc_sinh` (`hoc_sinh_id`, `phu_huynh_id`, `ho_ten`, `ngay_sinh`, `k
 CREATE TABLE `lich_hoc` (
   `lich_hoc_id` int(11) NOT NULL,
   `lop_hoc_id` int(11) NOT NULL,
+  `lich_dinh_ky_id` int(11) DEFAULT NULL,
   `ngay_hoc` date NOT NULL,
   `gio_bat_dau` time NOT NULL,
   `gio_ket_thuc` time NOT NULL,
-  `trang_thai` enum('chua_hoc','da_hoc','huy') DEFAULT 'chua_hoc'
+  `trang_thai` enum('chua_hoc','da_hoc','huy') DEFAULT 'chua_hoc',
+  `ghi_chu_huy` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Đang đổ dữ liệu cho bảng `lich_hoc`
 --
 
-INSERT INTO `lich_hoc` (`lich_hoc_id`, `lop_hoc_id`, `ngay_hoc`, `gio_bat_dau`, `gio_ket_thuc`, `trang_thai`) VALUES
-(1, 1, '2025-01-01', '18:00:00', '19:30:00', 'chua_hoc'),
-(2, 2, '2025-01-02', '18:00:00', '19:30:00', 'chua_hoc'),
-(3, 3, '2025-01-03', '18:00:00', '19:30:00', 'chua_hoc'),
-(4, 4, '2025-01-04', '18:00:00', '19:30:00', 'chua_hoc'),
-(5, 5, '2025-01-05', '18:00:00', '19:30:00', 'chua_hoc'),
-(6, 6, '2025-01-06', '18:00:00', '19:30:00', 'chua_hoc'),
-(7, 7, '2025-01-07', '18:00:00', '19:30:00', 'chua_hoc'),
-(8, 8, '2025-01-08', '18:00:00', '19:30:00', 'chua_hoc'),
-(9, 9, '2025-01-09', '18:00:00', '19:30:00', 'chua_hoc'),
-(10, 10, '2025-01-10', '18:00:00', '19:30:00', 'chua_hoc');
+INSERT INTO `lich_hoc` (`lich_hoc_id`, `lop_hoc_id`, `lich_dinh_ky_id`, `ngay_hoc`, `gio_bat_dau`, `gio_ket_thuc`, `trang_thai`, `ghi_chu_huy`) VALUES
+(1, 1, 1, '2025-01-01', '18:00:00', '19:30:00', 'chua_hoc', NULL),
+(2, 2, 4, '2025-01-02', '18:00:00', '19:30:00', 'chua_hoc', NULL),
+(3, 3, 6, '2025-01-03', '18:00:00', '19:30:00', 'chua_hoc', NULL),
+(4, 4, 9, '2025-01-04', '18:00:00', '19:30:00', 'chua_hoc', NULL),
+(5, 5, 11, '2025-01-05', '18:00:00', '19:30:00', 'chua_hoc', NULL),
+(6, 6, 13, '2025-01-06', '18:00:00', '19:30:00', 'chua_hoc', NULL),
+(7, 7, 16, '2025-01-07', '18:00:00', '19:30:00', 'chua_hoc', NULL),
+(8, 8, 18, '2025-01-08', '18:00:00', '19:30:00', 'chua_hoc', NULL),
+(9, 9, 20, '2025-01-09', '18:00:00', '19:30:00', 'chua_hoc', NULL),
+(10, 10, 22, '2025-01-10', '18:00:00', '19:30:00', 'chua_hoc', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `lich_su_thanh_toan`
+--
+
+CREATE TABLE `lich_su_thanh_toan` (
+  `ls_id` int(11) NOT NULL,
+  `loai` enum('hoc_phi','luong_gia_su') NOT NULL,
+  `tham_chieu_id` int(11) NOT NULL COMMENT 'hoc_phi_id hoặc luong_id',
+  `so_tien` decimal(10,2) NOT NULL,
+  `hinh_thuc` enum('tien_mat','chuyen_khoan','khac') DEFAULT 'chuyen_khoan',
+  `ghi_chu` text DEFAULT NULL,
+  `nguoi_xac_nhan` int(11) DEFAULT NULL COMMENT 'admin_id',
+  `ngay_ghi` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -409,6 +485,7 @@ CREATE TABLE `lop_hoc` (
   `chu_ky_thanh_toan` varchar(20) DEFAULT 'theo_thang',
   `trang_thai` enum('sap_mo','dang_hoc','ket_thuc','dong') DEFAULT 'sap_mo',
   `ngay_tao` date DEFAULT current_timestamp(),
+  `ngay_bat_dau` date DEFAULT NULL,
   `ngay_ket_thuc` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -416,18 +493,18 @@ CREATE TABLE `lop_hoc` (
 -- Đang đổ dữ liệu cho bảng `lop_hoc`
 --
 
-INSERT INTO `lop_hoc` (`lop_hoc_id`, `gia_su_id`, `mon_hoc_id`, `ten_lop`, `khoi_lop`, `gia_toan_khoa`, `so_buoi_hoc`, `gia_moi_buoi`, `so_luong_toi_da`, `so_luong_hien_tai`, `loai_chi_tra`, `gia_tri_chi_tra`, `chu_ky_thanh_toan`, `trang_thai`, `ngay_tao`, `ngay_ket_thuc`) VALUES
-(1, 1, 1, NULL, '6', 3000000.00, 20, 150000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
-(2, 2, 2, NULL, '7', 3200000.00, 20, 160000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
-(3, 3, 3, NULL, '8', 3500000.00, 20, 175000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
-(4, 4, 4, NULL, '9', 3600000.00, 20, 180000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
-(5, 5, 5, NULL, '6', 2800000.00, 20, 140000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
-(6, 6, 6, NULL, '7', 3000000.00, 20, 150000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
-(7, 7, 7, NULL, '8', 4000000.00, 20, 200000.00, 1, 0, 'phan_tram', 80.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
-(8, 8, 8, 'Địa - Lop 9', '9', 3800000.00, 20, 190000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27', '2026-04-21'),
-(9, 9, 9, NULL, '6', 2900000.00, 20, 145000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
-(10, 10, 10, NULL, '7', 3100000.00, 20, 155000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL),
-(11, 1, 2, 'Văn - Lop 6', '6', 300000.00, 20, 15000.00, 1, 0, 'tien_cu_the', 100000.00, 'theo_thang', 'dang_hoc', '2026-03-10', NULL);
+INSERT INTO `lop_hoc` (`lop_hoc_id`, `gia_su_id`, `mon_hoc_id`, `ten_lop`, `khoi_lop`, `gia_toan_khoa`, `so_buoi_hoc`, `gia_moi_buoi`, `so_luong_toi_da`, `so_luong_hien_tai`, `loai_chi_tra`, `gia_tri_chi_tra`, `chu_ky_thanh_toan`, `trang_thai`, `ngay_tao`, `ngay_bat_dau`, `ngay_ket_thuc`) VALUES
+(1, 1, 1, NULL, '6', 3000000.00, 20, 150000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL, NULL),
+(2, 2, 2, 'Văn - Lớp 6 (B)', '6', 3200000.00, 20, 160000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL, NULL),
+(3, 3, 3, 'Anh - Lớp 8 (A)', '8', 3500000.00, 20, 175000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL, NULL),
+(4, 4, 4, NULL, '9', 3600000.00, 20, 180000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL, NULL),
+(5, 5, 5, NULL, '6', 2800000.00, 20, 140000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL, NULL),
+(6, 6, 6, NULL, '7', 3000000.00, 20, 150000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL, NULL),
+(7, 7, 7, NULL, '8', 4000000.00, 20, 200000.00, 1, 0, 'phan_tram', 80.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL, NULL),
+(8, 8, 8, 'Địa - Lớp 9 (A)', '9', 3800000.00, 20, 190000.00, 1, 0, 'phan_tram', 75.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL, '2026-04-21'),
+(9, 9, 9, NULL, '6', 2900000.00, 20, 145000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL, NULL),
+(10, 10, 10, 'GDCD - Lớp 7 (A)', '7', 3100000.00, 20, 155000.00, 1, 0, 'phan_tram', 70.00, 'theo_thang', 'dang_hoc', '2026-01-27', NULL, NULL),
+(11, 1, 2, 'Văn - Lớp 6 (A)', '6', 300000.00, 20, 15000.00, 1, 1, 'tien_cu_the', 100000.00, 'theo_thang', 'dang_hoc', '2026-03-10', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -442,6 +519,7 @@ CREATE TABLE `luong_gia_su` (
   `thang` int(11) DEFAULT NULL,
   `nam` int(11) DEFAULT NULL,
   `so_buoi_day` int(11) DEFAULT 0,
+  `ngay_den_han` date DEFAULT NULL,
   `tong_tien_thu` decimal(10,2) DEFAULT NULL,
   `tien_tra_gia_su` decimal(10,2) DEFAULT NULL,
   `loai_chi_tra` enum('phan_tram','tien_cu_the') DEFAULT NULL,
@@ -455,17 +533,17 @@ CREATE TABLE `luong_gia_su` (
 -- Đang đổ dữ liệu cho bảng `luong_gia_su`
 --
 
-INSERT INTO `luong_gia_su` (`luong_id`, `gia_su_id`, `lop_hoc_id`, `thang`, `nam`, `so_buoi_day`, `tong_tien_thu`, `tien_tra_gia_su`, `loai_chi_tra`, `gia_tri_ap_dung`, `trang_thai_thanh_toan`, `ngay_thanh_toan`, `ngay_tao`) VALUES
-(1, 1, 1, 1, 2025, 10, 3000000.00, 2100000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
-(2, 2, 2, 1, 2025, 8, 3200000.00, 2240000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
-(3, 3, 3, 1, 2025, 6, 3500000.00, 2625000.00, 'phan_tram', 75.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
-(4, 4, 4, 1, 2025, 5, 3600000.00, 2700000.00, 'phan_tram', 75.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
-(5, 5, 5, 1, 2025, 4, 2800000.00, 1960000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
-(6, 6, 6, 1, 2025, 7, 3000000.00, 2100000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
-(7, 7, 7, 1, 2025, 9, 4000000.00, 3200000.00, 'phan_tram', 80.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
-(8, 8, 8, 1, 2025, 6, 3800000.00, 2850000.00, 'phan_tram', 75.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
-(9, 9, 9, 1, 2025, 10, 2900000.00, 2030000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
-(10, 10, 10, 1, 2025, 3, 3100000.00, 2170000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39');
+INSERT INTO `luong_gia_su` (`luong_id`, `gia_su_id`, `lop_hoc_id`, `thang`, `nam`, `so_buoi_day`, `ngay_den_han`, `tong_tien_thu`, `tien_tra_gia_su`, `loai_chi_tra`, `gia_tri_ap_dung`, `trang_thai_thanh_toan`, `ngay_thanh_toan`, `ngay_tao`) VALUES
+(1, 1, 1, 1, 2025, 10, NULL, 3000000.00, 2100000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
+(2, 2, 2, 1, 2025, 8, NULL, 3200000.00, 2240000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
+(3, 3, 3, 1, 2025, 6, NULL, 3500000.00, 2625000.00, 'phan_tram', 75.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
+(4, 4, 4, 1, 2025, 5, NULL, 3600000.00, 2700000.00, 'phan_tram', 75.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
+(5, 5, 5, 1, 2025, 4, NULL, 2800000.00, 1960000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
+(6, 6, 6, 1, 2025, 7, NULL, 3000000.00, 2100000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
+(7, 7, 7, 1, 2025, 9, NULL, 4000000.00, 3200000.00, 'phan_tram', 80.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
+(8, 8, 8, 1, 2025, 6, NULL, 3800000.00, 2850000.00, 'phan_tram', 75.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
+(9, 9, 9, 1, 2025, 10, NULL, 2900000.00, 2030000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39'),
+(10, 10, 10, 1, 2025, 3, NULL, 3100000.00, 2170000.00, 'phan_tram', 70.00, 'chua_thanh_toan', NULL, '2026-01-27 15:35:39');
 
 -- --------------------------------------------------------
 
@@ -522,7 +600,7 @@ INSERT INTO `phu_huynh` (`phu_huynh_id`, `ho_ten`, `so_dien_thoai`, `email`, `ma
 (1, 'Phụ huynh 1', '0910000001', 'ph1@gmail.com', '123', 'HN', 'da_duyet', '2026-01-27 15:31:25'),
 (2, 'Phụ huynh 2', '0910000002', 'ph2@gmail.com', '123', 'HN', 'da_duyet', '2026-01-27 15:31:25'),
 (3, 'Phụ huynh 3', '0910000003', 'ph3@gmail.com', '123', 'HCM', 'da_duyet', '2026-01-27 15:31:25'),
-(4, 'Phụ huynh 4', '0910000004', 'ph4@gmail.com', '123', 'HCM', 'da_duyet', '2026-01-27 15:31:25'),
+(4, 'Phụ huynh', '0910000004', 'ph4@gmail.com', '123', 'HCM12', 'da_duyet', '2026-01-27 15:31:25'),
 (5, 'Phụ huynh 5', '0910000005', 'ph5@gmail.com', '123', 'DN', 'da_duyet', '2026-01-27 15:31:25'),
 (6, 'Phụ huynh 6', '0910000006', 'ph6@gmail.com', '123', 'DN', 'da_duyet', '2026-01-27 15:31:25'),
 (7, 'Phụ huynh 7', '0910000007', 'ph7@gmail.com', '123', 'CT', 'da_duyet', '2026-01-27 15:31:25'),
@@ -530,7 +608,7 @@ INSERT INTO `phu_huynh` (`phu_huynh_id`, `ho_ten`, `so_dien_thoai`, `email`, `ma
 (9, 'Phụ huynh 9', '0910000009', 'ph9@gmail.com', '123', 'HN', 'da_duyet', '2026-01-27 15:31:25'),
 (10, 'Phụ huynh 10', '0910000010', 'ph10@gmail.com', '123', 'HN', 'da_duyet', '2026-01-27 15:31:25'),
 (11, 'Kim Long', '0338740832', 'n.kimlong205@gmail.com', '$2y$10$wLoW..pDOivR68Kp2tn4cerVyr9Kn6d1omqKFNprnefHINY5PyGJK', '', 'da_duyet', '2026-03-06 08:59:23'),
-(13, 'Kim Long', '0338740832', 'longnguyen210405@gmail.com', '$2y$10$S6XeEd9tR.tgEK6MmNbeu.hK6fidgK8m7QmpfwDPhc/MypnyctmRy', '', 'da_duyet', '2026-03-06 09:15:23');
+(13, 'Kim Long', '0338740832', 'longnguyen210405@gmail.com', '$2y$10$S6XeEd9tR.tgEK6MmNbeu.hK6fidgK8m7QmpfwDPhc/MypnyctmRy', '12312', 'da_duyet', '2026-03-06 09:15:23');
 
 -- --------------------------------------------------------
 
@@ -544,7 +622,7 @@ CREATE TABLE `thong_bao` (
   `loai_nguoi_gui` enum('admin','gia_su','phu_huynh') DEFAULT NULL,
   `nguoi_nhan_id` int(11) DEFAULT NULL,
   `loai_nguoi_nhan` enum('admin','gia_su','phu_huynh') DEFAULT NULL,
-  `loai_thong_bao` enum('he_thong','lop_hoc','thanh_toan','yeu_cau','danh_gia','khac') DEFAULT 'khac',
+  `loai_thong_bao` enum('he_thong','lop_hoc','thanh_toan','hoc_phi','yeu_cau','danh_gia','khac') DEFAULT 'khac',
   `tieu_de` varchar(255) DEFAULT NULL,
   `noi_dung` text DEFAULT NULL,
   `lien_ket_id` int(11) DEFAULT NULL,
@@ -567,7 +645,29 @@ INSERT INTO `thong_bao` (`thong_bao_id`, `nguoi_gui_id`, `loai_nguoi_gui`, `nguo
 (7, 1, 'admin', 7, 'gia_su', 'he_thong', 'Duyệt hồ sơ', 'Hồ sơ đã duyệt', NULL, NULL, 0, '2026-01-27 15:35:47'),
 (8, 1, 'admin', 8, 'gia_su', 'he_thong', 'Duyệt hồ sơ', 'Hồ sơ đã duyệt', NULL, NULL, 0, '2026-01-27 15:35:47'),
 (9, 1, 'admin', 9, 'gia_su', 'he_thong', 'Duyệt hồ sơ', 'Hồ sơ đã duyệt', NULL, NULL, 0, '2026-01-27 15:35:47'),
-(10, 1, 'admin', 10, 'gia_su', 'he_thong', 'Duyệt hồ sơ', 'Hồ sơ đã duyệt', NULL, NULL, 0, '2026-01-27 15:35:47');
+(10, 1, 'admin', 10, 'gia_su', 'he_thong', 'Duyệt hồ sơ', 'Hồ sơ đã duyệt', NULL, NULL, 0, '2026-01-27 15:35:47'),
+(11, 13, 'phu_huynh', 10, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 0, '2026-03-23 13:46:33'),
+(12, 13, 'phu_huynh', 1, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 1, '2026-03-23 13:46:33'),
+(13, 13, 'phu_huynh', 2, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 0, '2026-03-23 13:46:33'),
+(14, 13, 'phu_huynh', 3, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 0, '2026-03-23 13:46:33'),
+(15, 13, 'phu_huynh', 4, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 0, '2026-03-23 13:46:33'),
+(16, 13, 'phu_huynh', 5, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 0, '2026-03-23 13:46:33'),
+(17, 13, 'phu_huynh', 6, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 0, '2026-03-23 13:46:33'),
+(18, 13, 'phu_huynh', 7, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 0, '2026-03-23 13:46:33'),
+(19, 13, 'phu_huynh', 8, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 0, '2026-03-23 13:46:33'),
+(20, 13, 'phu_huynh', 9, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 0, '2026-03-23 13:46:33'),
+(21, 13, 'phu_huynh', 11, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 0, '2026-03-23 13:46:33'),
+(22, 13, 'phu_huynh', 12, 'admin', '', 'Có đơn đăng ký lớp mới', 'Học sinh #13 vừa gửi đơn đăng ký vào lớp #2.', NULL, NULL, 0, '2026-03-23 13:46:33'),
+(23, 0, '', 1, 'admin', 'hoc_phi', 'Học phí quá hạn', 'Học phí 3.500.000đ của HS Học sinh 3 - Lớp Anh - Lớp 8 (A) đã quá hạn 27 ngày. Vui lòng nhắc nhở phụ huynh.', NULL, NULL, 1, '2026-03-26 15:26:45'),
+(24, 0, '', 3, 'phu_huynh', 'hoc_phi', 'Học phí quá hạn', 'Học phí 3.500.000đ cho học sinh Học sinh 3 - lớp Anh - Lớp 8 (A) đã quá hạn 27 ngày. Vui lòng thanh toán sớm để tránh ảnh hưởng đến việc học của con.', NULL, NULL, 0, '2026-03-26 15:26:45'),
+(25, 0, '', 1, 'admin', 'hoc_phi', 'Học phí quá hạn', 'Học phí 3.600.000đ của HS Học sinh 4 - Lớp  đã quá hạn 27 ngày. Vui lòng nhắc nhở phụ huynh.', NULL, NULL, 1, '2026-03-26 15:26:45'),
+(26, 0, '', 4, 'phu_huynh', 'hoc_phi', 'Học phí quá hạn', 'Học phí 3.600.000đ cho học sinh Học sinh 4 - lớp  đã quá hạn 27 ngày. Vui lòng thanh toán sớm để tránh ảnh hưởng đến việc học của con.', NULL, NULL, 0, '2026-03-26 15:26:45'),
+(27, 0, '', 1, 'admin', 'hoc_phi', 'Học phí quá hạn', 'Học phí 4.000.000đ của HS Học sinh 7 - Lớp  đã quá hạn 27 ngày. Vui lòng nhắc nhở phụ huynh.', NULL, NULL, 1, '2026-03-26 15:26:45'),
+(28, 0, '', 7, 'phu_huynh', 'hoc_phi', 'Học phí quá hạn', 'Học phí 4.000.000đ cho học sinh Học sinh 7 - lớp  đã quá hạn 27 ngày. Vui lòng thanh toán sớm để tránh ảnh hưởng đến việc học của con.', NULL, NULL, 0, '2026-03-26 15:26:45'),
+(29, 0, '', 1, 'admin', 'hoc_phi', 'Học phí quá hạn', 'Học phí 3.800.000đ của HS Học sinh 8 - Lớp Địa - Lớp 9 (A) đã quá hạn 27 ngày. Vui lòng nhắc nhở phụ huynh.', NULL, NULL, 1, '2026-03-26 15:26:45'),
+(30, 0, '', 8, 'phu_huynh', 'hoc_phi', 'Học phí quá hạn', 'Học phí 3.800.000đ cho học sinh Học sinh 8 - lớp Địa - Lớp 9 (A) đã quá hạn 27 ngày. Vui lòng thanh toán sớm để tránh ảnh hưởng đến việc học của con.', NULL, NULL, 0, '2026-03-26 15:26:45'),
+(31, 0, '', 1, 'admin', 'hoc_phi', 'Học phí quá hạn', 'Học phí 3.100.000đ của HS Học sinh 10 - Lớp GDCD - Lớp 7 (A) đã quá hạn 27 ngày. Vui lòng nhắc nhở phụ huynh.', NULL, NULL, 1, '2026-03-26 15:26:45'),
+(32, 0, '', 10, 'phu_huynh', 'hoc_phi', 'Học phí quá hạn', 'Học phí 3.100.000đ cho học sinh Học sinh 10 - lớp GDCD - Lớp 7 (A) đã quá hạn 27 ngày. Vui lòng thanh toán sớm để tránh ảnh hưởng đến việc học của con.', NULL, NULL, 0, '2026-03-26 15:26:45');
 
 -- --------------------------------------------------------
 
@@ -577,6 +677,7 @@ INSERT INTO `thong_bao` (`thong_bao_id`, `nguoi_gui_id`, `loai_nguoi_gui`, `nguo
 
 CREATE TABLE `tin_nhan` (
   `tin_nhan_id` int(11) NOT NULL,
+  `cuoc_tro_chuyen_id` varchar(64) DEFAULT NULL,
   `nguoi_gui_id` int(11) NOT NULL,
   `loai_nguoi_gui` enum('admin','gia_su','phu_huynh') DEFAULT NULL,
   `nguoi_nhan_id` int(11) NOT NULL,
@@ -590,17 +691,17 @@ CREATE TABLE `tin_nhan` (
 -- Đang đổ dữ liệu cho bảng `tin_nhan`
 --
 
-INSERT INTO `tin_nhan` (`tin_nhan_id`, `nguoi_gui_id`, `loai_nguoi_gui`, `nguoi_nhan_id`, `loai_nguoi_nhan`, `noi_dung`, `da_doc`, `ngay_gui`) VALUES
-(1, 1, 'phu_huynh', 1, 'gia_su', 'Thầy cho hỏi lịch học', 0, '2026-01-27 15:35:55'),
-(2, 2, 'phu_huynh', 2, 'gia_su', 'Em hỏi bài', 0, '2026-01-27 15:35:55'),
-(3, 3, 'phu_huynh', 3, 'gia_su', 'Con em học ổn', 0, '2026-01-27 15:35:55'),
-(4, 4, 'phu_huynh', 4, 'gia_su', 'Xin đổi giờ', 0, '2026-01-27 15:35:55'),
-(5, 5, 'phu_huynh', 5, 'gia_su', 'Học phí thế nào', 0, '2026-01-27 15:35:55'),
-(6, 6, 'phu_huynh', 6, 'gia_su', 'Nhờ thầy hỗ trợ', 0, '2026-01-27 15:35:55'),
-(7, 7, 'phu_huynh', 7, 'gia_su', 'Con hơi yếu', 0, '2026-01-27 15:35:55'),
-(8, 8, 'phu_huynh', 8, 'gia_su', 'Xin nghỉ buổi', 0, '2026-01-27 15:35:55'),
-(9, 9, 'phu_huynh', 9, 'gia_su', 'Cảm ơn thầy', 0, '2026-01-27 15:35:55'),
-(10, 10, 'phu_huynh', 10, 'gia_su', 'Hỏi lịch thi', 0, '2026-01-27 15:35:55');
+INSERT INTO `tin_nhan` (`tin_nhan_id`, `cuoc_tro_chuyen_id`, `nguoi_gui_id`, `loai_nguoi_gui`, `nguoi_nhan_id`, `loai_nguoi_nhan`, `noi_dung`, `da_doc`, `ngay_gui`) VALUES
+(1, NULL, 1, 'phu_huynh', 1, 'gia_su', 'Thầy cho hỏi lịch học', 0, '2026-01-27 15:35:55'),
+(2, NULL, 2, 'phu_huynh', 2, 'gia_su', 'Em hỏi bài', 0, '2026-01-27 15:35:55'),
+(3, NULL, 3, 'phu_huynh', 3, 'gia_su', 'Con em học ổn', 0, '2026-01-27 15:35:55'),
+(4, NULL, 4, 'phu_huynh', 4, 'gia_su', 'Xin đổi giờ', 0, '2026-01-27 15:35:55'),
+(5, NULL, 5, 'phu_huynh', 5, 'gia_su', 'Học phí thế nào', 0, '2026-01-27 15:35:55'),
+(6, NULL, 6, 'phu_huynh', 6, 'gia_su', 'Nhờ thầy hỗ trợ', 0, '2026-01-27 15:35:55'),
+(7, NULL, 7, 'phu_huynh', 7, 'gia_su', 'Con hơi yếu', 0, '2026-01-27 15:35:55'),
+(8, NULL, 8, 'phu_huynh', 8, 'gia_su', 'Xin nghỉ buổi', 0, '2026-01-27 15:35:55'),
+(9, NULL, 9, 'phu_huynh', 9, 'gia_su', 'Cảm ơn thầy', 0, '2026-01-27 15:35:55'),
+(10, NULL, 10, 'phu_huynh', 10, 'gia_su', 'Hỏi lịch thi', 0, '2026-01-27 15:35:55');
 
 -- --------------------------------------------------------
 
@@ -630,7 +731,7 @@ CREATE TABLE `yeu_cau` (
 --
 
 INSERT INTO `yeu_cau` (`yeu_cau_id`, `nguoi_tao_id`, `loai_nguoi_tao`, `phan_loai`, `tieu_de`, `noi_dung`, `lop_hoc_id`, `dang_ky_id`, `gia_su_id`, `trang_thai`, `nguoi_xu_ly_id`, `ghi_chu_xu_ly`, `ngay_tao`, `ngay_xu_ly`) VALUES
-(1, 1, 'gia_su', 'nghi_day', 'Xin nghỉ', 'Xin nghỉ buổi 1', 1, NULL, NULL, 'cho_duyet', NULL, NULL, '2026-01-27 15:35:10', NULL),
+(1, 1, 'gia_su', 'nghi_day', 'Xin nghỉ', 'Xin nghỉ buổi 1', 1, NULL, NULL, 'dang_xu_ly', 1, '', '2026-01-27 15:35:10', '2026-03-23 14:59:57'),
 (2, 2, 'gia_su', 'nghi_day', 'Xin nghỉ', 'Xin nghỉ buổi 2', 2, NULL, NULL, 'da_duyet', NULL, NULL, '2026-01-27 15:35:10', NULL),
 (3, 3, 'gia_su', 'huy_lop', 'Hủy lớp', 'Lớp ít học sinh', 3, NULL, NULL, 'dang_xu_ly', NULL, NULL, '2026-01-27 15:35:10', NULL),
 (4, 4, 'gia_su', 'khac', 'Đề xuất', 'Đổi giờ học', 4, NULL, NULL, 'cho_duyet', NULL, NULL, '2026-01-27 15:35:10', NULL),
@@ -674,8 +775,10 @@ ALTER TABLE `dang_ky_lop`
 --
 ALTER TABLE `danh_gia`
   ADD PRIMARY KEY (`danh_gia_id`),
+  ADD UNIQUE KEY `uq_dg_lop` (`phu_huynh_id`,`gia_su_id`,`lop_hoc_id`),
   ADD KEY `phu_huynh_id` (`phu_huynh_id`,`gia_su_id`),
-  ADD KEY `gia_su_id` (`gia_su_id`);
+  ADD KEY `gia_su_id` (`gia_su_id`),
+  ADD KEY `danh_gia_ibfk_3` (`lop_hoc_id`);
 
 --
 -- Chỉ mục cho bảng `diem_danh`
@@ -714,6 +817,7 @@ ALTER TABLE `gia_su_mon_hoc`
 --
 ALTER TABLE `hoc_phi`
   ADD PRIMARY KEY (`hoc_phi_id`),
+  ADD UNIQUE KEY `uq_hp_thang` (`dang_ky_id`,`thang`,`nam`),
   ADD KEY `trang_thai_thanh_toan` (`trang_thai_thanh_toan`),
   ADD KEY `dang_ky_id` (`dang_ky_id`);
 
@@ -725,13 +829,29 @@ ALTER TABLE `hoc_sinh`
   ADD KEY `phu_huynh_id` (`phu_huynh_id`);
 
 --
+-- Chỉ mục cho bảng `lich_dinh_ky`
+--
+ALTER TABLE `lich_dinh_ky`
+  ADD PRIMARY KEY (`lich_dinh_ky_id`),
+  ADD KEY `fk_ldk_lop` (`lop_hoc_id`);
+
+--
 -- Chỉ mục cho bảng `lich_hoc`
 --
 ALTER TABLE `lich_hoc`
   ADD PRIMARY KEY (`lich_hoc_id`),
   ADD KEY `ngay_hoc` (`ngay_hoc`),
   ADD KEY `lop_hoc_id` (`lop_hoc_id`),
-  ADD KEY `trang_thai` (`trang_thai`);
+  ADD KEY `trang_thai` (`trang_thai`),
+  ADD KEY `lich_hoc_ibfk_2` (`lich_dinh_ky_id`);
+
+--
+-- Chỉ mục cho bảng `lich_su_thanh_toan`
+--
+ALTER TABLE `lich_su_thanh_toan`
+  ADD PRIMARY KEY (`ls_id`),
+  ADD KEY `idx_tham_chieu` (`loai`,`tham_chieu_id`),
+  ADD KEY `fk_lstt_admin` (`nguoi_xac_nhan`);
 
 --
 -- Chỉ mục cho bảng `lop_hoc`
@@ -786,7 +906,8 @@ ALTER TABLE `tin_nhan`
   ADD PRIMARY KEY (`tin_nhan_id`),
   ADD KEY `nguoi_nhan_id` (`nguoi_nhan_id`),
   ADD KEY `da_doc` (`da_doc`),
-  ADD KEY `ngay_gui` (`ngay_gui`);
+  ADD KEY `ngay_gui` (`ngay_gui`),
+  ADD KEY `idx_ctc` (`cuoc_tro_chuyen_id`);
 
 --
 -- Chỉ mục cho bảng `yeu_cau`
@@ -820,7 +941,7 @@ ALTER TABLE `chi_tiet_doanh_thu_lop`
 -- AUTO_INCREMENT cho bảng `dang_ky_lop`
 --
 ALTER TABLE `dang_ky_lop`
-  MODIFY `dang_ky_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `dang_ky_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT cho bảng `danh_gia`
@@ -865,10 +986,22 @@ ALTER TABLE `hoc_sinh`
   MODIFY `hoc_sinh_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
+-- AUTO_INCREMENT cho bảng `lich_dinh_ky`
+--
+ALTER TABLE `lich_dinh_ky`
+  MODIFY `lich_dinh_ky_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+
+--
 -- AUTO_INCREMENT cho bảng `lich_hoc`
 --
 ALTER TABLE `lich_hoc`
   MODIFY `lich_hoc_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT cho bảng `lich_su_thanh_toan`
+--
+ALTER TABLE `lich_su_thanh_toan`
+  MODIFY `ls_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT cho bảng `lop_hoc`
@@ -898,7 +1031,7 @@ ALTER TABLE `phu_huynh`
 -- AUTO_INCREMENT cho bảng `thong_bao`
 --
 ALTER TABLE `thong_bao`
-  MODIFY `thong_bao_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `thong_bao_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
 -- AUTO_INCREMENT cho bảng `tin_nhan`
@@ -910,7 +1043,7 @@ ALTER TABLE `tin_nhan`
 -- AUTO_INCREMENT cho bảng `yeu_cau`
 --
 ALTER TABLE `yeu_cau`
-  MODIFY `yeu_cau_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `yeu_cau_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- Các ràng buộc cho các bảng đã đổ
@@ -935,7 +1068,8 @@ ALTER TABLE `dang_ky_lop`
 --
 ALTER TABLE `danh_gia`
   ADD CONSTRAINT `danh_gia_ibfk_1` FOREIGN KEY (`phu_huynh_id`) REFERENCES `phu_huynh` (`phu_huynh_id`),
-  ADD CONSTRAINT `danh_gia_ibfk_2` FOREIGN KEY (`gia_su_id`) REFERENCES `gia_su` (`gia_su_id`);
+  ADD CONSTRAINT `danh_gia_ibfk_2` FOREIGN KEY (`gia_su_id`) REFERENCES `gia_su` (`gia_su_id`),
+  ADD CONSTRAINT `danh_gia_ibfk_3` FOREIGN KEY (`lop_hoc_id`) REFERENCES `lop_hoc` (`lop_hoc_id`);
 
 --
 -- Các ràng buộc cho bảng `diem_danh`
@@ -964,10 +1098,23 @@ ALTER TABLE `hoc_sinh`
   ADD CONSTRAINT `hoc_sinh_ibfk_1` FOREIGN KEY (`phu_huynh_id`) REFERENCES `phu_huynh` (`phu_huynh_id`);
 
 --
+-- Các ràng buộc cho bảng `lich_dinh_ky`
+--
+ALTER TABLE `lich_dinh_ky`
+  ADD CONSTRAINT `lich_dinh_ky_ibfk_1` FOREIGN KEY (`lop_hoc_id`) REFERENCES `lop_hoc` (`lop_hoc_id`);
+
+--
 -- Các ràng buộc cho bảng `lich_hoc`
 --
 ALTER TABLE `lich_hoc`
-  ADD CONSTRAINT `lich_hoc_ibfk_1` FOREIGN KEY (`lop_hoc_id`) REFERENCES `lop_hoc` (`lop_hoc_id`);
+  ADD CONSTRAINT `lich_hoc_ibfk_1` FOREIGN KEY (`lop_hoc_id`) REFERENCES `lop_hoc` (`lop_hoc_id`),
+  ADD CONSTRAINT `lich_hoc_ibfk_2` FOREIGN KEY (`lich_dinh_ky_id`) REFERENCES `lich_dinh_ky` (`lich_dinh_ky_id`);
+
+--
+-- Các ràng buộc cho bảng `lich_su_thanh_toan`
+--
+ALTER TABLE `lich_su_thanh_toan`
+  ADD CONSTRAINT `lstt_ibfk_1` FOREIGN KEY (`nguoi_xac_nhan`) REFERENCES `admin` (`admin_id`);
 
 --
 -- Các ràng buộc cho bảng `lop_hoc`
