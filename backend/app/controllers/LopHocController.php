@@ -10,6 +10,28 @@ class LopHocController {
         echo json_encode(["status" => "success", "data" => $lopHocs]);
     }
 
+    public function getAvailable() {
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            $classes = LopHoc::getAvailableClasses();
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Lấy danh sách lớp học thành công',
+                'count' => count($classes),
+                'data' => $classes
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi hệ thống khi lấy danh sách lớp: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
     public function create() {
         $data = json_decode(file_get_contents("php://input"), true);
         if (empty($data['mon_hoc_id'])) {
@@ -130,6 +152,13 @@ class LopHocController {
             echo json_encode(["status" => "error", "message" => "Thiếu ID lớp học"]);
             return;
         }
+
+        // Chống xung đột route: Nếu ID là từ khóa 'available', chuyển sang hàm đúng
+        if ($id === 'available') {
+            $this->getAvailable();
+            return;
+        }
+
         $lopHoc = LopHoc::getById($id);
         if ($lopHoc) {
             echo json_encode(["status" => "success", "data" => $lopHoc]);

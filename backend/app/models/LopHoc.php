@@ -186,4 +186,35 @@ class LopHoc {
         $result = Database::query($sql, [':id' => $id]);
         return $result ? $result[0] : null;
     }
+
+    /**
+     * Lấy danh sách các lớp học đang mở đăng ký (trang_thai = 'dang_mo')
+     * Kèm theo thông tin môn học và gia sư để hiển thị cho phụ huynh
+     */
+    public static function getAvailableClasses(): array
+    {
+        $sql = "SELECT 
+                    lh.*, 
+                    mh.ten_mon_hoc, 
+                    gs.ho_ten AS ten_gia_su, 
+                    gs.trinh_do,
+                    gs.anh_dai_dien,
+                    gs.bang_cap,
+                    -- Lấy lịch học dự kiến từ bảng lich_hoc
+                    (SELECT GROUP_CONCAT(DISTINCT CONCAT(
+                         CASE DAYOFWEEK(ngay_hoc)
+                             WHEN 1 THEN 'CN' WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' 
+                             WHEN 4 THEN 'T4' WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7'
+                         END,
+                         ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
+                     ) SEPARATOR ', ') 
+                     FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien
+                FROM lop_hoc lh
+                INNER JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
+                LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id
+                WHERE lh.trang_thai = 'dang_mo'
+                ORDER BY lh.ngay_tao DESC";
+
+        return Database::query($sql);
+    }
 }

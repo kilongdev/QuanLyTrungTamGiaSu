@@ -399,6 +399,33 @@ class PhuHuynhController
                 [$hocSinhId]
             );
 
+            // 4. Lấy lịch học sắp tới (upcoming schedule)
+            $student['lich_hoc_sap_toi'] = Database::query(
+                "SELECT lh.*, mh.ten_mon_hoc, l.ten_lop
+                 FROM lich_hoc lh
+                 JOIN lop_hoc l ON lh.lop_hoc_id = l.lop_hoc_id
+                 JOIN mon_hoc mh ON l.mon_hoc_id = mh.mon_hoc_id
+                 JOIN dang_ky_lop dkl ON l.lop_hoc_id = dkl.lop_hoc_id
+                 WHERE dkl.hoc_sinh_id = ? 
+                 AND dkl.trang_thai = 'da_duyet'
+                 AND lh.ngay_hoc >= CURRENT_DATE
+                 AND lh.trang_thai != 'huy'
+                 ORDER BY lh.ngay_hoc ASC, lh.gio_bat_dau ASC",
+                [$hocSinhId]
+            );
+
+            // 5. Lấy danh sách học phí của riêng học sinh này
+            $student['hoc_phi_lich_su'] = Database::query(
+                "SELECT hp.*, lh.ten_lop, mh.ten_mon_hoc
+                 FROM hoc_phi hp
+                 JOIN dang_ky_lop dkl ON hp.dang_ky_id = dkl.dang_ky_id
+                 JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
+                 JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
+                 WHERE dkl.hoc_sinh_id = ?
+                 ORDER BY hp.ngay_tao DESC",
+                [$hocSinhId]
+            );
+
             echo json_encode([
                 'status' => 'success',
                 'data' => $student

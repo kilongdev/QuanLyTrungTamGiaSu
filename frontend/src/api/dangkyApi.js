@@ -1,53 +1,60 @@
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
-// const API_URL = "http://localhost:5001/public";
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public';
+import axios from "axios";
 
-const API_URL = "http://localhost:5001";
-async function request(endpoint, options = {}) {
-  const token = localStorage.getItem("token");
-  const headers = { ...options.headers };
-
-  if (!(options.body instanceof FormData)) {
-    headers["Content-Type"] = "application/json";
-  }
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      throw { status: response.status, ...data };
-    }
-    return data;
-  } catch (error) {
-    if (error.status) throw error;
-    throw { status: 0, message: "Không thể kết nối đến server" };
-  }
-}
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/QuanLyTrungTamGiaSu/backend/public';
 
 export const dangKyAPI = {
-  create: (data) =>
-    request("/dangkylop/create", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+  /**
+   * Gửi yêu cầu đăng ký lớp học mới
+   * @param {Object} data - { hoc_sinh_id, lop_hoc_id }
+   */
+  create: async (data) => {
+    try {
+      const response = await axios.post(`${API_URL}/dangkylop/create`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating registration:", error.response?.data || error.message);
+      throw error.response?.data || new Error("Failed to create registration");
+    }
+  },
 
-  getByLop: (lopHocId) =>
-    request(`/dangkylop/lop/${lopHocId}`, {
-      method: "GET",
-    }),
+  /**
+   * Lấy tất cả các đơn đăng ký (dành cho Admin)
+   */
+  getAll: async () => {
+    try {
+      const response = await axios.get(`${API_URL}/dangkylop/all`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching all registrations:", error.response?.data || error.message);
+      throw error.response?.data || new Error("Failed to fetch all registrations");
+    }
+  },
 
-  updateStatus: (id, trang_thai) =>
-    request(`/dangkylop/status/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({ trang_thai }),
-    }),
-  getAll: () => request("/dangkylop/all", { method: "GET" }),
-  getByPhuHuynh: (phuHuynhId) =>
-    request(`/dangkylop/phuhuynh/${phuHuynhId}`, { method: "GET" }),
+  /**
+   * Lấy danh sách đăng ký của một phụ huynh
+   */
+  getByPhuHuynh: async (phuHuynhId) => {
+    try {
+      const response = await axios.get(`${API_URL}/dangkylop/phuhuynh/${phuHuynhId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching registrations for parent ${phuHuynhId}:`, error.response?.data || error.message);
+      throw error.response?.data || new Error("Failed to fetch parent registrations");
+    }
+  },
+
+  /**
+   * Cập nhật trạng thái của một đơn đăng ký
+   * @param {number} id - dang_ky_id
+   * @param {string} status - trạng thái mới ('da_duyet', 'tu_choi', 'da_huy')
+   */
+  updateStatus: async (id, status) => {
+    try {
+      const response = await axios.put(`${API_URL}/dangkylop/status/${id}`, { trang_thai: status });
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating registration status for ${id}:`, error.response?.data || error.message);
+      throw error.response?.data || new Error("Failed to update registration status");
+    }
+  },
 };
