@@ -33,6 +33,11 @@ export const diemDanhAPI = {
       method: "GET",
     }),
 
+  getClassOverview: (lopHocId) =>
+    request(`/diemdanh/lophoc/${lopHocId}/overview`, {
+      method: "GET",
+    }),
+
     /**
      * Lấy danh sách điểm danh theo ID lớp học
      * @param {number} lopHocId - ID lớp học
@@ -54,5 +59,10 @@ export const diemDanhAPI = {
     saveAttendanceForToday: (lop_hoc_id, danh_sach) => request(`/diemdanh/lophoc/${lop_hoc_id}/save-today`, {
         method: 'POST',
         body: JSON.stringify({ lop_hoc_id, danh_sach }),
+    }),
+
+    saveAttendanceByDate: (lop_hoc_id, ngay_hoc, danh_sach) => request(`/diemdanh/lophoc/${lop_hoc_id}/save-by-date`, {
+      method: 'POST',
+      body: JSON.stringify({ lop_hoc_id, ngay_hoc, danh_sach }),
     }),
 };

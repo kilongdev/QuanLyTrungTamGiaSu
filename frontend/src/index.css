@@ -11,7 +11,7 @@
   font-weight: 400;
   box-sizing: border-box;
 
-  color-scheme: light dark;
+  color-scheme: light;
   color: #213547;
   background-color: #ffffff;
 
@@ -205,10 +205,34 @@ input:-webkit-autofill:active {
   scrollbar-width: none; /* Firefox */
 }
 
+/* Đồng bộ thanh cuộn toàn hệ thống theo tông trắng */
+* {
+  scrollbar-color: #ffffff #ffffff;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #ffffff;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #ffffff;
+}
+
 /* Custom scrollbar styling */
 .scrollbar-custom {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 #f1f5f9;
+  scrollbar-color: #ffffff #ffffff;
 }
 
 .scrollbar-custom::-webkit-scrollbar {
@@ -217,16 +241,16 @@ input:-webkit-autofill:active {
 }
 
 .scrollbar-custom::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #ffffff;
   border-radius: 4px;
 }
 
 .scrollbar-custom::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #ffffff;
   border-radius: 4px;
-  border: 2px solid #f1f5f9;
+  border: 2px solid #ffffff;
 }
 
 .scrollbar-custom::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #ffffff;
 }

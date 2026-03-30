@@ -375,157 +375,110 @@ export default function DangKyLopManagement({ user }) {
 
   // 1. GIAO DIỆN QUẢN LÝ CHO ADMIN
   if (user?.role === "admin") {
-    const stats = {
-      total: dangKys.length,
-      pending: dangKys.filter((dk) => dk.trang_thai === "cho_duyet").length,
-      approved: dangKys.filter((dk) => dk.trang_thai === "da_duyet").length,
-      cancelled: dangKys.filter(
-        (dk) => dk.trang_thai === "tu_choi" || dk.trang_thai === "da_huy",
-      ).length,
-    };
-
     const filteredAdminDangKys = dangKys.filter((dk) => {
+      const keyword = searchTerm.toLowerCase().trim();
+      const maDon = String(dk.dang_ky_id || "").toLowerCase();
+      const tenHocSinh = String(dk.ten_hoc_sinh || "").toLowerCase();
+      const tenLop = String(dk.ten_lop || `Lớp #${dk.lop_hoc_id || ""}`).toLowerCase();
+      const keywordMatch =
+        !keyword ||
+        maDon.includes(keyword) ||
+        tenHocSinh.includes(keyword) ||
+        tenLop.includes(keyword);
+
       if (adminFilter === "all") return true;
       if (adminFilter === "cancelled")
-        return dk.trang_thai === "tu_choi" || dk.trang_thai === "da_huy";
-      return dk.trang_thai === adminFilter;
+        return keywordMatch && (dk.trang_thai === "tu_choi" || dk.trang_thai === "da_huy");
+      return keywordMatch && dk.trang_thai === adminFilter;
     });
 
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-center cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setAdminFilter("all")}
-          >
-            <p className="text-gray-500 text-sm font-medium">Tổng số đơn</p>
-            <p className="text-3xl font-bold text-blue-600 mt-1">
-              {stats.total}
-            </p>
+      <div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-5 border-b border-gray-200">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Duyệt đơn đăng ký lớp</h2>
+              <p className="text-gray-500 text-sm mt-1">Quản lý yêu cầu đăng ký lớp học từ phụ huynh</p>
+            </div>
           </div>
-          <div
-            className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl p-5 shadow-sm border border-amber-200 flex flex-col justify-center cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setAdminFilter("cho_duyet")}
-          >
-            <p className="text-amber-700 text-sm font-bold">
-              Chờ duyệt (Cần xử lý)
-            </p>
-            <p className="text-3xl font-bold text-amber-700 mt-1">
-              {stats.pending}
-            </p>
-          </div>
-          <div
-            className="bg-emerald-50 rounded-2xl p-5 shadow-sm border border-emerald-100 flex flex-col justify-center cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setAdminFilter("da_duyet")}
-          >
-            <p className="text-emerald-600 text-sm font-medium">Đã duyệt</p>
-            <p className="text-3xl font-bold text-emerald-600 mt-1">
-              {stats.approved}
-            </p>
-          </div>
-          <div
-            className="bg-gray-50 rounded-2xl p-5 shadow-sm border border-gray-200 flex flex-col justify-center cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setAdminFilter("cancelled")}
-          >
-            <p className="text-gray-500 text-sm font-medium">Từ chối / Hủy</p>
-            <p className="text-3xl font-bold text-gray-500 mt-1">
-              {stats.cancelled}
-            </p>
-          </div>
-        </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-6 relative">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-6 border-b pb-4 gap-4">
-            <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-              <FileText className="text-blue-600" /> Danh Sách Đơn Đăng Ký
-            </h3>
-            <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-lg border border-gray-200">
-              <Filter size={16} className="text-gray-400 ml-2" />
+          <div className="p-5 border-b border-gray-200">
+            <div className="flex flex-col md:flex-row md:items-center rounded-xl border border-gray-200 bg-gray-50 overflow-hidden">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Tìm theo mã đơn, học sinh, lớp học..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-transparent focus:outline-none"
+                />
+              </div>
+
+              <div className="h-px md:h-10 md:w-px bg-gray-200" />
+
               <select
                 value={adminFilter}
                 onChange={(e) => setAdminFilter(e.target.value)}
-                className="bg-transparent border-none text-sm font-medium text-gray-700 focus:ring-0 cursor-pointer outline-none pl-1 pr-6 py-1"
+                className="md:w-64 px-4 py-2.5 bg-transparent focus:outline-none"
               >
                 <option value="all">Tất cả trạng thái</option>
                 <option value="cho_duyet">Đang chờ duyệt</option>
-                <option value="da_duyet">Đã duyệt thành công</option>
-                <option value="cancelled">Đã bị từ chối/hủy</option>
+                <option value="da_duyet">Đã duyệt</option>
+                <option value="cancelled">Đã từ chối/hủy</option>
               </select>
             </div>
           </div>
 
           {loading ? (
-            <div className="text-center py-8 text-gray-500">
-              Đang tải dữ liệu...
+            <div className="p-16 text-center border-b border-gray-200">
+              <p className="text-gray-600 text-lg font-medium">Đang tải dữ liệu...</p>
+            </div>
+          ) : filteredAdminDangKys.length === 0 ? (
+            <div className="p-16 text-center border-b border-gray-200">
+              <p className="text-gray-600 text-lg font-medium">Không có dữ liệu đăng ký lớp</p>
+              <p className="text-gray-400 text-sm mt-2">Thử thay đổi từ khóa hoặc bộ lọc trạng thái</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="p-3 text-sm font-semibold text-gray-600">
-                      Mã đơn
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-600">
-                      Học sinh
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-600">
-                      Đăng ký vào Lớp
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-600">
-                      Ngày gửi
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-600">
-                      Trạng thái
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-600 text-center">
-                      Thao tác
-                    </th>
+            <div className="overflow-x-auto border-b border-gray-200">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">STT</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mã đơn</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Học sinh</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Lớp đăng ký</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Ngày gửi</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Thao tác</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {filteredAdminDangKys.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan="6"
-                        className="text-center py-8 text-gray-500"
-                      >
-                        Không có đơn đăng ký nào trong mục này.
+                <tbody className="divide-y divide-gray-100">
+                  {filteredAdminDangKys.map((dk, index) => (
+                    <tr
+                      key={dk.dang_ky_id}
+                      className={`hover:bg-red-50/40 transition-colors duration-200 ${dk.trang_thai === "cho_duyet" ? "bg-amber-50/20" : ""}`}
+                    >
+                      <td className="px-6 py-4 text-sm text-gray-500">{index + 1}</td>
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-900">#{dk.dang_ky_id}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{dk.ten_hoc_sinh}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        <span className="font-medium text-blue-700">{dk.ten_lop || `Lớp #${dk.lop_hoc_id}`}</span>
+                        {dk.ten_mon_hoc && (
+                          <span className="block text-xs text-gray-500 mt-0.5">{dk.ten_mon_hoc}</span>
+                        )}
                       </td>
-                    </tr>
-                  ) : (
-                    filteredAdminDangKys.map((dk) => (
-                      <tr
-                        key={dk.dang_ky_id}
-                        className={`border-b border-gray-100 hover:bg-gray-50 ${dk.trang_thai === "cho_duyet" ? "bg-amber-50/30" : ""}`}
-                      >
-                        <td className="p-3 text-sm font-bold text-gray-700">
-                          #{dk.dang_ky_id}
-                        </td>
-                        <td className="p-3 text-sm font-medium text-gray-800 flex items-center gap-2">
-                          <User size={14} className="text-blue-500" />
-                          {dk.ten_hoc_sinh}
-                        </td>
-                        <td className="p-3 text-sm text-blue-600 font-medium">
-                          {dk.ten_lop || `Lớp #${dk.lop_hoc_id}`}
-                          {dk.ten_mon_hoc && (
-                            <span className="block text-xs text-gray-500 font-normal mt-0.5">
-                              {dk.ten_mon_hoc}
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3 text-sm text-gray-600">
-                          {new Date(dk.ngay_dang_ky).toLocaleString("vi-VN")}
-                        </td>
-                        <td className="p-3">{getStatusBadge(dk.trang_thai)}</td>
-                        <td className="p-3 text-center flex justify-center items-center gap-2">
+                      <td className="px-6 py-4 text-sm text-gray-600">{new Date(dk.ngay_dang_ky).toLocaleString("vi-VN")}</td>
+                      <td className="px-6 py-4">{getStatusBadge(dk.trang_thai)}</td>
+                      <td className="px-6 py-4">
+                        <div className="grid grid-cols-[38px_92px_92px] items-center justify-center gap-2">
                           {/* NÚT CHI TIẾT CỦA ADMIN */}
                           <button
                             onClick={() => setDetailModal({ show: true, data: dk })}
-                            className="px-3 py-1.5 bg-white text-gray-700 hover:bg-gray-100 text-xs font-bold rounded border border-gray-300 transition-colors shadow-sm flex items-center gap-1"
+                            className="w-9 h-9 flex items-center justify-center text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
                             title="Xem chi tiết đơn"
                           >
-                            <SearchIcon size={14} /> Chi tiết
+                            <SearchIcon size={16} />
                           </button>
 
                           {dk.trang_thai === "cho_duyet" && (
@@ -534,7 +487,7 @@ export default function DangKyLopManagement({ user }) {
                                 onClick={() =>
                                   handleUpdateStatus(dk.dang_ky_id, "da_duyet")
                                 }
-                                className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded hover:bg-emerald-700 transition-colors shadow-sm"
+                                className="w-[92px] h-10 text-xs font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors"
                               >
                                 Duyệt
                               </button>
@@ -542,37 +495,44 @@ export default function DangKyLopManagement({ user }) {
                                 onClick={() =>
                                   handleUpdateStatus(dk.dang_ky_id, "tu_choi")
                                 }
-                                className="px-3 py-1.5 bg-red-100 text-red-600 text-xs font-bold rounded hover:bg-red-200 transition-colors"
+                                className="w-[92px] h-10 text-xs font-semibold bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors"
                               >
                                 Từ chối
                               </button>
                             </>
                           )}
                           {dk.trang_thai === "da_duyet" && (
-                            <button
-                              onClick={() =>
-                                handleUpdateStatus(dk.dang_ky_id, "da_huy")
-                              }
-                              className="px-3 py-1.5 bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-700 text-xs font-bold rounded border border-gray-200 hover:border-red-300 transition-colors"
-                              title="Hủy đơn này để hoàn trả 1 sĩ số cho lớp"
-                            >
-                              Hủy đơn
-                            </button>
+                            <>
+                              <button
+                                onClick={() =>
+                                  handleUpdateStatus(dk.dang_ky_id, "da_huy")
+                                }
+                                className="w-[92px] h-10 text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-red-100 hover:text-red-700 rounded-xl transition-colors"
+                                title="Hủy đơn này để hoàn trả 1 sĩ số cho lớp"
+                              >
+                                Hủy đơn
+                              </button>
+                              <span className="w-[92px] h-10" />
+                            </>
                           )}
                           {(dk.trang_thai === "tu_choi" ||
                             dk.trang_thai === "da_huy") && (
-                            <span className="text-xs text-gray-400 italic">
-                              Đã đóng
-                            </span>
+                            <>
+                              <span className="w-[92px] h-10" />
+                              <span className="w-[92px] h-10 inline-flex items-center justify-center text-xs text-gray-400 italic">
+                                Đã đóng
+                              </span>
+                            </>
                           )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           )}
+
           {renderPopups()}
         </div>
       </div>

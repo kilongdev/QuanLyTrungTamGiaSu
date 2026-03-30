@@ -5,8 +5,13 @@ import YeuCauManagement from '../components/YeuCauManagement'
 import LichHocManagement from '../components/LichHocManagement'
 
 export default function GiaSuDashboard({ user, onLogout }) {
-  const [activeMenu, setActiveMenu] = useState('dashboard')
+  const [activeMenu, setActiveMenu] = useState(() => localStorage.getItem('giasu_active_item') || 'dashboard')
   const [showEditProfile, setShowEditProfile] = useState(false)
+
+  const handleMenuClick = (menuId) => {
+    setActiveMenu(menuId)
+    localStorage.setItem('giasu_active_item', menuId)
+  }
 
   useEffect(() => {
     // Log token để kiểm tra
@@ -63,7 +68,7 @@ export default function GiaSuDashboard({ user, onLogout }) {
       setShowEditProfile={setShowEditProfile}
       menuItems={menuItems}
       activeItem={activeMenu}
-      onMenuClick={setActiveMenu}
+      onMenuClick={handleMenuClick}
       pageTitle={getPageTitle()}
     >
       {renderContent()}

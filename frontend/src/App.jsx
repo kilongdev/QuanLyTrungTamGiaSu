@@ -16,22 +16,35 @@ import { Toaster } from "sonner";
 
 // Component chính được wrap trong BrowserRouter
 function AppContent() {
+  const AUTH_SESSION_KEY = "auth_session_active";
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authTab, setAuthTab] = useState("login");
   const navigate = useNavigate();
 
-  // Kiểm tra token đã lưu
+  // Khôi phục phiên đăng nhập đã lưu để F5 không bị đăng xuất.
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
-      console.log("=== APP LOADED ===");
-      console.log("Saved User:", JSON.parse(savedUser));
-      console.log("Token:", token);
+    const savedUser = localStorage.getItem("user");
+    const isCurrentTabSession = sessionStorage.getItem(AUTH_SESSION_KEY) === "1";
+
+    if (token && savedUser && isCurrentTabSession) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error("Không thể parse user từ localStorage:", error);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        sessionStorage.removeItem(AUTH_SESSION_KEY);
+      }
+    } else if (token || savedUser) {
+      // Không tự dùng phiên cũ từ localStorage nếu tab hiện tại chưa đăng nhập.
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
     }
+
     setLoading(false);
   }, []);
 
@@ -42,6 +55,7 @@ function AppContent() {
     console.log("Token:", data.token);
 
     setUser(data.user);
+    sessionStorage.setItem(AUTH_SESSION_KEY, "1");
     setShowAuthModal(false);
     
     // Chuyển đến dashboard sau khi đăng nhập thành công
@@ -52,7 +66,13 @@ function AppContent() {
     console.log("=== LOGOUT ===");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("admin_active_item");
+    localStorage.removeItem("giasu_active_item");
+    localStorage.removeItem("phuhuynh_active_item");
+    sessionStorage.removeItem(AUTH_SESSION_KEY);
     setUser(null);
+    setShowAuthModal(false);
+    navigate("/");
   };
 
   const openLogin = () => {
@@ -120,7 +140,7 @@ function AppContent() {
         </Route>
 
         {/* Dashboard route - không dùng Layout */}
-        <Route path="/dashboard" element={<DashboardRoute />} />
+        <Route path="/dashboard/*" element={<DashboardRoute />} />
       </Routes>
 
       {/* Auth Modal */}

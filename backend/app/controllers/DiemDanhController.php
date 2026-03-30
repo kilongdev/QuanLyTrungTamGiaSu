@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../models/DiemDanh.php';
 require_once __DIR__ . '/../models/ThongBaoModel.php';
+require_once __DIR__ . '/../models/DoanhThuModel.php';
 require_once __DIR__ . '/../core/Database.php';
 
 class DiemDanhController {
@@ -28,76 +29,12 @@ class DiemDanhController {
             
             foreach ($data['danh_sach'] as $hoc_sinh) {
                 $hoc_sinh['lich_hoc_id'] = $lich_hoc_id;
-                
-                // Lấy trạng thái cũ trước khi lưu
-                $oldStatus = Database::queryOne(
-                    "SELECT tinh_trang FROM diem_danh WHERE lich_hoc_id = ? AND hoc_sinh_id = ?",
-                    [$lich_hoc_id, $hoc_sinh['hoc_sinh_id']]
-                );
-                $oldTinhTrang = $oldStatus ? $oldStatus['tinh_trang'] : null;
-                $newTinhTrang = $hoc_sinh['tinh_trang'];
+                $hoc_sinh['ngay_diem_danh'] = $this->buildAttendanceDatetime($lichHoc);
                 
                 // Lưu điểm danh
                 DiemDanh::save($hoc_sinh);
                 
-                // Chỉ cập nhật lương khi có thay đổi trạng thái liên quan đến có mặt
-                $wasPresent = ($oldTinhTrang === 'co_mat');
-                $isPresent = ($newTinhTrang === 'co_mat');
-                
-                if ($wasPresent !== $isPresent && !empty($lichHoc['lop_hoc_id'])) {
-                    $thang = date('n', strtotime($lichHoc['ngay_hoc']));
-                    $nam = date('Y', strtotime($lichHoc['ngay_hoc']));
-                    
-                    // Lấy thông tin lớp học để tính lương
-                    $lopHoc = Database::queryOne(
-                        "SELECT gia_su_id, gia_moi_buoi, so_buoi_hoc, loai_chi_tra, gia_tri_chi_tra FROM lop_hoc WHERE lop_hoc_id = ?",
-                        [$lichHoc['lop_hoc_id']]
-                    );
-                    
-                    if ($lopHoc) {
-                        // Kiểm tra xem đã có bản ghi lương cho tháng này chưa
-                        $luongHienTai = Database::queryOne(
-                            "SELECT luong_id, so_buoi_day FROM luong_gia_su 
-                             WHERE lop_hoc_id = ? AND thang = ? AND nam = ?",
-                            [$lichHoc['lop_hoc_id'], $thang, $nam]
-                        );
-                        
-                        $giaMoiBuoi = (float)($lopHoc['gia_moi_buoi'] ?? 0);
-                        $soBuoiHoc = (int)($lopHoc['so_buoi_hoc'] ?? 1);
-                        $loaiChiTra = $lopHoc['loai_chi_tra'] ?? 'tien_cu_the';
-                        $giaTriApDung = (float)($lopHoc['gia_tri_chi_tra'] ?? 0);
-                        
-                        // Công thức tính đơn giá buổi cho gia sư
-                        if ($loaiChiTra === 'phan_tram') {
-                            $donGiaBuoiGiaSu = $giaMoiBuoi * ($giaTriApDung / 100);
-                        } else {
-                            // tien_cu_the: giá mỗi buổi = giá trị chi trả / số buổi học
-                            $donGiaBuoiGiaSu = $soBuoiHoc > 0 ? ($giaTriApDung / $soBuoiHoc) : 0;
-                        }
-                        
-                        if ($luongHienTai) {
-                            // +1 nếu mới có mặt, -1 nếu từ có mặt thành vắng
-                            $soBuoiMoi = $luongHienTai['so_buoi_day'] + ($isPresent ? 1 : -1);
-                            $soBuoiMoi = max(0, $soBuoiMoi); // Không cho âm
-                            $tienTraGiaSu = $soBuoiMoi * $donGiaBuoiGiaSu;
-                            
-                            // Cập nhật số buổi dạy và tiền lương
-                            Database::execute(
-                                "UPDATE luong_gia_su SET so_buoi_day = ?, tien_tra_gia_su = ? WHERE luong_id = ?",
-                                [$soBuoiMoi, $tienTraGiaSu, $luongHienTai['luong_id']]
-                            );
-                        } else if ($isPresent) {
-                            // Chỉ tạo mới nếu học sinh có mặt
-                            $tienTraGiaSu = $donGiaBuoiGiaSu;
-                            
-                            Database::execute(
-                                "INSERT INTO luong_gia_su (gia_su_id, lop_hoc_id, thang, nam, so_buoi_day, tien_tra_gia_su, loai_chi_tra, gia_tri_ap_dung, trang_thai_thanh_toan)
-                                 VALUES (?, ?, ?, ?, 1, ?, ?, ?, 'chua_thanh_toan')",
-                                [$lopHoc['gia_su_id'], $lichHoc['lop_hoc_id'], $thang, $nam, $tienTraGiaSu, $loaiChiTra, $giaTriApDung]
-                            );
-                        }
-                    }
-                }
+                // Luong/doanh thu se duoc tinh lai theo toan bo du lieu sau khi luu xong danh sach.
                 
                 // Gửi thông báo cho phụ huynh về tình trạng điểm danh
                 if (!empty($hoc_sinh['hoc_sinh_id'])) {
@@ -126,6 +63,10 @@ class DiemDanhController {
                         );
                     }
                 }
+            }
+
+            if (!empty($lichHoc['lop_hoc_id']) && !empty($lichHoc['ngay_hoc'])) {
+                $this->syncRevenueForClassMonth($lichHoc['lop_hoc_id'], $lichHoc['ngay_hoc']);
             }
 
             Database::execute("UPDATE lich_hoc SET trang_thai = 'da_hoc' WHERE lich_hoc_id = :id", [':id' => $lich_hoc_id]);
@@ -171,6 +112,98 @@ class DiemDanhController {
         }
     }
 
+    public function getClassOverview($lopHocId) {
+        if (empty($lopHocId)) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Thiếu ID lớp học"]);
+            return;
+        }
+
+        try {
+            $lopHoc = Database::queryOne(
+                "SELECT lh.lop_hoc_id, lh.ten_lop, lh.khoi_lop, lh.so_buoi_hoc, lh.trang_thai,
+                        mh.ten_mon_hoc, gs.ho_ten AS ten_gia_su
+                 FROM lop_hoc lh
+                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
+                 LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id
+                 WHERE lh.lop_hoc_id = ?",
+                [$lopHocId]
+            );
+
+            if (!$lopHoc) {
+                http_response_code(404);
+                echo json_encode(["status" => "error", "message" => "Không tìm thấy lớp học"]);
+                return;
+            }
+
+            $hocSinhs = Database::query(
+                "SELECT hs.hoc_sinh_id, hs.ho_ten, hs.khoi_lop
+                 FROM dang_ky_lop dkl
+                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                 WHERE dkl.lop_hoc_id = ? AND dkl.trang_thai = 'da_duyet'
+                 ORDER BY hs.ho_ten ASC",
+                [$lopHocId]
+            );
+
+            $lichHocs = Database::query(
+                "SELECT lh.lich_hoc_id, lh.ngay_hoc, lh.gio_bat_dau, lh.gio_ket_thuc, lh.trang_thai,
+                        COALESCE(dd_stats.so_ban_ghi, 0) AS so_ban_ghi_diem_danh
+                 FROM lich_hoc lh
+                 LEFT JOIN (
+                    SELECT lich_hoc_id, COUNT(*) AS so_ban_ghi
+                    FROM diem_danh
+                    GROUP BY lich_hoc_id
+                 ) dd_stats ON dd_stats.lich_hoc_id = lh.lich_hoc_id
+                 WHERE lh.lop_hoc_id = ?
+                 ORDER BY lh.ngay_hoc ASC, lh.gio_bat_dau ASC",
+                [$lopHocId]
+            );
+
+            $lichDinhKy = Database::query(
+                "SELECT lich_dinh_ky_id, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, ngay_bat_dau, ngay_ket_thuc, trang_thai
+                 FROM lich_dinh_ky
+                 WHERE lop_hoc_id = ?
+                 ORDER BY thu_trong_tuan ASC, gio_bat_dau ASC",
+                [$lopHocId]
+            );
+
+            $diemDanhRows = Database::query(
+                "SELECT dd.lich_hoc_id, dd.hoc_sinh_id, dd.tinh_trang, dd.ghi_chu, dd.ngay_diem_danh
+                 FROM diem_danh dd
+                 JOIN lich_hoc lh ON lh.lich_hoc_id = dd.lich_hoc_id
+                 WHERE lh.lop_hoc_id = ?",
+                [$lopHocId]
+            );
+
+            $attendanceMap = [];
+            foreach ($diemDanhRows as $row) {
+                $lichHocId = (int)$row['lich_hoc_id'];
+                $hocSinhId = (int)$row['hoc_sinh_id'];
+                if (!isset($attendanceMap[$lichHocId])) {
+                    $attendanceMap[$lichHocId] = [];
+                }
+                $attendanceMap[$lichHocId][$hocSinhId] = [
+                    'tinh_trang' => $row['tinh_trang'],
+                    'ghi_chu' => $row['ghi_chu']
+                ];
+            }
+
+            echo json_encode([
+                "status" => "success",
+                "data" => [
+                    "lop_hoc" => $lopHoc,
+                    "hoc_sinh" => $hocSinhs,
+                    "lich_hoc" => $lichHocs,
+                    "lich_dinh_ky" => $lichDinhKy,
+                    "attendance_map" => $attendanceMap
+                ]
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Lỗi: " . $e->getMessage()]);
+        }
+    }
+
     /**
      * Save attendance for today for a class
      * Gets or creates a schedule for today, then saves attendance records
@@ -209,6 +242,7 @@ class DiemDanhController {
             // Save each attendance record
             foreach ($data['danh_sach'] as $hoc_sinh) {
                 $hoc_sinh['lich_hoc_id'] = $lich_hoc_id;
+                $hoc_sinh['ngay_diem_danh'] = $this->buildAttendanceDatetime($lichHoc ?: $schedule);
                 DiemDanh::save($hoc_sinh);
                 
                 // Send notification to parents about attendance
@@ -240,6 +274,10 @@ class DiemDanhController {
                 }
             }
 
+            if (!empty($lop_hoc_id) && !empty($schedule['ngay_hoc'])) {
+                $this->syncRevenueForClassMonth($lop_hoc_id, $schedule['ngay_hoc']);
+            }
+
             // Update schedule status to 'da_hoc'
             Database::execute("UPDATE lich_hoc SET trang_thai = 'da_hoc' WHERE lich_hoc_id = :id", [':id' => $lich_hoc_id]);
             
@@ -253,6 +291,80 @@ class DiemDanhController {
             http_response_code(500);
             echo json_encode(["status" => "error", "message" => "Lỗi: " . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Save attendance for a selected date for a class
+     */
+    public function saveAttendanceByDate($id = null) {
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        $lop_hoc_id = $id ?: ($data['lop_hoc_id'] ?? null);
+        $ngay_hoc = $data['ngay_hoc'] ?? null;
+
+        if (empty($lop_hoc_id) || empty($ngay_hoc) || empty($data['danh_sach'])) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Thiếu ID lớp học, ngày học hoặc danh sách điểm danh"]);
+            return;
+        }
+
+        try {
+            $schedule = DiemDanh::getOrCreateScheduleByDate($lop_hoc_id, $ngay_hoc);
+
+            if (!$schedule) {
+                throw new Exception("Không thể tạo lịch học cho ngày đã chọn");
+            }
+
+            $lich_hoc_id = $schedule['lich_hoc_id'];
+
+            $payload = [
+                'lich_hoc_id' => $lich_hoc_id,
+                'danh_sach' => $data['danh_sach']
+            ];
+
+            // Reuse existing save workflow by directly running the same persistence logic.
+            foreach ($payload['danh_sach'] as $hoc_sinh) {
+                $hoc_sinh['lich_hoc_id'] = $lich_hoc_id;
+                $hoc_sinh['ngay_diem_danh'] = $this->buildAttendanceDatetime($schedule);
+
+                DiemDanh::save($hoc_sinh);
+            }
+
+            if (!empty($lop_hoc_id) && !empty($schedule['ngay_hoc'])) {
+                $this->syncRevenueForClassMonth($lop_hoc_id, $schedule['ngay_hoc']);
+            }
+
+            Database::execute("UPDATE lich_hoc SET trang_thai = 'da_hoc' WHERE lich_hoc_id = :id", [':id' => $lich_hoc_id]);
+
+            echo json_encode([
+                "status" => "success",
+                "message" => "Đã lưu điểm danh cho ngày đã chọn thành công!",
+                "data" => ["lich_hoc_id" => $lich_hoc_id, "ngay_hoc" => $schedule['ngay_hoc']]
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Lỗi: " . $e->getMessage()]);
+        }
+    }
+
+    private function syncRevenueForClassMonth($lopHocId, $ngayHoc) {
+        $thang = (int)date('n', strtotime($ngayHoc));
+        $nam = (int)date('Y', strtotime($ngayHoc));
+
+        $doanhThuModel = new DoanhThuModel();
+        $doanhThuModel->syncClassRevenueFromAttendance((int)$lopHocId, $thang, $nam, true);
+    }
+
+    private function buildAttendanceDatetime($schedule) {
+        $ngayHoc = $schedule['ngay_hoc'] ?? date('Y-m-d');
+        $gioDiemDanh = $schedule['gio_bat_dau'] ?? '00:00:00';
+
+        $timestamp = strtotime($ngayHoc . ' ' . $gioDiemDanh);
+        if ($timestamp === false) {
+            return date('Y-m-d H:i:s');
+        }
+
+        return date('Y-m-d H:i:s', $timestamp);
     }
 
 }

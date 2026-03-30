@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/LuongGiaSuModel.php';
+require_once __DIR__ . '/../models/DoanhThuModel.php';
 require_once __DIR__ . '/../models/ThongBaoModel.php';
 require_once __DIR__ . '/../core/Database.php';
 
@@ -239,6 +240,12 @@ class LuongGiaSuController {
             if (isset($data['trang_thai_thanh_toan'])) {
                 $updateFields[] = "trang_thai_thanh_toan = ?";
                 $params[] = $data['trang_thai_thanh_toan'];
+
+                if ($data['trang_thai_thanh_toan'] === 'da_thanh_toan') {
+                    $updateFields[] = "ngay_thanh_toan = CURDATE()";
+                } else {
+                    $updateFields[] = "ngay_thanh_toan = NULL";
+                }
                 
                 // Gửi thông báo khi thanh toán thành công
                 if ($data['trang_thai_thanh_toan'] === 'da_thanh_toan') {
@@ -280,11 +287,29 @@ class LuongGiaSuController {
                 $updateFields[] = "thang = ?";
                 $params[] = $data['thang'];
             }
+            if (isset($data['nam'])) {
+                $updateFields[] = "nam = ?";
+                $params[] = $data['nam'];
+            }
             
             if (!empty($updateFields)) {
                 $params[] = $id;
                 $sql = "UPDATE luong_gia_su SET " . implode(', ', $updateFields) . " WHERE luong_id = ?";
                 Database::execute($sql, $params);
+            }
+
+            $updatedLuong = Database::queryOne(
+                "SELECT thang, nam, trang_thai_thanh_toan, tien_tra_gia_su, ngay_thanh_toan FROM luong_gia_su WHERE luong_id = ?",
+                [$id]
+            );
+
+            if ($updatedLuong && (
+                isset($data['trang_thai_thanh_toan']) ||
+                isset($data['tien_tra_gia_su']) ||
+                isset($data['thang']) ||
+                isset($data['nam'])
+            )) {
+                $this->syncDoanhThuForLuongChanges($existing, $updatedLuong);
             }
             
             $this->sendResponse(true, 'Cập nhật lương thành công');
@@ -372,6 +397,41 @@ class LuongGiaSuController {
             ]);
         } catch (Exception $e) {
             $this->sendResponse(false, 'Lỗi: ' . $e->getMessage(), null, 500);
+        }
+    }
+
+    private function syncDoanhThuForLuongChanges($oldLuong, $newLuong) {
+        $targets = [];
+
+        $this->collectRevenueTargetsFromPaymentRecord($oldLuong, $targets);
+        $this->collectRevenueTargetsFromPaymentRecord($newLuong, $targets);
+
+        if (empty($targets)) {
+            return;
+        }
+
+        $doanhThuModel = new DoanhThuModel();
+        foreach ($targets as $target) {
+            [$month, $year] = $target;
+            $doanhThuModel->processMonthlyRevenue($month, $year);
+        }
+    }
+
+    private function collectRevenueTargetsFromPaymentRecord($record, &$targets) {
+        $billingMonth = (int)($record['thang'] ?? 0);
+        $billingYear = (int)($record['nam'] ?? 0);
+
+        if ($billingMonth > 0 && $billingYear > 0) {
+            $targets["{$billingYear}-{$billingMonth}"] = [$billingMonth, $billingYear];
+        }
+
+        if (!empty($record['ngay_thanh_toan'])) {
+            $ts = strtotime($record['ngay_thanh_toan']);
+            if ($ts !== false) {
+                $paidMonth = (int)date('n', $ts);
+                $paidYear = (int)date('Y', $ts);
+                $targets["{$paidYear}-{$paidMonth}"] = [$paidMonth, $paidYear];
+            }
         }
     }
 

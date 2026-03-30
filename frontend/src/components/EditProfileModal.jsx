@@ -134,7 +134,6 @@ export default function EditProfileModal({ user, onClose, initialTab = 'profile'
 
       setTimeout(() => {
         onClose()
-        window.location.reload()
       }, 1500)
     } catch (err) {
       setError(err.message || 'Có lỗi xảy ra')
