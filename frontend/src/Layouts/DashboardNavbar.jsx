@@ -53,15 +53,12 @@ export default function DashboardNavbar({
 
     try {
       setLoading(true);
-      const response = await thongBaoAPI.getMyNotifications(
-        user.id,
-        getUserType(),
-      );
+      const response = await thongBaoAPI.getMyNotifications();
 
-      if (response.success && response.data) {
+      if (response.status === "success" && response.data) {
         setNotifications(response.data);
         const unread = response.data.filter(
-          (n) => n.trang_thai === "chua_doc",
+          (n) => n.da_doc === 0 || n.da_doc === false,
         ).length;
         setUnreadCount(unread);
       }
@@ -79,7 +76,7 @@ export default function DashboardNavbar({
       setNotifications((prev) =>
         prev.map((n) =>
           n.thong_bao_id === notificationId
-            ? { ...n, trang_thai: "da_doc" }
+            ? { ...n, da_doc: 1 }
             : n,
         ),
       );
@@ -92,7 +89,7 @@ export default function DashboardNavbar({
   // Click vào thông báo để xem chi tiết
   const handleNotificationClick = (notification) => {
     setSelectedNotification(notification);
-    if (notification.trang_thai === "chua_doc") {
+    if (!notification.da_doc) {
       handleMarkAsRead(notification.thong_bao_id);
     }
     setShowDropdown(false);
@@ -108,7 +105,7 @@ export default function DashboardNavbar({
     try {
       await thongBaoAPI.markAllAsRead(user.id, getUserType());
       setNotifications((prev) =>
-        prev.map((n) => ({ ...n, trang_thai: "da_doc" })),
+        prev.map((n) => ({ ...n, da_doc: 1 })),
       );
       setUnreadCount(0);
     } catch (error) {
@@ -238,7 +235,7 @@ export default function DashboardNavbar({
                       <div
                         key={notification.thong_bao_id}
                         className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
-                          notification.trang_thai === "chua_doc"
+                          !notification.da_doc
                             ? "bg-blue-50"
                             : ""
                         }`}
@@ -247,7 +244,7 @@ export default function DashboardNavbar({
                         <div className="flex items-start gap-3">
                           <div
                             className={`w-2 h-2 mt-2 rounded-full flex-shrink-0 ${
-                              notification.trang_thai === "chua_doc"
+                              !notification.da_doc
                                 ? "bg-blue-500"
                                 : "bg-gray-300"
                             }`}
@@ -351,12 +348,12 @@ export default function DashboardNavbar({
                     </h3>
                     <span
                       className={`inline-block mt-1 px-2 py-0.5 rounded text-xs ${
-                        selectedNotification.trang_thai === "chua_doc"
+                        !selectedNotification.da_doc
                           ? "bg-yellow-400 text-yellow-900"
                           : "bg-green-400 text-green-900"
                       }`}
                     >
-                      {selectedNotification.trang_thai === "chua_doc"
+                      {!selectedNotification.da_doc
                         ? "Chưa đọc"
                         : "Đã đọc"}
                     </span>
