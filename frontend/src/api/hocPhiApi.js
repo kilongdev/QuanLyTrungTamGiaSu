@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_BASE = 'http://localhost/QuanLyTrungTamGiaSu/backend/public/api.php';
 
 const getAuthHeaders = () => ({
   "Content-Type": "application/json",
@@ -50,10 +50,18 @@ export const hocPhiAPI = {
     return response.json();
   },
 
-  checkQuaHan: async () => {
-    const response = await fetch(`${API_BASE}?route=/hocphi/check-quahan`, {
-      method: "GET",
-      headers: getAuthHeaders(),
+  checkOverdue: async () => {
+    const response = await fetch(`${API_BASE}?route=/hocphi/check-overdue`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
+  sendOverdueNotifications: async () => {
+    const response = await fetch(`${API_BASE}?route=/hocphi/send-overdue-notifications`, {
+      method: 'GET',
+      headers: getAuthHeaders()
     });
     return response.json();
   },

@@ -26,8 +26,8 @@ export default function DashboardSidebar({
   const isExpanded = !collapsed || hoverExpanded;
 
   return (
-    <aside
-      className={`${isExpanded ? "w-64" : "w-20"} bg-gray-50 flex flex-col transition-all duration-300 fixed left-0 top-16 h-[calc(100vh-64px)] z-40 overflow-hidden`}
+    <aside 
+      className={`${isExpanded ? 'w-64' : 'w-20'} bg-white flex flex-col transition-all duration-300 fixed left-0 top-16 h-[calc(100vh-64px)] z-40 overflow-hidden`}
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
     >

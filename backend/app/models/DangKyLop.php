@@ -92,7 +92,7 @@ class DangKyLop {
     }
 
     public static function getHocSinhDaDuyetByLop($lop_hoc_id) {
-        $sql = "SELECT dkl.*, hs.ho_ten AS ten_hoc_sinh, hs.phu_huynh_id, ph.ho_ten AS ten_phu_huynh
+        $sql = "SELECT dkl.*, hs.hoc_sinh_id, hs.ho_ten, hs.phu_huynh_id, ph.ho_ten AS ten_phu_huynh
                 FROM dang_ky_lop dkl
                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
                 LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id

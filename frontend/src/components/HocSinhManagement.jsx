@@ -276,14 +276,8 @@ export default function HocSinhManagement() {
                       <span className="text-sm font-medium text-gray-500">{(pagination.page - 1) * pagination.limit + index + 1}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className={`${getAvatarColor(student.hoc_sinh_id)} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm`}>
-                          {getInitials(student.ho_ten)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{student.ho_ten}</p>
-                          <p className="text-xs text-gray-500">ID: {student.hoc_sinh_id}</p>
-                        </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{student.ho_ten}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -396,7 +390,7 @@ export default function HocSinhManagement() {
                     <option value="">-- Chọn phụ huynh --</option>
                     {allParents.map((parent) => (
                       <option key={parent.phu_huynh_id} value={parent.phu_huynh_id}>
-                        {parent.ho_ten} (ID: {parent.phu_huynh_id})
+                        {parent.ho_ten}
                       </option>
                     ))}
                   </select>
@@ -484,15 +478,10 @@ export default function HocSinhManagement() {
             ) : detailModal.data ? (
               <>
                 {/* Modal Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 flex justify-between items-start rounded-t-xl">
-                  <div className="flex items-center gap-4">
-                    <div className={`${getAvatarColor(detailModal.data.hoc_sinh_id)} w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl border-2 border-white/50`}>
-                      {getInitials(detailModal.data.ho_ten)}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold">{detailModal.data.ho_ten}</h3>
-                      <p className="text-blue-100">ID: {detailModal.data.hoc_sinh_id} • Khối: {detailModal.data.khoi_lop}</p>
-                    </div>
+                <div className="bg-blue-800 text-white p-5 flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold">{detailModal.data.ho_ten}</h3>
+                    <p className="text-blue-100 text-sm">Khối: {detailModal.data.khoi_lop || 'N/A'}</p>
                   </div>
                   <button 
                     onClick={() => setDetailModal({ isOpen: false, data: null, loading: false })}

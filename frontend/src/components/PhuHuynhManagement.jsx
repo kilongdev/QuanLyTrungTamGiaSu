@@ -292,14 +292,8 @@ export default function PhuHuynhManagement() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`${getAvatarColor(parent.phu_huynh_id)} text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-md`}>
-                          {getAvatarInitials(parent.ho_ten)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{parent.ho_ten}</p>
-                          <p className="text-xs text-gray-500">ID: {parent.phu_huynh_id}</p>
-                        </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{parent.ho_ten}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -404,15 +398,9 @@ export default function PhuHuynhManagement() {
             ) : detailModal.data ? (
               <>
                 {/* Modal Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex justify-between items-start">
-                  <div className="flex items-center gap-4">
-                    <div className={`${getAvatarColor(detailModal.data.phu_huynh_id)} text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg`}>
-                      {getAvatarInitials(detailModal.data.ho_ten)}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold">{detailModal.data.ho_ten}</h3>
-                      <p className="text-blue-100">ID: {detailModal.data.phu_huynh_id}</p>
-                    </div>
+                <div className="bg-blue-800 text-white p-5 flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold">{detailModal.data.ho_ten}</h3>
                   </div>
                   <button 
                     onClick={closeModal}
