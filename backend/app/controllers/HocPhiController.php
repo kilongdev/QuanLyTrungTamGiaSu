@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/HocPhiModel.php';
+require_once __DIR__ . '/../models/DoanhThuModel.php';
 require_once __DIR__ . '/../models/ThongBaoModel.php';
 require_once __DIR__ . '/../core/Database.php';
 
@@ -101,6 +102,12 @@ class HocPhiController {
         if (isset($data['trang_thai_thanh_toan'])) {
             $updateData[] = "trang_thai_thanh_toan = :trang_thai";
             $params[':trang_thai'] = $data['trang_thai_thanh_toan'];
+
+            if ($data['trang_thai_thanh_toan'] === 'da_thanh_toan') {
+                $updateData[] = "ngay_thanh_toan = CURDATE()";
+            } else {
+                $updateData[] = "ngay_thanh_toan = NULL";
+            }
         }
         if (isset($data['so_buoi_da_hoc'])) {
             $updateData[] = "so_buoi_da_hoc = :so_buoi";
@@ -118,6 +125,16 @@ class HocPhiController {
         if (!empty($updateData)) {
             $sql = "UPDATE hoc_phi SET " . implode(', ', $updateData) . " WHERE hoc_phi_id = :id";
             Database::execute($sql, $params);
+        }
+
+        // Tự động đồng bộ doanh thu tháng khi trạng thái/tiền học phí thay đổi
+        $updatedHocPhi = Database::queryOne(
+            "SELECT thang, nam, trang_thai_thanh_toan, so_tien, ngay_thanh_toan FROM hoc_phi WHERE hoc_phi_id = ?",
+            [$id]
+        );
+
+        if ($updatedHocPhi && (isset($data['trang_thai_thanh_toan']) || isset($data['so_tien']))) {
+            $this->syncDoanhThuForHocPhiChanges($hocPhi, $updatedHocPhi);
         }
         
         // Gửi thông báo khi thanh toán thành công
@@ -144,6 +161,41 @@ class HocPhiController {
         }
         
         $this->sendResponse(true, 'Cập nhật thành công');
+    }
+
+    private function syncDoanhThuForHocPhiChanges($oldHocPhi, $newHocPhi) {
+        $targets = [];
+
+        $this->collectRevenueTargetsFromPaymentRecord($oldHocPhi, $targets);
+        $this->collectRevenueTargetsFromPaymentRecord($newHocPhi, $targets);
+
+        if (empty($targets)) {
+            return;
+        }
+
+        $doanhThuModel = new DoanhThuModel();
+        foreach ($targets as $target) {
+            [$month, $year] = $target;
+            $doanhThuModel->processMonthlyRevenue($month, $year);
+        }
+    }
+
+    private function collectRevenueTargetsFromPaymentRecord($record, &$targets) {
+        $billingMonth = (int)($record['thang'] ?? 0);
+        $billingYear = (int)($record['nam'] ?? 0);
+
+        if ($billingMonth > 0 && $billingYear > 0) {
+            $targets["{$billingYear}-{$billingMonth}"] = [$billingMonth, $billingYear];
+        }
+
+        if (!empty($record['ngay_thanh_toan'])) {
+            $ts = strtotime($record['ngay_thanh_toan']);
+            if ($ts !== false) {
+                $paidMonth = (int)date('n', $ts);
+                $paidYear = (int)date('Y', $ts);
+                $targets["{$paidYear}-{$paidMonth}"] = [$paidMonth, $paidYear];
+            }
+        }
     }
 
     public function delete($id) {

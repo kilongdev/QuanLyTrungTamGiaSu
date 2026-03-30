@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { lopHocAPI } from '../api/lophocApi'
 import { monHocAPI } from '../api/monhocApi'
 import { giaSuAPI } from '../api/giaSuApi'
 import { hocSinhAPI } from '../api/hocSinhApi'
 import { diemDanhAPI } from '../api/diemdanhApi'
+import { lichHocAPI } from '../api/lichhocApi'
 import { Plus, Settings, X, Search, Trash2, Edit2, BookOpen, Layers3, Users, Clock } from 'lucide-react'
 import { validateClassForm } from '@/lib/validators'
+import { normalizeNumberInputValue } from '@/lib/numberUtils'
 import { toast } from 'sonner'
 
 export default function LopHocManagement() {
+  const navigate = useNavigate()
   const [lopHocs, setLopHocs] = useState([])
   const [monHocs, setMonHocs] = useState([])
   const [giaSus, setGiaSus] = useState([])
@@ -27,6 +31,23 @@ export default function LopHocManagement() {
   const [attendanceForToday, setAttendanceForToday] = useState({}) // Track status for each student
   const [showAttendanceHistory, setShowAttendanceHistory] = useState(false) // Toggle between form and history
   const [savingAttendance, setSavingAttendance] = useState(false)
+  const [createWithSchedule, setCreateWithSchedule] = useState(true)
+  const [scheduleForm, setScheduleForm] = useState({
+    ngay_bat_dau: '',
+    gio_bat_dau: '18:00',
+    gio_ket_thuc: '19:30',
+    ngay_trong_tuan: []
+  })
+
+  const WEEKDAY_OPTIONS = [
+    { value: 2, label: 'Thứ 2' },
+    { value: 3, label: 'Thứ 3' },
+    { value: 4, label: 'Thứ 4' },
+    { value: 5, label: 'Thứ 5' },
+    { value: 6, label: 'Thứ 6' },
+    { value: 7, label: 'Thứ 7' },
+    { value: 8, label: 'Chủ nhật' }
+  ]
   const [formData, setFormData] = useState({
     mon_hoc_id: '',
     ten_lop: '',
@@ -255,7 +276,51 @@ export default function LopHocManagement() {
         await lopHocAPI.update(editingId, payload)
         toast.success('Cập nhật lớp học thành công!')
       } else {
-        await lopHocAPI.create(payload)
+        if (createWithSchedule) {
+          if (!scheduleForm.ngay_bat_dau || scheduleForm.ngay_trong_tuan.length === 0) {
+            toast.warning('Vui lòng chọn ngày bắt đầu và ít nhất 1 ngày học trong tuần')
+            return
+          }
+
+          if (!scheduleForm.gio_bat_dau || !scheduleForm.gio_ket_thuc || scheduleForm.gio_bat_dau >= scheduleForm.gio_ket_thuc) {
+            toast.warning('Giờ bắt đầu/kết thúc của lịch học không hợp lệ')
+            return
+          }
+        }
+
+        const createResult = await lopHocAPI.create(payload)
+        const createdClassId = createResult?.data?.lop_hoc_id
+
+        if (createWithSchedule) {
+          if (!createdClassId) {
+            throw new Error('Không lấy được ID lớp vừa tạo để tạo lịch học')
+          }
+
+          if (!scheduleForm.ngay_bat_dau || scheduleForm.ngay_trong_tuan.length === 0) {
+            throw new Error('Vui lòng nhập đầy đủ lịch học định kỳ trước khi tạo lớp')
+          }
+
+          if (!scheduleForm.gio_bat_dau || !scheduleForm.gio_ket_thuc || scheduleForm.gio_bat_dau >= scheduleForm.gio_ket_thuc) {
+            throw new Error('Giờ học không hợp lệ')
+          }
+
+          const thoiGianTungNgay = {}
+          scheduleForm.ngay_trong_tuan.forEach((thu) => {
+            thoiGianTungNgay[thu] = {
+              gio_bat_dau: scheduleForm.gio_bat_dau,
+              gio_ket_thuc: scheduleForm.gio_ket_thuc
+            }
+          })
+
+          await lichHocAPI.create({
+            lop_hoc_id: createdClassId,
+            tao_chu_ky: true,
+            ngay_bat_dau: scheduleForm.ngay_bat_dau,
+            ngay_trong_tuan: scheduleForm.ngay_trong_tuan,
+            thoi_gian_tung_ngay: thoiGianTungNgay
+          })
+        }
+
         toast.success('Thêm lớp học thành công!')
       }
       
@@ -275,11 +340,11 @@ export default function LopHocManagement() {
       ten_lop: lopHoc.ten_lop || '',
       gia_su_id: lopHoc.gia_su_id || '',
       khoi_lop: lopHoc.khoi_lop || '',
-      gia_toan_khoa: lopHoc.gia_toan_khoa || '',
-      so_buoi_hoc: lopHoc.so_buoi_hoc || '',
-      so_luong_toi_da: lopHoc.so_luong_toi_da || '1',
+      gia_toan_khoa: normalizeNumberInputValue(lopHoc.gia_toan_khoa),
+      so_buoi_hoc: normalizeNumberInputValue(lopHoc.so_buoi_hoc),
+      so_luong_toi_da: normalizeNumberInputValue(lopHoc.so_luong_toi_da || '1'),
       loai_chi_tra: lopHoc.loai_chi_tra || 'phan_tram',
-      gia_tri_chi_tra: lopHoc.gia_tri_chi_tra || '',
+      gia_tri_chi_tra: normalizeNumberInputValue(lopHoc.gia_tri_chi_tra),
       trang_thai: lopHoc.trang_thai || 'sap_mo',
       ngay_ket_thuc: lopHoc.ngay_ket_thuc ? lopHoc.ngay_ket_thuc.split(' ')[0] : ''
     })
@@ -347,6 +412,13 @@ export default function LopHocManagement() {
     setStudentSearchTerm('')
     setAddStudentSearchTerm('')
     setAttendance([])
+    setCreateWithSchedule(true)
+    setScheduleForm({
+      ngay_bat_dau: '',
+      gio_bat_dau: '18:00',
+      gio_ket_thuc: '19:30',
+      ngay_trong_tuan: []
+    })
   }
 
   const handleOpenModal = () => {
@@ -538,7 +610,7 @@ export default function LopHocManagement() {
                               <div className="absolute top-9 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
                                 <button
                                   onClick={() => {
-                                    handleEdit(lopHoc)
+                                    navigate(`/dashboard/lophoc/${lopHoc.lop_hoc_id}/edit`)
                                     setShowSettings(null)
                                   }}
                                   className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-2 border-b border-gray-100"
@@ -548,9 +620,7 @@ export default function LopHocManagement() {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    setCurrentViewTab('attendance')
-                                    setEditingId(lopHoc.lop_hoc_id)
-                                    setShowModal(true)
+                                    navigate(`/dashboard/lophoc/${lopHoc.lop_hoc_id}/attendance`)
                                     setShowSettings(null)
                                   }}
                                   className="w-full text-left px-3 py-2 text-xs text-green-600 hover:bg-green-50 flex items-center gap-2 border-b border-gray-100"
@@ -858,6 +928,85 @@ export default function LopHocManagement() {
                       />
                     </div>
                   </div>
+
+                  {!editingId && (
+                    <div className="border-t border-gray-200 pt-3 mt-2 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-gray-800 text-sm">Lịch học khi tạo lớp</h4>
+                        <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={createWithSchedule}
+                            onChange={(e) => setCreateWithSchedule(e.target.checked)}
+                          />
+                          Tạo lịch học ngay
+                        </label>
+                      </div>
+
+                      {createWithSchedule && (
+                        <>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Ngày bắt đầu</label>
+                              <input
+                                type="date"
+                                value={scheduleForm.ngay_bat_dau}
+                                onChange={(e) => setScheduleForm((prev) => ({ ...prev, ngay_bat_dau: e.target.value }))}
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Giờ bắt đầu</label>
+                                <input
+                                  type="time"
+                                  value={scheduleForm.gio_bat_dau}
+                                  onChange={(e) => setScheduleForm((prev) => ({ ...prev, gio_bat_dau: e.target.value }))}
+                                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Giờ kết thúc</label>
+                                <input
+                                  type="time"
+                                  value={scheduleForm.gio_ket_thuc}
+                                  onChange={(e) => setScheduleForm((prev) => ({ ...prev, gio_ket_thuc: e.target.value }))}
+                                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  required
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Ngày học trong tuần</label>
+                            <div className="grid grid-cols-3 gap-2">
+                              {WEEKDAY_OPTIONS.map((day) => (
+                                <label key={day.value} className="inline-flex items-center gap-2 text-sm text-gray-700">
+                                  <input
+                                    type="checkbox"
+                                    checked={scheduleForm.ngay_trong_tuan.includes(day.value)}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked
+                                      setScheduleForm((prev) => ({
+                                        ...prev,
+                                        ngay_trong_tuan: checked
+                                          ? [...prev.ngay_trong_tuan, day.value].sort((a, b) => a - b)
+                                          : prev.ngay_trong_tuan.filter((v) => v !== day.value)
+                                      }))
+                                    }}
+                                  />
+                                  {day.label}
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex gap-3 pt-3 border-t border-gray-100 mt-3">
                     <button

@@ -6,8 +6,13 @@ import LichHocManagement from '../components/LichHocManagement'
 import DangKyLopManagement from '../components/DangKyLopManagement' 
 
 export default function PhuHuynhDashboard({ user, onLogout }) {
-  const [activeMenu, setActiveMenu] = useState('dashboard')
+  const [activeMenu, setActiveMenu] = useState(() => localStorage.getItem('phuhuynh_active_item') || 'dashboard')
   const [showEditProfile, setShowEditProfile] = useState(false)
+
+  const handleMenuClick = (menuId) => {
+    setActiveMenu(menuId)
+    localStorage.setItem('phuhuynh_active_item', menuId)
+  }
 
   useEffect(() => {
     // Log token để kiểm tra
@@ -67,7 +72,7 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
       setShowEditProfile={setShowEditProfile}
       menuItems={menuItems}
       activeItem={activeMenu}
-      onMenuClick={setActiveMenu}
+      onMenuClick={handleMenuClick}
       pageTitle={getPageTitle()}
     >
       {renderContent()}

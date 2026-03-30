@@ -171,6 +171,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
         clearFormData()
         localStorage.setItem('token', data.data.token)
         localStorage.setItem('user', JSON.stringify(data.data.user))
+        sessionStorage.setItem('auth_session_active', '1')
         onRegisterSuccess?.(data.data)
       } else {
         setError(data.message || 'Đăng ký thất bại')

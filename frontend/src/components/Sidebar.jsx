@@ -5,6 +5,17 @@ import { LogIn, UserPlus, LogOut, User, LayoutDashboard, X } from "lucide-react"
 import { Link } from "react-router-dom";
 
 const Sidebar = ({ open, onClose, user, onLogin, onRegister, onLogout }) => {
+  const handleLogoutClick = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('admin_active_item')
+    localStorage.removeItem('giasu_active_item')
+    localStorage.removeItem('phuhuynh_active_item')
+    sessionStorage.removeItem('auth_session_active')
+    onLogout?.()
+    onClose()
+  }
+
   return (
     <>
       {/* overlay */}
@@ -39,9 +50,6 @@ const Sidebar = ({ open, onClose, user, onLogin, onRegister, onLogout }) => {
               </div>
               <div>
                 <p className="font-medium text-gray-800">{user.name}</p>
-                <p className="text-xs text-gray-500 capitalize">
-                  {user.role === 'phu_huynh' ? 'Phụ huynh' : user.role === 'gia_su' ? 'Gia sư' : user.role}
-                </p>
               </div>
             </div>
           </div>
@@ -78,10 +86,7 @@ const Sidebar = ({ open, onClose, user, onLogin, onRegister, onLogout }) => {
                 Dashboard
               </Link>
               <button
-                onClick={() => {
-                  onLogout?.();
-                  onClose();
-                }}
+                onClick={handleLogoutClick}
                 className="flex items-center gap-2 px-4 py-3 text-red-600 border border-red-200 hover:bg-red-50 rounded-lg transition-colors justify-center"
               >
                 <LogOut size={18} />

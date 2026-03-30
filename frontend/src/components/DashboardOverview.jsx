@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { GraduationCap, Users, Briefcase, BookOpen, ArrowRight, TrendingUp, Award } from 'lucide-react';
+import { GraduationCap, Users, Briefcase, BookOpen, TrendingUp, Award } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { hocSinhAPI } from '@/api/hocSinhApi';
 import { phuHuynhAPI } from '@/api/phuHuynhApi';
 import { giaSuAPI } from '@/api/giaSuApi';
 import { lopHocAPI } from '@/api/lophocApi';
-import { monHocAPI } from '@/api/monhocApi';
+import { doanhThuAPI } from '@/api/doanhThuApi';
 
 function StatCard({ icon, label, value, color, loading, subtext }) {
   return (
@@ -28,34 +28,24 @@ function StatCard({ icon, label, value, color, loading, subtext }) {
   );
 }
 
-// Dữ liệu mẫu cho biểu đồ - có thể được thay thế bằng dữ liệu thực từ backend
-const SAMPLE_REVENUE_DATA = [
-  { month: 'T1', revenue: 2400, students: 24 },
-  { month: 'T2', revenue: 1398, students: 18 },
-  { month: 'T3', revenue: 9800, students: 35 },
-  { month: 'T4', revenue: 3908, students: 28 },
-  { month: 'T5', revenue: 4800, students: 32 },
-  { month: 'T6', revenue: 3800, students: 30 },
-];
+const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#14B8A6', '#F97316', '#8B5CF6'];
 
-const SAMPLE_SUBJECTS_DATA = [
-  { name: 'Toán', value: 45, color: '#3B82F6' },
-  { name: 'Tiếng Anh', value: 38, color: '#10B981' },
-  { name: 'Lý', value: 25, color: '#F59E0B' },
-  { name: 'Hóa', value: 20, color: '#8B5CF6' },
-  { name: 'Văn', value: 15, color: '#EF4444' },
-];
+const formatCurrencyCompact = (value) => {
+  const num = Number(value || 0);
+  if (!Number.isFinite(num)) return '0';
+  return new Intl.NumberFormat('vi-VN', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(num);
+};
 
-const SAMPLE_CLASS_DISTRIBUTION = [
-  { grade: 'Lớp 6', total: 12, active: 10 },
-  { grade: 'Lớp 7', total: 15, active: 13 },
-  { grade: 'Lớp 8', total: 18, active: 16 },
-  { grade: 'Lớp 9', total: 22, active: 20 },
-  { grade: 'Lớp 10', total: 20, active: 18 },
-  { grade: 'Lớp 11', total: 18, active: 15 },
-];
-
-export default function DashboardOverview({ onNavigate }) {
+export default function DashboardOverview() {
+  const now = new Date();
+  const [filterType, setFilterType] = useState('nam');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [dateFrom, setDateFrom] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
+  const [dateTo, setDateTo] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
   const [stats, setStats] = useState({
     students: 0,
     parents: 0,
@@ -63,59 +53,119 @@ export default function DashboardOverview({ onNavigate }) {
     classes: 0,
     activeClasses: 0,
     totalRevenue: 0,
+    totalExpense: 0,
+    totalProfit: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [ongoingClasses, setOngoingClasses] = useState([]);
-  const [monHocs, setMonHocs] = useState([]);
-  const [giaSus, setGiaSus] = useState([]);
+  const [processingRevenue, setProcessingRevenue] = useState(false);
+  const [revenueTrendData, setRevenueTrendData] = useState([]);
+  const [subjectRevenueData, setSubjectRevenueData] = useState([]);
+  const [classRevenueData, setClassRevenueData] = useState([]);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const overviewParams = { kieu_thong_ke: filterType };
+      if (filterType === 'thang') {
+        overviewParams.nam = selectedYear;
+        overviewParams.thang = selectedMonth;
+      } else if (filterType === 'khoang_ngay') {
+        overviewParams.tu_ngay = dateFrom;
+        overviewParams.den_ngay = dateTo;
+      } else {
+        overviewParams.nam = selectedYear;
+      }
+
+      const [studentRes, parentRes, tutorRes, classRes, revenueRes] = await Promise.all([
+        hocSinhAPI.getAll({ limit: 1 }),
+        phuHuynhAPI.getAll({ limit: 1 }),
+        giaSuAPI.getAll(),
+        lopHocAPI.getAll(),
+        doanhThuAPI.getOverview(overviewParams),
+      ]);
+
+      const allClasses = classRes.data || [];
+      const activeClasses = allClasses.filter((c) => c.trang_thai === 'dang_hoc');
+
+      const overview = revenueRes?.success ? (revenueRes.data || {}) : {};
+      const summary = overview.summary || {};
+
+      setStats({
+        students: studentRes?.pagination?.total || 0,
+        parents: parentRes?.pagination?.total || 0,
+        tutors: tutorRes?.data?.length || 0,
+        classes: allClasses.length,
+        activeClasses: activeClasses.length,
+        totalRevenue: Number(summary.totalRevenue || 0),
+        totalExpense: Number(summary.totalExpense || 0),
+        totalProfit: Number(summary.totalProfit || 0),
+      });
+
+      const trend = (overview.monthlyTrend || []).map((item) => ({
+        month: item.month,
+        revenue: Number(item.revenue || 0),
+        profit: Number(item.profit || 0),
+        students: Number(item.students || 0),
+      }));
+      setRevenueTrendData(trend);
+
+      const subjects = (overview.subjectDistribution || []).map((item, index) => ({
+        name: item.subject,
+        value: Number(item.revenue || 0),
+        profit: Number(item.profit || 0),
+        color: CHART_COLORS[index % CHART_COLORS.length],
+      }));
+      setSubjectRevenueData(subjects);
+
+      const classesRevenue = (overview.topClasses || []).map((item) => ({
+        grade: item.ten_lop || `Lớp ${item.lop_hoc_id}`,
+        total: Number(item.tong_thu || 0),
+        active: Number(item.loi_nhuan || 0),
+      }));
+      setClassRevenueData(classesRevenue);
+    } catch (error) {
+      console.error('Không thể tải dữ liệu tổng quan:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const [studentRes, parentRes, tutorRes, classRes, monHocRes] = await Promise.all([
-          hocSinhAPI.getAll({ limit: 1 }),
-          phuHuynhAPI.getAll({ limit: 1 }),
-          giaSuAPI.getAll(),
-          lopHocAPI.getAll(),
-          monHocAPI.getAll(),
-        ]);
-
-        const allClasses = classRes.data || [];
-        const activeClasses = allClasses.filter(c => c.trang_thai === 'dang_hoc');
-
-        setStats({
-          students: studentRes.pagination.total,
-          parents: parentRes.pagination.total,
-          tutors: tutorRes.data.length,
-          classes: allClasses.length,
-          activeClasses: activeClasses.length,
-          totalRevenue: 28000, // Đơn vị: nghìn đồng - thay đổi theo dữ liệu thực tế
-        });
-
-        setMonHocs(monHocRes.data || []);
-        setGiaSus(tutorRes.data || []);
-        setOngoingClasses(activeClasses.slice(0, 5)); // Chỉ hiển thị 5 lớp đầu tiên
-
-      } catch (error) {
-        console.error("Không thể tải dữ liệu tổng quan:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStats();
-  }, []);
+  }, [filterType, selectedYear, selectedMonth, dateFrom, dateTo]);
 
-  const getMonHocName = (monHocId) => {
-    const monHoc = monHocs.find(m => m.mon_hoc_id == monHocId);
-    return monHoc ? monHoc.ten_mon_hoc : 'N/A';
+  const handleProcessCurrentMonth = async () => {
+    try {
+      setProcessingRevenue(true);
+      const now = new Date();
+      const response = await doanhThuAPI.processMonthly({
+        thang: now.getMonth() + 1,
+        nam: now.getFullYear(),
+      });
+
+      if (!response?.success) {
+        console.error(response?.message || 'Xử lý doanh thu tháng thất bại');
+        return;
+      }
+
+      if (selectedYear !== now.getFullYear()) {
+        setSelectedYear(now.getFullYear());
+      } else {
+        await fetchStats();
+      }
+    } catch (error) {
+      console.error('Không thể xử lý doanh thu tháng:', error);
+    } finally {
+      setProcessingRevenue(false);
+    }
   };
 
-  const getGiaSuName = (giaSuId) => {
-    const giaSu = giaSus.find(g => g.gia_su_id == giaSuId);
-    return giaSu ? giaSu.ho_ten : 'Chưa có';
-  };
+  const filterLabel =
+    filterType === 'thang'
+      ? `Tháng ${selectedMonth}/${selectedYear}`
+      : filterType === 'khoang_ngay'
+        ? `${dateFrom} đến ${dateTo}`
+        : `Năm ${selectedYear}`;
 
   return (
     <div>
@@ -171,35 +221,119 @@ export default function DashboardOverview({ onNavigate }) {
             />
             <StatCard 
               label="Doanh thu" 
-              value={`${(stats.totalRevenue / 1000).toFixed(0)}k`} 
+              value={formatCurrencyCompact(stats.totalRevenue)} 
               icon={<Award size={24} className="text-yellow-500" />} 
               color="border-yellow-500" 
               loading={loading}
-              subtext="Tháng này"
+              subtext={`Lợi nhuận: ${formatCurrencyCompact(stats.totalProfit)}`}
             />
           </div>
         </div>
 
         {/* Charts Section */}
         <div className="p-5 border-b border-gray-200">
+          <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <div className="flex flex-col md:flex-row md:items-end gap-3">
+              <div className="w-full md:w-52">
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Kiểu thống kê</label>
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white"
+                >
+                  <option value="nam">Theo năm</option>
+                  <option value="thang">Theo tháng</option>
+                  <option value="khoang_ngay">Từ ngày đến ngày</option>
+                </select>
+              </div>
+
+              {(filterType === 'nam' || filterType === 'thang') && (
+                <div className="w-full md:w-40">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Năm</label>
+                  <input
+                    type="number"
+                    min="2000"
+                    max="2100"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value || new Date().getFullYear()))}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white"
+                  />
+                </div>
+              )}
+
+              {filterType === 'thang' && (
+                <div className="w-full md:w-36">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Tháng</label>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                      <option key={month} value={month}>Tháng {month}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {filterType === 'khoang_ngay' && (
+                <>
+                  <div className="w-full md:w-44">
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Từ ngày</label>
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white"
+                    />
+                  </div>
+
+                  <div className="w-full md:w-44">
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Đến ngày</label>
+                    <input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-3">Đang xem dữ liệu: {filterLabel}</p>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
             {/* Revenue Trend Chart */}
             <div>
-              <div className="mb-4">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
                 <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
                   <TrendingUp size={20} className="text-blue-600" />
                   Xu hướng doanh thu & học sinh
                 </h3>
-                <p className="text-gray-500 text-sm">6 tháng gần đây</p>
+                <p className="text-gray-500 text-sm">Theo bộ lọc: {filterLabel}</p>
+                </div>
+                <button
+                  onClick={handleProcessCurrentMonth}
+                  disabled={processingRevenue}
+                  className="px-3 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
+                >
+                  {processingRevenue ? 'Đang xử lý...' : 'Xử lý doanh thu tháng này'}
+                </button>
               </div>
               <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={SAMPLE_REVENUE_DATA} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                <LineChart data={revenueTrendData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" stroke="#9CA3AF" />
                   <YAxis stroke="#9CA3AF" />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                    formatter={(value) => value}
+                    formatter={(value, name) => {
+                      if (name === 'Doanh thu') return [new Intl.NumberFormat('vi-VN').format(value), name];
+                      if (name === 'Lợi nhuận') return [new Intl.NumberFormat('vi-VN').format(value), name];
+                      return [value, name];
+                    }}
                   />
                   <Legend />
                   <Line 
@@ -208,7 +342,15 @@ export default function DashboardOverview({ onNavigate }) {
                     stroke="#3B82F6" 
                     strokeWidth={2}
                     dot={{ fill: '#3B82F6', strokeWidth: 2 }}
-                    name="Doanh thu (x 100k)"
+                    name="Doanh thu"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="profit" 
+                    stroke="#F59E0B" 
+                    strokeWidth={2}
+                    dot={{ fill: '#F59E0B', strokeWidth: 2 }}
+                    name="Lợi nhuận"
                   />
                   <Line 
                     type="monotone" 
@@ -234,20 +376,20 @@ export default function DashboardOverview({ onNavigate }) {
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
-                    data={SAMPLE_SUBJECTS_DATA}
+                    data={subjectRevenueData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}`}
+                    label={({ name, value }) => `${name}: ${formatCurrencyCompact(value)}`}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {SAMPLE_SUBJECTS_DATA.map((entry, index) => (
+                    {subjectRevenueData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => `${value} lớp`} />
+                  <Tooltip formatter={(value) => new Intl.NumberFormat('vi-VN').format(value)} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -258,63 +400,25 @@ export default function DashboardOverview({ onNavigate }) {
             <div className="mb-4">
               <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
                 <GraduationCap size={20} className="text-orange-600" />
-                Phân bố lớp theo khối
+                Chi tiết doanh thu theo lớp
               </h3>
-              <p className="text-gray-500 text-sm">Tổng vs Lớp đang hoạt động</p>
+              <p className="text-gray-500 text-sm">Top lớp theo doanh thu/lợi nhuận ({filterLabel})</p>
             </div>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={SAMPLE_CLASS_DISTRIBUTION}>
+              <BarChart data={classRevenueData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="grade" stroke="#9CA3AF" />
                 <YAxis stroke="#9CA3AF" />
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                  formatter={(value, name) => [new Intl.NumberFormat('vi-VN').format(value), name]}
                 />
                 <Legend />
-                <Bar dataKey="total" fill="#3B82F6" name="Tổng lớp" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="active" fill="#10B981" name="Lớp đang hoạt động" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="total" fill="#3B82F6" name="Doanh thu lớp" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="active" fill="#10B981" name="Lợi nhuận lớp" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-
-          <p className="text-xs text-gray-400 mt-4">💡 Dữ liệu mẫu - sẽ cập nhật tự động khi kết nối backend</p>
-        </div>
-
-        {/* Ongoing Classes List */}
-        <div className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-              <BookOpen size={20} className="text-blue-600" />
-              Lớp đang hoạt động gần đây
-            </h3>
-            <button 
-              onClick={() => onNavigate && onNavigate('lophoc')}
-              className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
-            >
-              Xem tất cả <ArrowRight size={14} />
-            </button>
-          </div>
-          {loading ? (
-            <p className="text-gray-500 text-center py-8">Đang tải danh sách lớp...</p>
-          ) : ongoingClasses.length > 0 ? (
-            <div className="space-y-3">
-              {ongoingClasses.map(lop => (
-                <div key={lop.lop_hoc_id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                    {getMonHocName(lop.mon_hoc_id).charAt(0)}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-800">Lớp {lop.khoi_lop} - {getMonHocName(lop.mon_hoc_id)}</p>
-                    <p className="text-gray-500 text-sm">👨‍🏫 {getGiaSuName(lop.gia_su_id)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-10">
-              <p className="text-gray-500">Không có lớp nào đang hoạt động.</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

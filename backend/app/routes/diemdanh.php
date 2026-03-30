@@ -8,5 +8,7 @@ require_once __DIR__ . '/../controllers/DiemDanhController.php';
 
 Router::get('/diemdanh/lich/{lich_hoc_id}', [new DiemDanhController(), 'getByLich']);
 Router::get('/diemdanh/lophoc/{lopHocId}', [new DiemDanhController(), 'getByClass']);
+Router::get('/diemdanh/lophoc/{lopHocId}/overview', [new DiemDanhController(), 'getClassOverview']);
 Router::post('/diemdanh/save', [new DiemDanhController(), 'saveDanhSach']);
 Router::post('/diemdanh/lophoc/{id}/save-today', [new DiemDanhController(), 'saveAttendanceForToday']);
+Router::post('/diemdanh/lophoc/{id}/save-by-date', [new DiemDanhController(), 'saveAttendanceByDate']);

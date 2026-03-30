@@ -485,14 +485,14 @@ export default function LuongGiaSuManagement({ user }) {
   return (
     <div>
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-gray-200">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-5 border-b border-gray-200">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Quản lý Lương Gia sư</h2>
             <p className="text-gray-500 text-sm mt-1">Theo dõi chi trả lương và trạng thái thanh toán gia sư</p>
           </div>
           <button 
             onClick={handleOpenAddModal}
-            className="flex items-center gap-2 bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white px-4 py-2 rounded-xl transition">
+            className="bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white px-5 py-2.5 rounded-2xl flex items-center gap-2 transition shadow-md font-medium">
             <Plus className="w-5 h-5" />
             Thêm lương
           </button>
@@ -553,11 +553,16 @@ export default function LuongGiaSuManagement({ user }) {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Đang tải dữ liệu...</div>
+          <div className="p-16 text-center border-b border-gray-200">
+            <p className="text-gray-600 text-lg font-medium">Đang tải dữ liệu...</p>
+          </div>
         ) : filteredLuongData.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">Chưa có dữ liệu lương</div>
+          <div className="p-16 text-center border-b border-gray-200">
+            <p className="text-gray-600 text-lg font-medium">Không có dữ liệu bảng lương</p>
+            <p className="text-gray-400 text-sm mt-2">Thử thay đổi từ khóa hoặc bộ lọc nâng cao</p>
+          </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto border-b border-gray-200">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -570,9 +575,9 @@ export default function LuongGiaSuManagement({ user }) {
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Thao tác</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-100">
                 {paginatedLuongData.map((item, idx) => (
-                  <tr key={`${item.gia_su_id}-${item.thang}-${item.nam}`} className="border-t hover:bg-red-50/40 transition-colors">
+                  <tr key={`${item.gia_su_id}-${item.thang}-${item.nam}`} className="hover:bg-red-50/40 transition-colors duration-200">
                     <td className="px-6 py-4 text-sm text-gray-600">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
                     <td className="px-6 py-4 text-sm text-gray-900 font-medium">{item.ten_giasu || 'N/A'}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{item.so_lop || 1} lớp</td>

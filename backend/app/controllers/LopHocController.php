@@ -21,8 +21,9 @@ class LopHocController {
         try {
             $result = LopHoc::create($data);
             if ($result) {
+                $createdId = (int)Database::lastInsertId();
                 // Lấy tên lớp vừa tạo
-                $lopHoc = LopHoc::getById(Database::lastInsertId());
+                $lopHoc = LopHoc::getById($createdId);
                 $tenLop = $lopHoc ? $lopHoc['ten_lop'] : 'lớp học mới';
                 
                 // Thông báo cho Admin về lớp học mới
@@ -46,7 +47,14 @@ class LopHocController {
                 }
                 
                 http_response_code(201);
-                echo json_encode(["status" => "success", "message" => "Tạo lớp học thành công!"]);
+                echo json_encode([
+                    "status" => "success",
+                    "message" => "Tạo lớp học thành công!",
+                    "data" => [
+                        "lop_hoc_id" => $createdId,
+                        "ten_lop" => $tenLop
+                    ]
+                ]);
             }
         } catch (Exception $e) {
             http_response_code(500);

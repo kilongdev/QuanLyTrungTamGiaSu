@@ -4,6 +4,7 @@ import DataPagination from '@/components/ui/DataPagination'
 import { hocPhiAPI } from '@/api/hocPhiApi'
 import { dangKyAPI } from "@/api/dangkyApi";
 import { toast } from 'sonner'
+import { normalizeNumberInputValue } from '@/lib/numberUtils'
 
 export default function HocPhiManagement({ user }) {
   const [hocPhiData, setHocPhiData] = useState([])
@@ -197,7 +198,7 @@ export default function HocPhiManagement({ user }) {
     const lop = lopCuaHocSinh.find(l => l.dang_ky_id == dangKyId)
     setSelectedLop(lop)
     // Tự động điền số tiền = gia_toan_khoa
-    const soTien = lop?.gia_toan_khoa || ''
+    const soTien = normalizeNumberInputValue(lop?.gia_toan_khoa)
     setFormData({ ...formData, dang_ky_id: dangKyId, so_tien: soTien })
   }
 
@@ -211,7 +212,7 @@ export default function HocPhiManagement({ user }) {
     
     setFormData({
       dang_ky_id: hocPhi.dang_ky_id || '',
-      so_tien: hocPhi.so_tien || '',
+      so_tien: normalizeNumberInputValue(hocPhi.so_tien),
       so_buoi_da_hoc: hocPhi.so_buoi_da_hoc || 0,
       trang_thai_thanh_toan: hocPhi.trang_thai || 'chua_thanh_toan',
       ngay_den_han: hocPhi.ngay_den_han || ''
@@ -310,7 +311,7 @@ export default function HocPhiManagement({ user }) {
   return (
     <div>
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-gray-200">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-5 border-b border-gray-200">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Quản lý Học phí</h2>
             <p className="text-gray-500 text-sm mt-1">Theo dõi học phí theo học sinh, tháng và trạng thái thanh toán</p>
@@ -318,7 +319,7 @@ export default function HocPhiManagement({ user }) {
           <div className="flex gap-2">
             <button 
               onClick={handleOpenQuaHanModal}
-              className="flex items-center gap-2 border border-yellow-500 text-yellow-700 hover:bg-yellow-50 px-4 py-2 rounded-xl transition"
+              className="flex items-center gap-2 border border-yellow-500 text-yellow-700 hover:bg-yellow-50 px-4 py-2.5 rounded-2xl transition font-medium"
               title="Gửi thông báo học phí quá hạn"
             >
               <Bell className="w-5 h-5" />
@@ -326,7 +327,7 @@ export default function HocPhiManagement({ user }) {
             </button>
             <button 
               onClick={handleOpenAddModal}
-              className="flex items-center gap-2 bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white px-4 py-2 rounded-xl transition">
+              className="bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white px-5 py-2.5 rounded-2xl flex items-center gap-2 transition shadow-md font-medium">
               <Plus className="w-5 h-5" />
               Thêm học phí
             </button>
@@ -378,11 +379,16 @@ export default function HocPhiManagement({ user }) {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Đang tải dữ liệu...</div>
+          <div className="p-16 text-center border-b border-gray-200">
+            <p className="text-gray-600 text-lg font-medium">Đang tải dữ liệu...</p>
+          </div>
         ) : filteredHocPhiData.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">Chưa có dữ liệu học phí</div>
+          <div className="p-16 text-center border-b border-gray-200">
+            <p className="text-gray-600 text-lg font-medium">Không có dữ liệu học phí</p>
+            <p className="text-gray-400 text-sm mt-2">Thử thay đổi từ khóa hoặc bộ lọc nâng cao</p>
+          </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto border-b border-gray-200">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -395,9 +401,9 @@ export default function HocPhiManagement({ user }) {
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Thao tác</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-100">
                 {paginatedHocPhiData.map((item, idx) => (
-                  <tr key={idx} className="border-t hover:bg-red-50/40 transition-colors">
+                  <tr key={idx} className="hover:bg-red-50/40 transition-colors duration-200">
                     <td className="px-6 py-4 text-sm text-gray-600">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
                     <td className="px-6 py-4 text-sm text-gray-900 font-medium">{item.ten_hocsinh || 'N/A'}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{parseInt(item.so_tien || 0).toLocaleString('vi-VN')} đ</td>

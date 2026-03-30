@@ -7,6 +7,17 @@ import { Link } from "react-router-dom";
 
 const Header = ({ user, onLogin, onRegister, onLogout }) => {
   const [openSidebar, setOpenSidebar] = useState(false);
+
+  const handleLogoutClick = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('admin_active_item')
+    localStorage.removeItem('giasu_active_item')
+    localStorage.removeItem('phuhuynh_active_item')
+    sessionStorage.removeItem('auth_session_active')
+    onLogout?.()
+  }
+
   return (
     <header className="sticky top-0 left-0 w-full z-50 bg-white">
       <div className="flex items-center justify-between h-30 px-10 text-md bg-white">
@@ -51,9 +62,6 @@ const Header = ({ user, onLogin, onRegister, onLogout }) => {
               <div className="flex items-center gap-2 text-gray-800">
                 <User size={18} />
                 <span className="font-medium">{user.name}</span>
-                <span className="text-xs text-gray-500 capitalize">
-                  ({user.role === 'phu_huynh' ? 'Phụ huynh' : user.role === 'gia_su' ? 'Gia sư' : user.role})
-                </span>
               </div>
               <Link
                 to="/dashboard"
@@ -63,7 +71,7 @@ const Header = ({ user, onLogin, onRegister, onLogout }) => {
                 Dashboard
               </Link>
               <button
-                onClick={onLogout}
+                onClick={handleLogoutClick}
                 className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               >
                 <LogOut size={18} />
