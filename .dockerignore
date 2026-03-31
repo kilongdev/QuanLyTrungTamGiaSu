@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+.env.local
+frontend
+database
+*.md
+.DS_Store
+.vscode
+vendor/composer/autoload_static.php
+vendor/composer/ClassLoader.php
+vendor/composer/autoload_real.php
+vendor/composer/installed.php

@@ -1,18 +1,41 @@
 <?php
+require_once __DIR__ . '/Env.php';
+
 class Database
 {
-    private static $host = 'localhost';
-    private static $dbName = 'quanlytrungtamgiasu';
-    private static $username = 'root';
+    private static $host = '';
+    private static $port = '';
+    private static $dbName = '';
+    private static $username = '';
     private static $password = '';
     private static $charset = 'utf8mb4';
     private static $connection = null;
+
+    private static $initialized = false;
+
+    private static function initConfig(): void
+    {
+        if (self::$initialized) {
+            return;
+        }
+
+        self::$host = (string)Env::get('DB_HOST', 'localhost');
+        self::$port = (string)Env::get('DB_PORT', '3306');
+        self::$dbName = (string)Env::get('DB_NAME', 'quanlytrungtamgiasu');
+        self::$username = (string)Env::get('DB_USER', 'root');
+        self::$password = (string)Env::get('DB_PASSWORD', self::$password);
+
+        self::$initialized = true;
+    }
 
     public static function getConnection(): PDO
     {
         if (self::$connection === null) {
             try {
+                self::initConfig();
+
                 $dsn = "mysql:host=" . self::$host . 
+                       ";port=" . self::$port .
                        ";dbname=" . self::$dbName . 
                        ";charset=" . self::$charset;
 
@@ -20,7 +43,8 @@ class Database
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
-                    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
+                    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4; SET SESSION sql_mode='STRICT_TRANS_TABLES'",
+                    PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
                 ];
 
                 self::$connection = new PDO(

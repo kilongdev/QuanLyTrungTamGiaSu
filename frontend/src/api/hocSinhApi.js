@@ -54,14 +54,22 @@ export const hocSinhAPI = {
         });
     },
 
-    /**
-     * Lấy chi tiết học sinh theo ID
-     * @param {number|string} id - ID học sinh
-     */
-    getById: (id) => 
-        request(`/hocsinh/${id}`, {
-            method: 'GET',
-        }),
+  /**
+   * Lấy danh sách học sinh theo ID gia sư
+   */
+  getByGiaSu: (giaSuId) =>
+    request(`/hocsinh?gia_su_id=${giaSuId}`, {
+      method: "GET",
+    }),
+
+  /**
+   * Lấy chi tiết học sinh theo ID
+   * @param {number|string} id - ID học sinh
+   */
+  getById: (id) =>
+    request(`/hocsinh/${id}`, {
+      method: "GET",
+    }),
 
     /**
      * Tạo học sinh mới

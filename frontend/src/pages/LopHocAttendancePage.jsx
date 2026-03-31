@@ -1,13 +1,28 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CalendarDays, Check, Clock3, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { diemDanhAPI } from '../api/diemdanhApi'
 
 const STATUS_OPTIONS = [
-  { value: 'co_mat', label: 'Có mặt', activeClass: 'bg-green-600 text-white', idleClass: 'bg-green-100 text-green-700 hover:bg-green-200' },
-  { value: 'vang', label: 'Vắng', activeClass: 'bg-red-600 text-white', idleClass: 'bg-red-100 text-red-700 hover:bg-red-200' },
-  { value: 'vang_co_phep', label: 'Vắng có phép', activeClass: 'bg-yellow-600 text-white', idleClass: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' }
+  {
+    value: 'co_mat',
+    label: 'Có mặt',
+    activeClass: 'bg-blue-600 text-white border border-blue-600',
+    idleClass: 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
+  },
+  {
+    value: 'vang',
+    label: 'Vắng',
+    activeClass: 'bg-rose-800 text-white border border-rose-800',
+    idleClass: 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+  },
+  {
+    value: 'vang_co_phep',
+    label: 'Vắng có phép',
+    activeClass: 'bg-rose-600 text-white border border-rose-600',
+    idleClass: 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
+  }
 ]
 
 const WEEKDAY_LABEL = {
@@ -70,6 +85,7 @@ export default function LopHocAttendancePage({ classId }) {
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedScheduleKey, setSelectedScheduleKey] = useState('')
   const [attendanceDraft, setAttendanceDraft] = useState({})
+  const scheduleItemRefs = useRef({})
 
   const fetchOverview = async (preserveState = true) => {
     try {
@@ -185,6 +201,14 @@ export default function LopHocAttendancePage({ classId }) {
 
     setSelectedScheduleKey('')
   }, [scheduleOptions, selectedDate])
+
+  useEffect(() => {
+    if (!selectedScheduleKey) return
+    const target = scheduleItemRefs.current[selectedScheduleKey]
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [selectedScheduleKey, scheduleOptions.length])
 
   const selectedSchedule = useMemo(() => {
     if (!selectedDate) return null
@@ -337,12 +361,17 @@ export default function LopHocAttendancePage({ classId }) {
               Chưa có bản ghi trong lịch học cho lớp này. Vui lòng tạo lịch học trước khi điểm danh.
             </div>
           ) : (
-            <div className="space-y-2 max-h-[420px] overflow-y-auto">
+            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
               {schedules.map((schedule) => {
                 const active = String(selectedScheduleKey) === String(schedule.key)
                 return (
                   <button
                     key={schedule.key}
+                    ref={(el) => {
+                      if (el) {
+                        scheduleItemRefs.current[schedule.key] = el
+                      }
+                    }}
                     onClick={() => {
                       setSelectedDate(schedule.ngay_hoc)
                       setSelectedScheduleKey(schedule.key)
@@ -444,7 +473,7 @@ export default function LopHocAttendancePage({ classId }) {
                               key={option.value}
                               type="button"
                               onClick={() => handleStatusChange(student.hoc_sinh_id, option.value)}
-                              className={`px-3 py-1.5 text-xs font-medium rounded transition ${active ? option.activeClass : option.idleClass}`}
+                              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${active ? option.activeClass : option.idleClass}`}
                             >
                               {option.label}
                             </button>

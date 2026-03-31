@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: gia-su-backend
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health-check.php
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DISPLAY_ERRORS
+        value: "0"
+      - key: LOG_ERRORS
+        value: "1"
+    
+    # Database environment variables (set these in Render Dashboard)
+    # - key: DB_HOST
+    #   fromDatabase:
+    #     name: mysql-db
+    #     property: host
+    # - key: DB_PORT
+    #   fromDatabase:
+    #     name: mysql-db
+    #     property: port
+    # - key: DB_USER
+    #   fromDatabase:
+    #     name: mysql-db
+    #     property: user
+    # - key: DB_PASSWORD
+    #   fromDatabase:
+    #     name: mysql-db
+    #     property: password
+    # - key: DB_NAME
+    #   fromDatabase:
+    #     name: mysql-db
+    #     property: database
+
+databases:
+  - name: mysql-db
+    engine: mysql
+    plan: starter
+    ipAllowList: [] # Allow all IPs, or specify your IP for security
