@@ -27,8 +27,11 @@ export default function YeuCauManagement({ user }) {
     user?.id ||
     user?.gia_su_id ||
     user?.phu_huynh_id ||
-    user?.tai_khoan_id ||
-    "1";
+    user?.tai_khoan_id || 
+    user?.user_id || 
+    user?.id ||
+    null;
+
   const currentUserRole =
     user?.role === "admin" ? "phu_huynh" : user?.role || "phu_huynh";
 
@@ -44,21 +47,22 @@ export default function YeuCauManagement({ user }) {
   });
 
   useEffect(() => {
-    fetchYeuCaus();
-  }, []);
+    if (user) {
+      fetchYeuCaus();
+    }
+  }, [user]);
 
   const fetchYeuCaus = async () => {
+    if (!user) return;
     try {
       setLoading(true);
       let response;
       if (user?.role === "admin") {
         response = await yeuCauAPI.getAll();
       } else {
-        const userId =
-          user?.id ||
-          user?.gia_su_id ||
-          user?.phu_huynh_id ||
-          user?.tai_khoan_id;
+        // Lấy ID chuẩn xác từ thông tin đăng nhập để lọc
+        const userId = user?.user_id || user?.phu_huynh_id || user?.gia_su_id || user?.id;
+          
         response = await yeuCauAPI.getByNguoiTao(userId, user.role);
       }
       setYeuCaus(response.data || []);
@@ -140,12 +144,8 @@ export default function YeuCauManagement({ user }) {
   };
 
   const resetForm = () => {
-    const userId =
-      user?.id ||
-      user?.gia_su_id ||
-      user?.phu_huynh_id ||
-      user?.tai_khoan_id ||
-      "1";
+    const userId = user?.user_id || user?.phu_huynh_id || user?.gia_su_id || user?.id || user?.tai_khoan_id;
+
     setFormData({
       nguoi_tao_id: userId,
       loai_nguoi_tao: user?.role === "admin" ? "phu_huynh" : user?.role,

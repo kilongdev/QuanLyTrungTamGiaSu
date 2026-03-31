@@ -88,13 +88,32 @@ class YeuCauController
 
     public function getAll()
     {
-        $data = YeuCau::getAll();
+        // Nếu có tham số lọc (id và loai) thì thực hiện lấy theo người tạo
+        if (!empty($_GET['id']) && !empty($_GET['loai']) && $_GET['id'] !== 'undefined') {
+            $id = $_GET['id'] ?? null;
+            $loai = $_GET['loai'] ?? null;
+
+            $data = YeuCau::getByNguoiTao($id, $loai);
+        } else {
+            $data = YeuCau::getAll();
+        }
+        
         echo json_encode(["status" => "success", "data" => $data]);
     }
 
-    public function getByNguoiTao($nguoi_tao_id, $loai_nguoi_tao)
+    public function getByNguoiTao()
     {
-        $data = YeuCau::getByNguoiTao($nguoi_tao_id, $loai_nguoi_tao);
+        // Lấy tham số từ Query String (?id=2&loai=phu_huynh)
+        $id = $_GET['id'] ?? null;
+        $loai = $_GET['loai'] ?? null;
+
+        if (!$id || !$loai) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Thiếu tham số id hoặc loai người tạo"]);
+            return;
+        }
+
+        $data = YeuCau::getByNguoiTao($id, $loai);
         echo json_encode(["status" => "success", "data" => $data]);
     }
 

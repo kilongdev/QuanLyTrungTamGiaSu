@@ -24,6 +24,7 @@ import {
 import YeuCauManagement from "../components/YeuCauManagement";
 import LichHocManagement from "../components/LichHocManagement";
 import DangKyLopManagement from "../components/DangKyLopManagement";
+import HocPhiPhuHuynh from "../components/HocPhiPhuHuynh";
 
 export default function PhuHuynhDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState("dashboard");
@@ -121,12 +122,7 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
       case "requests":
         return <YeuCauManagement user={user} />;
       case "payments":
-        return (
-          <PlaceholderContent
-            title="Thanh toán"
-            description="Quản lý thanh toán học phí"
-          />
-        );
+        return <HocPhiPhuHuynh />;
       case "profile":
         return <ProfileContent initialData={parentData} />;
       default:
