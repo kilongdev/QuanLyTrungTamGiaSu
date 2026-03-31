@@ -40,6 +40,11 @@ class PhuHuynhController
             $this->getDashboardData();
             return;
         }
+        // Điều hướng nếu gọi xem chi tiết con của phụ huynh
+        if ($id === 'child') {
+            $this->getChildDetails($_GET['id'] ?? null);
+            return;
+        }
 
         $phuHuynh = PhuHuynh::findById($id);
 

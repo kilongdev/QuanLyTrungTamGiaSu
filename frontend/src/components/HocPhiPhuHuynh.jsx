@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Wallet, CreditCard, Clock, CheckCircle, AlertCircle, ChevronRight, User } from "lucide-react";
+import { Wallet, CreditCard, Clock, CheckCircle, AlertCircle, ChevronRight, User, ReceiptText } from "lucide-react";
 import { phuHuynhAPI } from "../api/phuHuynhApi";
 import { hocPhiAPI } from "../api/hocPhiApi";
 import { cn } from "@/lib/utils";
@@ -32,8 +32,13 @@ export default function HocPhiPhuHuynh() {
     setSelectedStudent(student);
     setLoading(true);
     try {
-      const res = await hocPhiAPI.getByChild(student.hoc_sinh_id);
-      setTuitionData(res.data?.hoc_phi_lich_su || []);
+      // Gọi API chi tiết con
+      // Backend trả về: { status: 'success', data: { hoc_phi_lich_su: [...] } }
+      const res = await phuHuynhAPI.getChildDetails(student.hoc_sinh_id);
+
+      // Lấy chính xác mảng lịch sử học phí từ data học sinh
+      const tuitionHistory = res.data?.hoc_phi_lich_su || [];
+      setTuitionData(tuitionHistory);
     } catch (error) {
       console.error("Lỗi lấy học phí:", error);
     } finally {
@@ -69,7 +74,7 @@ export default function HocPhiPhuHuynh() {
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Wallet className="text-blue-600" /> Quản lý Học phí
           </h1>
-          <p className="text-gray-500 text-sm">Theo dõi và thanh toán học phí cho các con</p>
+          <p className="text-gray-500 text-sm">Theo dõi và thanh toán học phí cho các con của bạn</p>
         </div>
       </div>
 
@@ -121,6 +126,7 @@ export default function HocPhiPhuHuynh() {
                   <thead>
                     <tr className="text-xs uppercase text-gray-400 font-bold border-b border-gray-100">
                       <th className="px-6 py-4">Lớp học</th>
+                      <th className="px-6 py-4 text-center">Kỳ hạn</th>
                       <th className="px-6 py-4 text-right">Số tiền</th>
                       <th className="px-6 py-4">Hạn đóng</th>
                       <th className="px-6 py-4">Trạng thái</th>
@@ -133,6 +139,11 @@ export default function HocPhiPhuHuynh() {
                         <td className="px-6 py-4">
                           <div className="font-bold text-gray-800">{hp.ten_lop}</div>
                           <div className="text-xs text-gray-500">{hp.ten_mon_hoc}</div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="text-sm text-gray-600">
+                            {hp.thang && hp.nam ? `Tháng ${hp.thang}/${hp.nam}` : "Cả khóa"}
+                          </span>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span className="font-bold text-red-600">
@@ -173,8 +184,10 @@ export default function HocPhiPhuHuynh() {
             <div>
               <h4 className="font-bold text-blue-900 text-sm">Hướng dẫn thanh toán</h4>
               <p className="text-sm text-blue-700 mt-1">
-                Phụ huynh vui lòng chuyển khoản qua ngân hàng với nội dung: 
-                <span className="font-bold"> [MaHocPhi] [TenHocSinh]</span>. 
+                Phụ huynh vui lòng chuyển khoản qua ngân hàng với nội dung:
+                <span className="font-bold bg-blue-100 px-2 py-0.5 rounded mx-1">
+                  {selectedStudent ? `HP${selectedStudent.hoc_sinh_id} ${selectedStudent.ho_ten.toUpperCase()}` : "[MaHS] [TenHocSinh]"}
+                </span>. 
                 Sau khi chuyển khoản, hệ thống sẽ tự động cập nhật trạng thái sau khi Admin xác nhận.
               </p>
             </div>

@@ -75,16 +75,25 @@ export const yeuCauAPI = {
   /**
    * Lấy yêu cầu theo người tạo
    */
-  getByNguoiTao: (id, loai) =>
-    request(`/yeucau/${loai}/${id}`, {
+  getByNguoiTao: (id, loai) => 
+    request(`/yeucau?loai=${loai}&id=${id}`, {
       method: "GET",
+    }),
+
+  /**
+   * Cập nhật nội dung yêu cầu (dành cho người tạo)
+   */
+  update: (id, data) =>
+    request(`/yeucau/update/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
     }),
 
   /**
    * Admin cập nhật trạng thái yêu cầu
    */
   updateStatus: (id, data) =>
-    request(`/yeucau/status/${id}`, {
+    request(`/yeucau/updateStatus/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
@@ -93,7 +102,7 @@ export const yeuCauAPI = {
    * Xóa yêu cầu
    */
   delete: (id) =>
-    request(`/yeucau/${id}`, {
+    request(`/yeucau/delete/${id}`, {
       method: "DELETE",
     }),
 };
