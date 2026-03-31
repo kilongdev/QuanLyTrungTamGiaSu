@@ -1,9 +1,15 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Route, Routes, Navigate, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
 import Layouts from "./Layouts/Layouts";
 import Homepage from "./pages/HomePage";
 import Tutorpage from "./pages/TutorPage";
-import Introduce from "./pages/Introduce";
+// import Introduce from "./pages/Introduce";
 import FeesPage from "./pages/FeesPage";
 import ContactPage from "./pages/ContactPage";
 import AvailableClassPage from "./pages/AvailableClassPage";
@@ -13,6 +19,8 @@ import GiaSuDashboard from "./pages/GiaSuDashboard";
 import PhuHuynhDashboard from "./pages/PhuHuynhDashboard";
 import AuthModal from "./components/AuthModal";
 import { Toaster } from "sonner";
+import PhuHuynhPage from "./pages/PhuHuynhPage";
+import ScrollToTop from "./components/ScrollToTop";
 
 // Component chính được wrap trong BrowserRouter
 function AppContent() {
@@ -27,7 +35,8 @@ function AppContent() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const savedUser = localStorage.getItem("user");
-    const isCurrentTabSession = sessionStorage.getItem(AUTH_SESSION_KEY) === "1";
+    const isCurrentTabSession =
+      sessionStorage.getItem(AUTH_SESSION_KEY) === "1";
 
     if (token && savedUser && isCurrentTabSession) {
       try {
@@ -57,7 +66,7 @@ function AppContent() {
     setUser(data.user);
     sessionStorage.setItem(AUTH_SESSION_KEY, "1");
     setShowAuthModal(false);
-    
+
     // Chuyển đến dashboard sau khi đăng nhập thành công
     navigate("/dashboard");
   };
@@ -128,15 +137,13 @@ function AppContent() {
           }
         >
           <Route path="/" element={<Homepage />} />
+          <Route path="/phu-huynh" element={<PhuHuynhPage />} />
           <Route path="/dich-vu-gia-su" element={<Tutorpage />} />
-          <Route path="/ve-chung-toi" element={<Introduce />} />
+          {/* <Route path="/ve-chung-toi" element={<Introduce />} /> */}
           <Route path="/hoc-phi-gia-su" element={<FeesPage />} />
           <Route path="/lien-he" element={<ContactPage />} />
           <Route path="/lop-hien-co" element={<AvailableClassPage />} />
-          <Route
-            path="/dang-ky-hoc-thu"
-            element={<RegisterforATrialClass />}
-          />
+          <Route path="/dang-ky-hoc-thu" element={<RegisterforATrialClass />} />
         </Route>
 
         {/* Dashboard route - không dùng Layout */}
@@ -159,6 +166,7 @@ function App() {
     <>
       <Toaster richColors />
       <BrowserRouter>
+        <ScrollToTop />
         <AppContent />
       </BrowserRouter>
     </>
