@@ -156,7 +156,7 @@ export default function LopHocEditPage({ classId }) {
           )].sort((a, b) => a - b)
 
           setScheduleForm({
-            enabled: true,
+            enabled: false,
             ngay_bat_dau: String(first.ngay_bat_dau || '').split(' ')[0],
             gio_bat_dau: targetStartTime || '18:00',
             gio_ket_thuc: targetEndTime || '19:30',
@@ -226,7 +226,9 @@ export default function LopHocEditPage({ classId }) {
       return
     }
 
-    if (scheduleForm.enabled) {
+    const shouldSaveRecurringSchedule = scheduleForm.enabled
+
+    if (shouldSaveRecurringSchedule) {
       if (!scheduleForm.ngay_bat_dau || scheduleForm.ngay_trong_tuan.length === 0) {
         toast.warning('Vui lòng chọn ngày bắt đầu và ít nhất 1 ngày học trong tuần')
         return
@@ -242,7 +244,7 @@ export default function LopHocEditPage({ classId }) {
       setSaving(true)
       await lopHocAPI.update(id, payload)
 
-      if (scheduleForm.enabled) {
+      if (shouldSaveRecurringSchedule) {
         const thoiGianTungNgay = {}
         scheduleForm.ngay_trong_tuan.forEach((thu) => {
           thoiGianTungNgay[thu] = {
@@ -255,13 +257,21 @@ export default function LopHocEditPage({ classId }) {
           lop_hoc_id: Number(id),
           tao_chu_ky: true,
           ngay_bat_dau: scheduleForm.ngay_bat_dau,
+          ngay_ket_thuc: formData.ngay_ket_thuc || null,
           ngay_trong_tuan: scheduleForm.ngay_trong_tuan,
           thoi_gian_tung_ngay: thoiGianTungNgay
         })
       }
 
-      toast.success(scheduleForm.enabled ? 'Cập nhật lớp và tạo lịch định kỳ thành công' : 'Cập nhật lớp học thành công')
-      goBackToClassManagement()
+      const [classScheduleRes, classOverviewRes] = await Promise.all([
+        lichHocAPI.getByLopHoc(id),
+        diemDanhAPI.getClassOverview(id)
+      ])
+
+      setExistingSchedules(classScheduleRes?.data || [])
+      setExistingRecurringSchedules(classOverviewRes?.data?.lich_dinh_ky || [])
+
+      toast.success(shouldSaveRecurringSchedule ? 'Đã cập nhật lớp học và lịch định kỳ' : 'Cập nhật lớp học thành công')
     } catch (error) {
       console.error('Lỗi khi cập nhật lớp học:', error)
       toast.error(error.message || 'Không thể cập nhật lớp học')

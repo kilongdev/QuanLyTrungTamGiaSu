@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useMatch, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, Briefcase, FileText, ClipboardList, BookCheck, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, Briefcase, FileText, ClipboardList, BookCheck, DollarSign, HandCoins } from 'lucide-react';
 
 import DashboardLayout from '../Layouts/DashboardLayout';
 import DashboardOverview from '../components/DashboardOverview';
@@ -51,7 +51,7 @@ export default function AdminDashboard({ user, onLogout }) {
     { id: 'hocsinh', label: 'Quản lý Học sinh', icon: GraduationCap },
     { id: 'phuhuynh', label: 'Quản lý Phụ huynh', icon: Users },
     { id: 'giasu', label: 'Quản lý Gia sư', icon: Briefcase },
-    { id: 'luonggiasu', label: 'Lương gia sư', icon: DollarSign },
+    { id: 'luonggiasu', label: 'Lương gia sư', icon: HandCoins },
     { id: 'hocphi', label: 'Học phí', icon: DollarSign },
   ];
 
