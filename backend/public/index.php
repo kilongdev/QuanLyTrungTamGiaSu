@@ -1,6 +1,21 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+
+// CORS headers: ưu tiên FRONTEND_URL cho production, vẫn cho phép local/dev.
+$allowedOrigins = array_filter([
+    getenv('FRONTEND_URL') ?: '',
+    'http://localhost:3000',
+    'http://localhost:5173',
+]);
+
+$requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if ($requestOrigin && in_array($requestOrigin, $allowedOrigins, true)) {
+    header("Access-Control-Allow-Origin: {$requestOrigin}");
+    header('Vary: Origin');
+} else {
+    header('Access-Control-Allow-Origin: *');
+}
+
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 

@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost/QuanLyTrungTamGiaSu/backend/public/api.php';
+const API_BASE = `${import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public'}/api.php`;
 
 const getAuthHeaders = () => ({
   'Content-Type': 'application/json',
