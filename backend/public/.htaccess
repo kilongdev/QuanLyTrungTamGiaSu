@@ -1,10 +1,5 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    
-    # Cho phép truy cập từ domain khác (CORS) nếu server chặn
-    Header set Access-Control-Allow-Origin "*"
-    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
 
     # Loại bỏ index.php khỏi URL
     RewriteCond %{REQUEST_FILENAME} !-f
@@ -14,6 +9,5 @@
 
 # Chặn truy cập trực tiếp vào file .env
 <Files .env>
-    Order allow,deny
-    Deny from all
+    Require all denied
 </Files>
