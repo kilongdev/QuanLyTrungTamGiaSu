@@ -52,11 +52,12 @@ class YeuCauController {
             return;
         }
         $ghiChu = $data['ghi_chu'] ?? '';
+        $email = $data['email'] ?? '';
 
         $noiDung = "
             Họ tên: {$data['ho_ten']}
             SĐT: {$data['so_dien_thoai']}
-            Email: {$data['email']}
+            Email: {$email}
             Ghi chú: {$ghiChu}
         ";
         $yeuCau = [
