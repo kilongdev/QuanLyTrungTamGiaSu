@@ -100,6 +100,12 @@ export const lopHocAPI = {
             body: JSON.stringify(data),
         }),
 
+    updateStatus: (id, trang_thai) =>
+        request(`/lophoc/status/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ trang_thai }),
+        }),
+
     /**
      * Xóa lớp học
      * @param {number} id - ID lớp học

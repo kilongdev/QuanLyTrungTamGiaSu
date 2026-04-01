@@ -4,6 +4,21 @@ require_once __DIR__ . '/../core/Database.php';
 class DangKyLop {
 
     public static function create($data) {
+        $sqlCheckParent = "SELECT ph.trang_thai
+                           FROM hoc_sinh hs
+                           INNER JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
+                           WHERE hs.hoc_sinh_id = :hs_id
+                           LIMIT 1";
+        $parent = Database::query($sqlCheckParent, [':hs_id' => $data['hoc_sinh_id']]);
+
+        if (!$parent) {
+            throw new Exception("Không tìm thấy học sinh hoặc phụ huynh!");
+        }
+
+        if (($parent[0]['trang_thai'] ?? '') === 'khoa') {
+            throw new Exception("Phụ huynh của học sinh này đang bị khóa, không thể đăng ký lớp học.");
+        }
+
         $sqlCheckExist = "SELECT dang_ky_id, trang_thai FROM dang_ky_lop WHERE hoc_sinh_id = :hs_id AND lop_hoc_id = :lop_id";
         $exist = Database::query($sqlCheckExist, [
             ':hs_id' => $data['hoc_sinh_id'], 

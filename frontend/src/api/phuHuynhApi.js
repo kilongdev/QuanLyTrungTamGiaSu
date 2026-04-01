@@ -60,6 +60,16 @@ export const phuHuynhAPI = {
             method: 'PUT',
             body: JSON.stringify(data),
         }),
+    lock: (id) =>
+        request(`/phuhuynh/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ trang_thai: 'khoa' }),
+        }),
+    unlock: (id) =>
+        request(`/phuhuynh/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ trang_thai: 'da_duyet' }),
+        }),
     delete: (id) =>
         request(`/phuhuynh/${id}`, {
             method: 'DELETE',

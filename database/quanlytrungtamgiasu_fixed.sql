@@ -712,7 +712,7 @@ INSERT INTO `tin_nhan` (`tin_nhan_id`, `cuoc_tro_chuyen_id`, `nguoi_gui_id`, `lo
 CREATE TABLE `yeu_cau` (
   `yeu_cau_id` int(11) NOT NULL,
   `nguoi_tao_id` int(11) NOT NULL,
-  `loai_nguoi_tao` enum('admin','gia_su','phu_huynh') NOT NULL,
+  `loai_nguoi_tao` enum('admin','gia_su','phu_huynh','guest') NOT NULL,
   `phan_loai` varchar(50) NOT NULL,
   `tieu_de` varchar(255) NOT NULL,
   `noi_dung` text NOT NULL,

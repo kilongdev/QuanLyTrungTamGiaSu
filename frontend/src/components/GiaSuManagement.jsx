@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Trash2, Edit2, Eye, Search, Plus, X } from 'lucide-react'
+import { Edit2, Eye, Search, Plus, X, Lock, Unlock, AlertTriangle } from 'lucide-react'
 import { giaSuAPI } from '@/api/giaSuApi'
 import { validateTutorForm } from '@/lib/validators'
 import DataPagination from '@/components/ui/DataPagination'
 import { toast } from 'sonner'
+
+const API_URL = (import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com').replace(/\/$/, '')
 
 export default function GiaSuManagement() {
   const [tutors, setTutors] = useState([])
@@ -33,6 +35,14 @@ export default function GiaSuManagement() {
     so_dien_thoai: '', 
     bang_cap: '', 
     kinh_nghiem: '' 
+  })
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    title: '',
+    message: '',
+    confirmText: 'Đồng ý',
+    confirmButtonClass: 'bg-amber-600 hover:bg-amber-700',
+    onConfirm: null
   })
 
   // Gọi API lấy danh sách gia sư
@@ -141,26 +151,6 @@ export default function GiaSuManagement() {
     } catch (err) { toast.error('Lỗi khi cập nhật: ' + err.message) } finally { setModalLoading(false) }
   }
 
-  // Xử lý click nút xóa
-  const handleDelete = async (tutor) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa gia sư "${tutor.ho_ten}"? Thao tác này không thể hoàn tác.`)) {
-      try {
-        setLoading(true)
-        const result = await giaSuAPI.delete(tutor.gia_su_id)
-        if (result.status === 'success') {
-          toast.success('Xóa gia sư thành công!')
-          fetchTutors(pagination.page, search)
-        } else {
-          throw new Error(result.message || 'Xóa thất bại')
-        }
-      } catch (err) {
-        toast.error('Lỗi khi xóa gia sư: ' + err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-  }
-
   // Load dữ liệu khi component mount
   useEffect(() => {
     fetchTutors(1, '', 10)
@@ -193,9 +183,50 @@ export default function GiaSuManagement() {
     fetchTutorDetail(tutorId)
   }
 
+  const handleToggleTutorLock = async (tutor) => {
+    const isLocked = tutor.trang_thai === 'khoa'
+    const actionText = isLocked ? 'mở khóa' : 'khóa'
+    setConfirmModal({
+      show: true,
+      title: isLocked ? 'Xác nhận mở khóa' : 'Xác nhận khóa',
+      message: `Bạn có chắc muốn ${actionText} tài khoản gia sư "${tutor.ho_ten}"?`,
+      confirmText: isLocked ? 'Mở khóa' : 'Khóa',
+      confirmButtonClass: isLocked ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700',
+      onConfirm: async () => {
+        closeConfirmModal()
+
+        try {
+          const result = isLocked
+            ? await giaSuAPI.unlock(tutor.gia_su_id)
+            : await giaSuAPI.lock(tutor.gia_su_id)
+
+          if (result.status === 'success') {
+            toast.success(isLocked ? 'Đã mở khóa tài khoản gia sư' : 'Đã khóa tài khoản gia sư')
+            fetchTutors(pagination.page, search)
+          } else {
+            throw new Error(result.message || `Không thể ${actionText} tài khoản`)
+          }
+        } catch (err) {
+          toast.error(err.message || `Không thể ${actionText} tài khoản gia sư`)
+        }
+      }
+    })
+  }
+
   // Đóng modal
   const closeModal = () => {
     setDetailModal({ open: false, data: null, loading: false })
+  }
+
+  const closeConfirmModal = () => {
+    setConfirmModal({
+      show: false,
+      title: '',
+      message: '',
+      confirmText: 'Đồng ý',
+      confirmButtonClass: 'bg-amber-600 hover:bg-amber-700',
+      onConfirm: null
+    })
   }
 
   // Tạo avatar từ tên
@@ -214,10 +245,17 @@ export default function GiaSuManagement() {
     const statusMap = {
       'cho_duyet': { label: 'Chờ duyệt', class: 'bg-yellow-100 text-yellow-800' },
       'da_duyet': { label: 'Đã duyệt', class: 'bg-green-100 text-green-800' },
-      'tu_choi': { label: 'Từ chối', class: 'bg-red-100 text-red-800' }
+      'tu_choi': { label: 'Từ chối', class: 'bg-red-100 text-red-800' },
+      'khoa': { label: 'Bị khóa', class: 'bg-gray-200 text-gray-800' }
     }
     const s = statusMap[status] || { label: status, class: 'bg-gray-100 text-gray-800' }
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.class}`}>{s.label}</span>
+  }
+
+  const toAbsoluteMediaUrl = (path) => {
+    if (!path || typeof path !== 'string') return ''
+    if (path.startsWith('http://') || path.startsWith('https://')) return path
+    return `${API_URL}${path.startsWith('/') ? path : `/${path}`}`
   }
 
   if (loading) {
@@ -323,12 +361,12 @@ export default function GiaSuManagement() {
                         >
                           <Edit2 size={18} />
                         </button>
-                        <button 
-                          className="p-2 text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 tooltip"
-                          title="Xóa"
-                          onClick={() => handleDelete(tutor)}
+                        <button
+                          className={`p-2 rounded-lg transition-colors duration-200 tooltip ${tutor.trang_thai === 'khoa' ? 'text-green-700 hover:bg-green-50' : 'text-amber-700 hover:bg-amber-50'}`}
+                          title={tutor.trang_thai === 'khoa' ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
+                          onClick={() => handleToggleTutorLock(tutor)}
                         >
-                          <Trash2 size={18} />
+                          {tutor.trang_thai === 'khoa' ? <Unlock size={18} /> : <Lock size={18} />}
                         </button>
                       </div>
                     </td>
@@ -375,6 +413,17 @@ export default function GiaSuManagement() {
 
                 {/* Modal Content */}
                 <div className="p-5 space-y-4">
+                  {detailModal.data.anh_dai_dien_url && (
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                      <p className="text-gray-600 text-sm mb-2">Ảnh đại diện</p>
+                      <img
+                        src={toAbsoluteMediaUrl(detailModal.data.anh_dai_dien_url)}
+                        alt="Ảnh đại diện gia sư"
+                        className="w-32 h-32 object-cover rounded-xl border border-gray-200"
+                      />
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
                       <p className="text-gray-600 text-sm">Email</p>
@@ -392,6 +441,30 @@ export default function GiaSuManagement() {
                       <p className="text-gray-600 text-sm">Kinh nghiệm</p>
                       <p className="font-semibold text-gray-900">{detailModal.data.kinh_nghiem || 'Chưa cập nhật'}</p>
                     </div>
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                      <p className="text-gray-600 text-sm">Ngày sinh</p>
+                      <p className="font-semibold text-gray-900">{detailModal.data.ngay_sinh ? detailModal.data.ngay_sinh.substring(0, 10) : 'Chưa cập nhật'}</p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                      <p className="text-gray-600 text-sm">Giới tính</p>
+                      <p className="font-semibold text-gray-900">{detailModal.data.gioi_tinh || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 sm:col-span-2">
+                      <p className="text-gray-600 text-sm">Địa chỉ</p>
+                      <p className="font-semibold text-gray-900">{detailModal.data.dia_chi || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 sm:col-span-2">
+                      <p className="text-gray-600 text-sm">Giới thiệu</p>
+                      <p className="font-semibold text-gray-900 whitespace-pre-wrap">{detailModal.data.gioi_thieu || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 sm:col-span-2">
+                      <p className="text-gray-600 text-sm">Số tài khoản ngân hàng</p>
+                      <p className="font-semibold text-gray-900">{detailModal.data.so_tai_khoan_ngan_hang || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                      <p className="text-gray-600 text-sm">Ngày đăng ký</p>
+                      <p className="font-semibold text-gray-900">{detailModal.data.ngay_dang_ky || 'Chưa cập nhật'}</p>
+                    </div>
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-200">
                       <p className="text-blue-700 text-sm">Đánh giá trung bình</p>
                       <p className="font-bold text-blue-900 text-xl">{detailModal.data.diem_danh_gia_trung_binh || '0.00'}</p>
@@ -400,6 +473,25 @@ export default function GiaSuManagement() {
                       <p className="text-gray-600 text-sm">Trạng thái</p>
                       {getStatusBadge(detailModal.data.trang_thai)}
                     </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <p className="text-gray-700 text-sm font-semibold mb-3">Chứng chỉ</p>
+                    {Array.isArray(detailModal.data.chung_chi) && detailModal.data.chung_chi.length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {detailModal.data.chung_chi.map((item, idx) => {
+                          const imageUrl = toAbsoluteMediaUrl(item?.url || '')
+                          return (
+                            <a key={`${item?.file_name || 'cert'}-${idx}`} href={imageUrl} target="_blank" rel="noreferrer" className="group block">
+                              <img src={imageUrl} alt={item?.original_name || `Chứng chỉ ${idx + 1}`} className="w-full h-24 object-cover rounded-lg border border-gray-200 group-hover:border-red-300" />
+                              <p className="text-xs text-gray-600 mt-1 truncate">{item?.original_name || `Chứng chỉ ${idx + 1}`}</p>
+                            </a>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">Chưa có chứng chỉ</p>
+                    )}
                   </div>
                 </div>
 
@@ -420,6 +512,32 @@ export default function GiaSuManagement() {
                 </div>
               </>
             ) : null}
+          </div>
+        </div>
+      )}
+
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden p-6 text-center">
+            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={32} className="text-amber-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">{confirmModal.title || 'Xác nhận'}</h3>
+            <p className="text-sm text-gray-600 mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={closeConfirmModal}
+                className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => confirmModal.onConfirm && confirmModal.onConfirm()}
+                className={`flex-1 py-2.5 text-white font-medium rounded-lg ${confirmModal.confirmButtonClass}`}
+              >
+                {confirmModal.confirmText}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -589,6 +707,7 @@ export default function GiaSuManagement() {
                     <option value="cho_duyet">Chờ duyệt</option>
                     <option value="da_duyet">Đã duyệt</option>
                     <option value="tu_choi">Từ chối</option>
+                    <option value="khoa">Bị khóa</option>
                   </select>
                 </div>
               </div>

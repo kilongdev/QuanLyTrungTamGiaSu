@@ -6,7 +6,7 @@ import { giaSuAPI } from '../api/giaSuApi'
 import { hocSinhAPI } from '../api/hocSinhApi'
 import { diemDanhAPI } from '../api/diemdanhApi'
 import { lichHocAPI } from '../api/lichhocApi'
-import { Plus, Settings, X, Search, Trash2, Edit2, BookOpen, Layers3, Users, Clock } from 'lucide-react'
+import { Plus, Settings, X, Search, Trash2, Edit2, BookOpen, Layers3, Users, Clock, AlertTriangle } from 'lucide-react'
 import { validateClassForm } from '@/lib/validators'
 import { normalizeNumberInputValue } from '@/lib/numberUtils'
 import { toast } from 'sonner'
@@ -32,6 +32,14 @@ export default function LopHocManagement() {
   const [showAttendanceHistory, setShowAttendanceHistory] = useState(false) // Toggle between form and history
   const [savingAttendance, setSavingAttendance] = useState(false)
   const [createWithSchedule, setCreateWithSchedule] = useState(true)
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    title: '',
+    message: '',
+    confirmText: 'Đồng ý',
+    confirmButtonClass: 'bg-amber-600 hover:bg-amber-700',
+    onConfirm: null
+  })
   const [scheduleForm, setScheduleForm] = useState({
     ngay_bat_dau: '',
     gio_bat_dau: '18:00',
@@ -94,7 +102,8 @@ export default function LopHocManagement() {
   const fetchGiaSus = async () => {
     try {
       const response = await giaSuAPI.getAll()
-      setGiaSus(response.data || [])
+      const tutors = (response.data || []).filter((gs) => gs && gs.trang_thai === 'da_duyet')
+      setGiaSus(tutors)
     } catch (error) {
       console.error('Lỗi khi tải danh sách gia sư:', error)
     }
@@ -105,7 +114,8 @@ export default function LopHocManagement() {
       const response = await hocSinhAPI.getAll({ page: 1, limit: 1000 })
       const students = response.data || []
       setAllHocSinh(students
-        .filter(hs => hs && hs.hoc_sinh_id) // Filter out invalid items
+        .filter(hs => hs && hs.hoc_sinh_id)
+        .filter(hs => !hs.phu_huynh_trang_thai || hs.phu_huynh_trang_thai !== 'khoa')
         .map(hs => ({
           id: hs.hoc_sinh_id,
           code: `HS${hs.hoc_sinh_id}`,
@@ -154,26 +164,31 @@ export default function LopHocManagement() {
 
   const removeStudentFromClass = async (lopHocId, studentId) => {
     const student = classStudents.find(s => s.id === studentId)
-    const confirmDelete = confirm(
-      `Bạn có chắc chắn muốn xóa học sinh "${student?.name || 'N/A'}" khỏi lớp này?`
-    )
-    
-    if (!confirmDelete) return
+    setConfirmModal({
+      show: true,
+      title: 'Xác nhận xóa học sinh',
+      message: `Bạn có chắc chắn muốn xóa học sinh "${student?.name || 'N/A'}" khỏi lớp này?`,
+      confirmText: 'Xóa',
+      confirmButtonClass: 'bg-amber-600 hover:bg-amber-700',
+      onConfirm: async () => {
+        closeConfirmModal()
 
-    try {
-      await lopHocAPI.removeStudent(lopHocId, studentId)
-      setClassStudents(classStudents.filter(s => s.id !== studentId))
-      toast.success('Xóa học sinh khỏi lớp thành công')
-    } catch (error) {
-      console.error('Lỗi khi xóa học sinh:', error)
-      // Fallback: Xóa local nếu API chưa sẵn sàng
-      if (error.status === 404) {
-        setClassStudents(classStudents.filter(s => s.id !== studentId))
-        toast.success('Xóa học sinh thành công')
-      } else {
-        toast.error(error.message || 'Không thể xóa học sinh')
+        try {
+          await lopHocAPI.removeStudent(lopHocId, studentId)
+          setClassStudents(classStudents.filter(s => s.id !== studentId))
+          toast.success('Xóa học sinh khỏi lớp thành công')
+        } catch (error) {
+          console.error('Lỗi khi xóa học sinh:', error)
+          // Fallback: Xóa local nếu API chưa sẵn sàng
+          if (error.status === 404) {
+            setClassStudents(classStudents.filter(s => s.id !== studentId))
+            toast.success('Xóa học sinh thành công')
+          } else {
+            toast.error(error.message || 'Không thể xóa học sinh')
+          }
+        }
       }
-    }
+    })
   }
 
   // Initialize attendance form for today
@@ -377,21 +392,6 @@ export default function LopHocManagement() {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
-      return
-    }
-
-    try {
-      await lopHocAPI.delete(id)
-      toast.success('Xóa lớp học thành công!')
-      fetchLopHocs()
-    } catch (error) {
-      console.error('Lỗi khi xóa lớp học:', error)
-      toast.error(error.message || 'Không thể xóa lớp học này')
-    }
-  }
-
   const resetForm = () => {
     setFormData({
       mon_hoc_id: '',
@@ -454,6 +454,47 @@ export default function LopHocManagement() {
       'dong': 'bg-red-100 text-red-700'
     }
     return colors[trangThai] || 'bg-gray-100 text-gray-700'
+  }
+
+  const handleToggleClassLock = async (lopHoc) => {
+    const isClosed = lopHoc.trang_thai === 'dong'
+    const nextStatus = isClosed ? 'sap_mo' : 'dong'
+    const actionText = isClosed ? 'mở lại' : 'khóa'
+    setConfirmModal({
+      show: true,
+      title: isClosed ? 'Xác nhận mở lại lớp' : 'Xác nhận khóa lớp',
+      message: `Bạn có chắc muốn ${actionText} lớp "${lopHoc.ten_lop}"?`,
+      confirmText: isClosed ? 'Mở lại lớp' : 'Khóa lớp',
+      confirmButtonClass: isClosed ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700',
+      onConfirm: async () => {
+        closeConfirmModal()
+
+        try {
+          const result = await lopHocAPI.updateStatus(lopHoc.lop_hoc_id, nextStatus)
+          if (result.status === 'success') {
+            toast.success(isClosed ? 'Đã mở lại lớp học' : 'Đã khóa lớp học')
+            setShowSettings(null)
+            fetchLopHocs()
+          } else {
+            throw new Error(result.message || `Không thể ${actionText} lớp học`)
+          }
+        } catch (error) {
+          console.error(`Lỗi khi ${actionText} lớp học:`, error)
+          toast.error(error.message || `Không thể ${actionText} lớp học`)
+        }
+      }
+    })
+  }
+
+  const closeConfirmModal = () => {
+    setConfirmModal({
+      show: false,
+      title: '',
+      message: '',
+      confirmText: 'Đồng ý',
+      confirmButtonClass: 'bg-amber-600 hover:bg-amber-700',
+      onConfirm: null
+    })
   }
 
   const toAlphabetSuffix = (index) => {
@@ -629,14 +670,11 @@ export default function LopHocManagement() {
                                   Điểm danh
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    handleDelete(lopHoc.lop_hoc_id)
-                                    setShowSettings(null)
-                                  }}
-                                  className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                  onClick={() => handleToggleClassLock(lopHoc)}
+                                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 ${lopHoc.trang_thai === 'dong' ? 'text-green-600 hover:bg-green-50' : 'text-amber-600 hover:bg-amber-50'}`}
                                 >
                                   <Trash2 size={12} />
-                                  Xóa
+                                  {lopHoc.trang_thai === 'dong' ? 'Mở lại lớp' : 'Khóa lớp'}
                                 </button>
                               </div>
                             )}
@@ -1344,6 +1382,32 @@ export default function LopHocManagement() {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[120] p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden p-6 text-center">
+            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={32} className="text-amber-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">{confirmModal.title || 'Xác nhận'}</h3>
+            <p className="text-sm text-gray-600 mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={closeConfirmModal}
+                className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => confirmModal.onConfirm && confirmModal.onConfirm()}
+                className={`flex-1 py-2.5 text-white font-medium rounded-lg ${confirmModal.confirmButtonClass}`}
+              >
+                {confirmModal.confirmText}
+              </button>
             </div>
           </div>
         </div>

@@ -164,8 +164,16 @@ class LopHoc {
     }
 
     public static function delete($id) {
-        $sql = "DELETE FROM lop_hoc WHERE lop_hoc_id = :id";
+        $sql = "UPDATE lop_hoc SET trang_thai = 'dong' WHERE lop_hoc_id = :id";
         return Database::execute($sql, [':id' => $id]);
+    }
+
+    public static function updateStatus($id, $trangThai) {
+        $sql = "UPDATE lop_hoc SET trang_thai = :trang_thai WHERE lop_hoc_id = :id";
+        return Database::execute($sql, [
+            ':id' => $id,
+            ':trang_thai' => $trangThai
+        ]);
     }
 
     public static function getById($id) {

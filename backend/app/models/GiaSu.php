@@ -103,15 +103,26 @@ class GiaSu
         $hashedPassword = password_hash($data['mat_khau'], PASSWORD_DEFAULT);
 
         Database::execute(
-            "INSERT INTO gia_su (ho_ten, email, so_dien_thoai, mat_khau, bang_cap, kinh_nghiem, trang_thai)
-             VALUES (?, ?, ?, ?, ?, ?, 'cho_duyet')",
+            "INSERT INTO gia_su (
+                ho_ten, email, so_dien_thoai, mat_khau, ngay_sinh, gioi_tinh, dia_chi,
+                bang_cap, chung_chi, gioi_thieu, kinh_nghiem, so_tai_khoan_ngan_hang,
+                anh_dai_dien, trang_thai
+            )
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cho_duyet')",
             [
                 $data['ho_ten'],
                 $data['email'],
                 $data['so_dien_thoai'] ?? '',
                 $hashedPassword,
+                $data['ngay_sinh'] ?? null,
+                $data['gioi_tinh'] ?? null,
+                $data['dia_chi'] ?? null,
                 $data['bang_cap'] ?? '',
-                $data['kinh_nghiem'] ?? ''
+                $data['chung_chi'] ?? null,
+                $data['gioi_thieu'] ?? null,
+                $data['kinh_nghiem'] ?? '',
+                $data['so_tai_khoan_ngan_hang'] ?? null,
+                $data['anh_dai_dien'] ?? null,
             ]
         );
 
@@ -122,7 +133,7 @@ class GiaSu
     {
         $allowedFields = [
             'ho_ten', 'so_dien_thoai', 'dia_chi', 'bang_cap', 'kinh_nghiem', 
-            'gioi_thieu', 'trang_thai', 'ngay_sinh', 'gioi_tinh', 'anh_dai_dien', 'so_tai_khoan_ngan_hang'
+            'gioi_thieu', 'trang_thai', 'ngay_sinh', 'gioi_tinh', 'anh_dai_dien', 'so_tai_khoan_ngan_hang', 'chung_chi'
         ];
         $fields = [];
         $params = [];
@@ -147,7 +158,7 @@ class GiaSu
 
     public static function delete(string $id): int
     {
-        return Database::execute("DELETE FROM gia_su WHERE gia_su_id = ?", [$id]);
+        return Database::execute("UPDATE gia_su SET trang_thai = 'khoa' WHERE gia_su_id = ?", [$id]);
     }
 
     public static function updateStatus(string $id, string $trangThai): int
@@ -160,10 +171,25 @@ class GiaSu
 
     public static function getDetails(int $userId): ?array
     {
-        return Database::queryOne(
-            "SELECT gia_su_id, ho_ten, email, so_dien_thoai, dia_chi, bang_cap, trang_thai, ngay_dang_ky
+        $tutor = Database::queryOne(
+            "SELECT gia_su_id, ho_ten, email, so_dien_thoai, ngay_sinh, gioi_tinh, dia_chi,
+                    anh_dai_dien, bang_cap, chung_chi, gioi_thieu, kinh_nghiem,
+                    so_tai_khoan_ngan_hang, diem_danh_gia_trung_binh, trang_thai, ngay_dang_ky
              FROM gia_su WHERE gia_su_id = ?",
             [$userId]
         );
+
+        if (!$tutor) {
+            return null;
+        }
+
+        if (!empty($tutor['chung_chi'])) {
+            $decoded = json_decode($tutor['chung_chi'], true);
+            $tutor['chung_chi'] = is_array($decoded) ? $decoded : [];
+        } else {
+            $tutor['chung_chi'] = [];
+        }
+
+        return $tutor;
     }
 }

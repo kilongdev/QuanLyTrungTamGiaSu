@@ -127,16 +127,54 @@ class LopHocController {
     public function delete($id) {
         if (empty($id)) {
             http_response_code(400);
-            echo json_encode(["status" => "error", "message" => "Thiếu ID lớp học cần xóa"]);
+            echo json_encode(["status" => "error", "message" => "Thiếu ID lớp học cần khóa"]);
             return;
         }
 
         try {
-            LopHoc::delete($id);
-            echo json_encode(["status" => "success", "message" => "Đã xóa lớp học thành công"]);
+            $affected = LopHoc::delete($id);
+            if ($affected === 0) {
+                http_response_code(404);
+                echo json_encode(["status" => "error", "message" => "Không tìm thấy lớp học"]);
+                return;
+            }
+
+            echo json_encode(["status" => "success", "message" => "Đã khóa lớp học thành công"]);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(["status" => "error", "message" => "Không thể xóa: Lớp học này đã có dữ liệu ràng buộc"]);
+            echo json_encode(["status" => "error", "message" => "Không thể khóa lớp học"]);
+        }
+    }
+
+    public function updateStatus($id) {
+        if (empty($id)) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Thiếu ID lớp học"]);
+            return;
+        }
+
+        $data = json_decode(file_get_contents("php://input"), true);
+        $trangThai = $data['trang_thai'] ?? '';
+        $allowedStatuses = ['sap_mo', 'dang_hoc', 'ket_thuc', 'dong'];
+
+        if (!in_array($trangThai, $allowedStatuses, true)) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Trạng thái lớp học không hợp lệ"]);
+            return;
+        }
+
+        try {
+            $affected = LopHoc::updateStatus($id, $trangThai);
+            if ($affected === 0) {
+                http_response_code(404);
+                echo json_encode(["status" => "error", "message" => "Không tìm thấy lớp học hoặc trạng thái không đổi"]);
+                return;
+            }
+
+            echo json_encode(["status" => "success", "message" => "Cập nhật trạng thái lớp học thành công"]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Không thể cập nhật trạng thái lớp học"]);
         }
     }
 
@@ -188,6 +226,25 @@ class LopHocController {
 
         try {
             require_once __DIR__ . '/../models/DangKyLop.php';
+
+            $parentSql = "SELECT ph.trang_thai
+                          FROM hoc_sinh hs
+                          INNER JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
+                          WHERE hs.hoc_sinh_id = :hs_id
+                          LIMIT 1";
+            $parent = Database::query($parentSql, [':hs_id' => $data['hoc_sinh_id']]);
+
+            if (!$parent) {
+                http_response_code(404);
+                echo json_encode(["status" => "error", "message" => "Không tìm thấy học sinh hoặc phụ huynh"]);
+                return;
+            }
+
+            if (($parent[0]['trang_thai'] ?? '') === 'khoa') {
+                http_response_code(403);
+                echo json_encode(["status" => "error", "message" => "Phụ huynh của học sinh này đang bị khóa, không thể thêm vào lớp"]);
+                return;
+            }
             
             // Check if already registered with approved status
             $checkSql = "SELECT dang_ky_id, trang_thai FROM dang_ky_lop WHERE hoc_sinh_id = :hs_id AND lop_hoc_id = :lop_id";
