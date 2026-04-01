@@ -484,7 +484,7 @@ CREATE TABLE `lop_hoc` (
   `gia_tri_chi_tra` decimal(10,2) DEFAULT NULL,
   `chu_ky_thanh_toan` varchar(20) DEFAULT 'theo_thang',
   `trang_thai` enum('sap_mo','dang_hoc','ket_thuc','dong') DEFAULT 'sap_mo',
-  ``ngay_tao` date DEFAULT (CURRENT_DATE),
+  `ngay_tao` date DEFAULT (CURRENT_DATE),
   `ngay_bat_dau` date DEFAULT NULL,
   `ngay_ket_thuc` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
