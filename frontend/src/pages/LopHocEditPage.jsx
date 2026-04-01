@@ -220,12 +220,6 @@ export default function LopHocEditPage({ classId }) {
       payload.ten_lop = formData.ten_lop
     }
 
-    const validationMessage = validateClassForm(payload)
-    if (validationMessage) {
-      toast.warning(validationMessage)
-      return
-    }
-
     const shouldSaveRecurringSchedule = scheduleForm.enabled
 
     if (shouldSaveRecurringSchedule) {
@@ -238,43 +232,38 @@ export default function LopHocEditPage({ classId }) {
         toast.warning('Giờ bắt đầu/kết thúc của lịch định kỳ không hợp lệ')
         return
       }
+
+      payload.thoi_gian_du_kien = {
+        ngay_trong_tuan: scheduleForm.ngay_trong_tuan,
+        gio_bat_dau: scheduleForm.gio_bat_dau,
+        gio_ket_thuc: scheduleForm.gio_ket_thuc,
+        ngay_bat_dau: scheduleForm.ngay_bat_dau,
+        ngay_ket_thuc: formData.ngay_ket_thuc
+      }
+    }
+
+    const validationMessage = validateClassForm(payload)
+    if (validationMessage) {
+      toast.warning(validationMessage)
+      return
     }
 
     try {
       setSaving(true)
+      
+      // GỌI API CẬP NHẬT LỚP HỌC (Nếu kẹt lịch, Backend sẽ văng lỗi đỏ ngay lập tức)
       await lopHocAPI.update(id, payload)
 
-      if (shouldSaveRecurringSchedule) {
-        const thoiGianTungNgay = {}
-        scheduleForm.ngay_trong_tuan.forEach((thu) => {
-          thoiGianTungNgay[thu] = {
-            gio_bat_dau: scheduleForm.gio_bat_dau,
-            gio_ket_thuc: scheduleForm.gio_ket_thuc
-          }
-        })
-
-        await lichHocAPI.create({
-          lop_hoc_id: Number(id),
-          tao_chu_ky: true,
-          ngay_bat_dau: scheduleForm.ngay_bat_dau,
-          ngay_ket_thuc: formData.ngay_ket_thuc || null,
-          ngay_trong_tuan: scheduleForm.ngay_trong_tuan,
-          thoi_gian_tung_ngay: thoiGianTungNgay
-        })
-      }
-
-      const [classScheduleRes, classOverviewRes] = await Promise.all([
-        lichHocAPI.getByLopHoc(id),
-        diemDanhAPI.getClassOverview(id)
-      ])
-
-      setExistingSchedules(classScheduleRes?.data || [])
-      setExistingRecurringSchedules(classOverviewRes?.data?.lich_dinh_ky || [])
-
-      toast.success(shouldSaveRecurringSchedule ? 'Đã cập nhật lớp học và lịch định kỳ' : 'Cập nhật lớp học thành công')
+      toast.success(shouldSaveRecurringSchedule ? 'Đã cập nhật lớp học và lịch học mới' : 'Cập nhật lớp học thành công')
+      
+      // Load lại dữ liệu ngay sau khi lưu thành công để cập nhật giao diện
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+      
     } catch (error) {
       console.error('Lỗi khi cập nhật lớp học:', error)
-      toast.error(error.message || 'Không thể cập nhật lớp học')
+      toast.error(error.message || 'Không thể cập nhật lớp học. Vui lòng kiểm tra lại lịch!')
     } finally {
       setSaving(false)
     }

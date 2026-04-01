@@ -83,18 +83,17 @@ class YeuCau {
     }
 
     public static function getYeuCauMoiGiaSu($giaSuId) {
-        // CẬP NHẬT: Kéo theo Lịch dự kiến, Ngày bắt đầu, Ngày kết thúc và Sĩ số
         $sql = "SELECT yc.*, lh.ten_lop, lh.so_buoi_hoc, lh.gia_toan_khoa, lh.gia_moi_buoi, 
                        lh.loai_chi_tra, lh.khoi_lop, lh.ngay_ket_thuc, lh.so_luong_toi_da, mh.ten_mon_hoc,
-                       (SELECT GROUP_CONCAT(DISTINCT CONCAT(
-                            CASE DAYOFWEEK(ngay_hoc)
-                                WHEN 1 THEN 'CN' WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' 
-                                WHEN 4 THEN 'T4' WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7'
+                       (SELECT GROUP_CONCAT(CONCAT(
+                            CASE ldk.thu_trong_tuan
+                                WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' WHEN 4 THEN 'T4' 
+                                WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7' WHEN 8 THEN 'CN'
                             END,
-                            ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
-                       ) SEPARATOR ', ') 
-                       FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien,
-                       (SELECT MIN(ngay_hoc) FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS ngay_bat_dau
+                            ' (', TIME_FORMAT(ldk.gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(ldk.gio_ket_thuc, '%H:%i'), ')'
+                       ) ORDER BY ldk.thu_trong_tuan ASC SEPARATOR ', ') 
+                       FROM lich_dinh_ky ldk WHERE ldk.lop_hoc_id = lh.lop_hoc_id AND ldk.trang_thai = 'hoat_dong') AS lich_hoc_du_kien,
+                       (SELECT MIN(ngay_bat_dau) FROM lich_dinh_ky ldk WHERE ldk.lop_hoc_id = lh.lop_hoc_id AND ldk.trang_thai = 'hoat_dong') AS ngay_bat_dau
                 FROM yeu_cau yc 
                 JOIN lop_hoc lh ON yc.lop_hoc_id = lh.lop_hoc_id 
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id 
