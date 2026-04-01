@@ -4,6 +4,36 @@ require_once __DIR__ . '/../models/ThongBaoModel.php';
 
 class GiaSuController
 {
+    private static function buildMediaUrl(string $type, string $fileName): string
+    {
+        return '/giasu/media/' . $type . '/' . rawurlencode($fileName);
+    }
+
+    private static function enrichMediaFields(array $giaSu): array
+    {
+        if (!empty($giaSu['anh_dai_dien'])) {
+            $giaSu['anh_dai_dien_url'] = self::buildMediaUrl('avatar', $giaSu['anh_dai_dien']);
+        }
+
+        if (!empty($giaSu['chung_chi']) && is_string($giaSu['chung_chi'])) {
+            $decoded = json_decode($giaSu['chung_chi'], true);
+            $giaSu['chung_chi'] = is_array($decoded) ? $decoded : [];
+        } elseif (empty($giaSu['chung_chi'])) {
+            $giaSu['chung_chi'] = [];
+        }
+
+        if (is_array($giaSu['chung_chi'])) {
+            $giaSu['chung_chi'] = array_map(function ($item) {
+                if (is_array($item) && !empty($item['file_name'])) {
+                    $item['url'] = self::buildMediaUrl('certificate', $item['file_name']);
+                }
+                return $item;
+            }, $giaSu['chung_chi']);
+        }
+
+        return $giaSu;
+    }
+
     public static function index(): void
     {
         $page = (int)($_GET['page'] ?? 1);
@@ -41,11 +71,52 @@ class GiaSuController
 
         $giaSu['mon_hoc'] = GiaSu::getMonHoc($id);
         $giaSu['lop_hoc'] = GiaSu::getLopHoc($id);
+        $giaSu = self::enrichMediaFields($giaSu);
 
         echo json_encode([
             'status' => 'success',
             'data' => $giaSu
         ], JSON_UNESCAPED_UNICODE);
+    }
+
+    public static function media(string $type, string $fileName): void
+    {
+        $folder = $type === 'avatar' ? 'avatar' : ($type === 'certificate' ? 'certificates' : null);
+        if ($folder === null) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Loai tep khong hop le'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $safeName = basename($fileName);
+        if ($safeName !== $fileName) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Ten tep khong hop le'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $path = __DIR__ . '/../../public/uploads/tutors/' . $folder . '/' . $safeName;
+        if (!is_file($path)) {
+            http_response_code(404);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Khong tim thay tep'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+        header_remove('Content-Type');
+        header('Content-Type: ' . $mimeType);
+        header('Content-Length: ' . (string)filesize($path));
+        header('Cache-Control: public, max-age=2592000');
+        readfile($path);
     }
 
     public static function store(): void
@@ -142,7 +213,7 @@ class GiaSuController
 
             echo json_encode([
                 'status' => 'success',
-                'message' => 'Xóa gia sư thành công'
+                'message' => 'Đã khóa tài khoản gia sư'
             ], JSON_UNESCAPED_UNICODE);
 
         } catch (Exception $e) {

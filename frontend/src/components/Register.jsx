@@ -37,6 +37,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
   const [loading, setLoading] = useState(false)
   const [sendingOtp, setSendingOtp] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [countdown, setCountdown] = useState(0)
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState('')
@@ -64,6 +65,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
     setError('')
+    setSuccess('')
   }
 
   const startCountdown = () => {
@@ -83,6 +85,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
     }
     setSendingOtp(true)
     setError('')
+    setSuccess('')
 
     try {
       const data = await otpAPI.send(formData.email)
@@ -109,6 +112,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess('')
 
     if (formData.password !== formData.confirmPassword) {
       setError('Mật khẩu xác nhận không khớp')
@@ -142,37 +146,73 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
         return
       }
 
-      const data = await authAPI.register({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-        role: formData.role,
-        student: formData.role === 'phu_huynh' ? {
-          name: formData.studentName,
-          birthday: formData.studentBirthday,
-          grade: formData.studentGrade
-        } : null,
-        tutor: formData.role === 'gia_su' ? {
+      let payload
+      if (formData.role === 'gia_su') {
+        payload = new FormData()
+        payload.append('name', formData.name)
+        payload.append('email', formData.email)
+        payload.append('phone', formData.phone)
+        payload.append('password', formData.password)
+        payload.append('role', formData.role)
+        payload.append('tutor', JSON.stringify({
           birthday: formData.birthday,
           gender: formData.gender,
           address: formData.address,
-          avatar: formData.avatar,
           degree: formData.degree,
-          certificates: formData.certificates,
           introduction: formData.introduction,
           experience: formData.experience,
           bankAccount: formData.bankAccount,
-          bankName: formData.bankName
-        } : null
-      })
+          bankName: formData.bankName,
+        }))
+
+        if (avatarFile) {
+          payload.append('avatar', avatarFile)
+        }
+        certificateFiles.forEach((file) => payload.append('certificates[]', file))
+      } else {
+        payload = {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          role: formData.role,
+          student: {
+            name: formData.studentName,
+            birthday: formData.studentBirthday,
+            grade: formData.studentGrade
+          }
+        }
+      }
+
+      const data = await authAPI.register(payload)
 
       if (data.status === 'success') {
         clearFormData()
-        localStorage.setItem('token', data.data.token)
-        localStorage.setItem('user', JSON.stringify(data.data.user))
-        sessionStorage.setItem('auth_session_active', '1')
-        onRegisterSuccess?.(data.data)
+
+        const token = data?.data?.token
+        const user = data?.data?.user
+        const requiresApproval = Boolean(data?.data?.requires_approval)
+
+        if (token && user) {
+          localStorage.setItem('token', token)
+          localStorage.setItem('user', JSON.stringify(user))
+          sessionStorage.setItem('auth_session_active', '1')
+          onRegisterSuccess?.(data.data)
+        } else if (requiresApproval) {
+          setOtp('')
+          setOtpToken('')
+          setStep(1)
+          setFormData(defaultFormData)
+          setAvatarFile(null)
+          setAvatarPreview('')
+          setCertificateFiles([])
+          setCertificatePreviews([])
+          setSuccess('Đăng ký thành công. Hồ sơ gia sư của bạn đang chờ Admin duyệt. Vui lòng đăng nhập lại sau khi được duyệt.')
+          onSwitchToLogin?.()
+        } else {
+          setSuccess(data.message || 'Đăng ký thành công')
+          onSwitchToLogin?.()
+        }
       } else {
         setError(data.message || 'Đăng ký thất bại')
       }
@@ -254,6 +294,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
             </div>
 
             {error && <p className="text-red-500 text-center text-sm">{error}</p>}
+            {success && <p className="text-green-600 text-center text-sm">{success}</p>}
 
             <div className="flex gap-3 pt-1">
               <button
@@ -642,6 +683,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
             </div>
 
             {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
+            {success && <p className="text-green-600 text-sm mt-3">{success}</p>}
 
             {/* Submit */}
             <button

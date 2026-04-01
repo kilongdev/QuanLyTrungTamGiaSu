@@ -54,7 +54,7 @@ class PhuHuynh
     {
         return Database::queryOne(
             "SELECT phu_huynh_id as id, ho_ten as name, email, so_dien_thoai as phone, 
-                    mat_khau as password, 'phu_huynh' as role
+                    mat_khau as password, 'phu_huynh' as role, trang_thai
              FROM phu_huynh WHERE email = ?",
             [$email]
         );
@@ -64,7 +64,7 @@ class PhuHuynh
     {
         return Database::queryOne(
             "SELECT phu_huynh_id as id, ho_ten as name, email, so_dien_thoai as phone, 
-                    mat_khau as password, 'phu_huynh' as role
+                    mat_khau as password, 'phu_huynh' as role, trang_thai
              FROM phu_huynh WHERE so_dien_thoai = ?",
             [$phone]
         );
@@ -91,7 +91,7 @@ class PhuHuynh
 
     public static function update(string $id, array $data): bool
     {
-        $allowedFields = ['ho_ten', 'so_dien_thoai', 'dia_chi', 'email'];
+        $allowedFields = ['ho_ten', 'so_dien_thoai', 'dia_chi', 'email', 'trang_thai'];
         $fields = [];
         $params = [];
 
@@ -115,7 +115,7 @@ class PhuHuynh
 
     public static function delete(string $id): int
     {
-        return Database::execute("DELETE FROM phu_huynh WHERE phu_huynh_id = ?", [$id]);
+        return Database::execute("UPDATE phu_huynh SET trang_thai = 'khoa' WHERE phu_huynh_id = ?", [$id]);
     }
 
     public static function getDetails(int $userId): ?array

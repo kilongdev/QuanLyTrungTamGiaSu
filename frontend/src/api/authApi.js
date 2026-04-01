@@ -9,9 +9,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onr
  */
 async function request(endpoint, options = {}) {
     const token = localStorage.getItem('token');
+    const isFormData = options.body instanceof FormData;
     
     const headers = {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...options.headers,
     };
     
@@ -59,7 +60,7 @@ export const authAPI = {
     register: (data) => 
         request('/auth/register', {
             method: 'POST',
-            body: JSON.stringify(data),
+            body: data instanceof FormData ? data : JSON.stringify(data),
         }),
     
     /**

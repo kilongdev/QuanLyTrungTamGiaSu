@@ -9,6 +9,7 @@ require_once __DIR__ . '/../controllers/LopHocController.php';
 // Specific routes first (to avoid conflicts with parameterized routes)
 Router::post('/lophoc/create', [new LopHocController(), 'create']);
 Router::put('/lophoc/update/{id}', [new LopHocController(), 'update']);
+Router::put('/lophoc/status/{id}', [new LopHocController(), 'updateStatus']);
 Router::delete('/lophoc/delete/{id}', [new LopHocController(), 'delete']);
 
 // Routes with parameters - more specific first

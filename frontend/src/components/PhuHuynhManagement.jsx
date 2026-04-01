@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Trash2, Edit2, Eye, Search, Plus, X } from 'lucide-react'
+import { Edit2, Eye, Search, Plus, X, Lock, Unlock, AlertTriangle } from 'lucide-react'
 import { phuHuynhAPI } from '@/api/phuHuynhApi'
 import { validateParentForm } from '@/lib/validators'
 import DataPagination from '@/components/ui/DataPagination'
@@ -16,11 +16,19 @@ export default function PhuHuynhManagement() {
   const [detailModal, setDetailModal] = useState({ open: false, data: null, students: [], loading: false })
   // State cho modal chỉnh sửa
   const [editModal, setEditModal] = useState({ open: false, data: null })
-  const [editFormData, setEditFormData] = useState({ ho_ten: '', email: '', so_dien_thoai: '', dia_chi: '' })
+  const [editFormData, setEditFormData] = useState({ ho_ten: '', email: '', so_dien_thoai: '', dia_chi: '', trang_thai: 'da_duyet' })
   const [modalLoading, setModalLoading] = useState(false)
   // State cho modal thêm mới
   const [addModal, setAddModal] = useState(false)
   const [addFormData, setAddFormData] = useState({ ho_ten: '', email: '', mat_khau: '', so_dien_thoai: '', dia_chi: '' })
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    title: '',
+    message: '',
+    confirmText: 'Đồng ý',
+    confirmButtonClass: 'bg-amber-600 hover:bg-amber-700',
+    onConfirm: null
+  })
 
   // Lấy số học sinh thực tế của phụ huynh
   const fetchStudentCount = async (parentId) => {
@@ -122,9 +130,50 @@ export default function PhuHuynhManagement() {
       ho_ten: parent.ho_ten,
       email: parent.email,
       so_dien_thoai: parent.so_dien_thoai || '',
-      dia_chi: parent.dia_chi || ''
+      dia_chi: parent.dia_chi || '',
+      trang_thai: parent.trang_thai || 'da_duyet'
     })
     setEditModal({ open: true, data: parent })
+  }
+
+  const handleToggleParentLock = async (parent) => {
+    const isLocked = parent.trang_thai === 'khoa'
+    const actionText = isLocked ? 'mở khóa' : 'khóa'
+    setConfirmModal({
+      show: true,
+      title: isLocked ? 'Xác nhận mở khóa' : 'Xác nhận khóa',
+      message: `Bạn có chắc muốn ${actionText} tài khoản phụ huynh "${parent.ho_ten}"?`,
+      confirmText: isLocked ? 'Mở khóa' : 'Khóa',
+      confirmButtonClass: isLocked ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700',
+      onConfirm: async () => {
+        closeConfirmModal()
+
+        try {
+          const result = isLocked
+            ? await phuHuynhAPI.unlock(parent.phu_huynh_id)
+            : await phuHuynhAPI.lock(parent.phu_huynh_id)
+
+          if (result.status === 'success') {
+            toast.success(isLocked ? 'Đã mở khóa tài khoản phụ huynh' : 'Đã khóa tài khoản phụ huynh')
+            fetchParents(pagination.page, search)
+          } else {
+            throw new Error(result.message || `Không thể ${actionText} tài khoản`)
+          }
+        } catch (err) {
+          toast.error(err.message || `Không thể ${actionText} tài khoản phụ huynh`)
+        }
+      }
+    })
+  }
+
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      da_duyet: { label: 'Đang hoạt động', class: 'bg-green-100 text-green-800' },
+      cho_duyet: { label: 'Chờ duyệt', class: 'bg-yellow-100 text-yellow-800' },
+      khoa: { label: 'Bị khóa', class: 'bg-gray-200 text-gray-800' }
+    }
+    const s = statusMap[status] || { label: status || 'Không rõ', class: 'bg-gray-100 text-gray-700' }
+    return <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.class}`}>{s.label}</span>
   }
 
   // Xử lý submit form cập nhật
@@ -147,33 +196,6 @@ export default function PhuHuynhManagement() {
         fetchParents(pagination.page, search) // Tải lại danh sách
       } else { throw new Error(result.message || 'Cập nhật thất bại') }
     } catch (err) { toast.error('Lỗi khi cập nhật: ' + err.message) } finally { setModalLoading(false) }
-  }
-
-  // Xử lý click nút xóa
-  const handleDelete = async (parent) => {
-    // Kiểm tra phía Client trước
-    const studentCount = studentCounts[parent.phu_huynh_id] || 0
-    if (studentCount > 0) {
-      toast.warning(`Không thể xóa phụ huynh "${parent.ho_ten}" vì đang có ${studentCount} học sinh theo học.`)
-      return
-    }
-
-    if (window.confirm(`Bạn có chắc chắn muốn xóa phụ huynh "${parent.ho_ten}"? Thao tác này không thể hoàn tác.`)) {
-      try {
-        setLoading(true)
-        const result = await phuHuynhAPI.delete(parent.phu_huynh_id)
-        if (result.status === 'success') {
-          toast.success('Xóa phụ huynh thành công!')
-          fetchParents(pagination.page, search) // Tải lại danh sách
-        } else {
-          throw new Error(result.message || 'Xóa thất bại')
-        }
-      } catch (err) {
-        toast.error('Lỗi khi xóa phụ huynh: ' + err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
   }
 
   // Load dữ liệu khi component mount
@@ -211,6 +233,17 @@ export default function PhuHuynhManagement() {
   // Đóng modal
   const closeModal = () => {
     setDetailModal({ open: false, data: null, students: [], loading: false })
+  }
+
+  const closeConfirmModal = () => {
+    setConfirmModal({
+      show: false,
+      title: '',
+      message: '',
+      confirmText: 'Đồng ý',
+      confirmButtonClass: 'bg-amber-600 hover:bg-amber-700',
+      onConfirm: null
+    })
   }
 
   // Tạo avatar từ tên
@@ -281,6 +314,7 @@ export default function PhuHuynhManagement() {
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Phụ Huynh</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Điện Thoại</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Trạng thái</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Số Con</th>
                   <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Thao Tác</th>
                 </tr>
@@ -305,6 +339,9 @@ export default function PhuHuynhManagement() {
                       <p className="text-sm text-gray-700">{parent.so_dien_thoai || <span className="text-gray-400 italic">Chưa cập nhật</span>}</p>
                     </td>
                     <td className="px-6 py-4">
+                      {getStatusBadge(parent.trang_thai)}
+                    </td>
+                    <td className="px-6 py-4">
                       <span className="inline-flex items-center justify-center bg-red-100 text-red-800 text-sm font-semibold px-3 py-1 rounded-full">
                         {studentCounts[parent.phu_huynh_id] !== undefined 
                           ? studentCounts[parent.phu_huynh_id] 
@@ -327,12 +364,12 @@ export default function PhuHuynhManagement() {
                         >
                           <Edit2 size={18} />
                         </button>
-                        <button 
-                          className="p-2 text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 tooltip"
-                          title="Xóa"
-                          onClick={() => handleDelete(parent)}
+                        <button
+                          className={`p-2 rounded-lg transition-colors duration-200 tooltip ${parent.trang_thai === 'khoa' ? 'text-green-700 hover:bg-green-50' : 'text-amber-700 hover:bg-amber-50'}`}
+                          title={parent.trang_thai === 'khoa' ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
+                          onClick={() => handleToggleParentLock(parent)}
                         >
-                          <Trash2 size={18} />
+                          {parent.trang_thai === 'khoa' ? <Unlock size={18} /> : <Lock size={18} />}
                         </button>
                       </div>
                     </td>
@@ -396,6 +433,10 @@ export default function PhuHuynhManagement() {
                       <p className="text-blue-700 text-sm">Số học sinh</p>
                       <p className="font-bold text-blue-900 text-xl">{detailModal.students.length}</p>
                     </div>
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 sm:col-span-2">
+                      <p className="text-gray-600 text-sm">Trạng thái tài khoản</p>
+                      <div className="mt-1">{getStatusBadge(detailModal.data.trang_thai)}</div>
+                    </div>
                   </div>
 
                   {detailModal.students.length > 0 ? (
@@ -431,6 +472,32 @@ export default function PhuHuynhManagement() {
                 </div>
               </>
             ) : null}
+          </div>
+        </div>
+      )}
+
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden p-6 text-center">
+            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={32} className="text-amber-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">{confirmModal.title || 'Xác nhận'}</h3>
+            <p className="text-sm text-gray-600 mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={closeConfirmModal}
+                className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => confirmModal.onConfirm && confirmModal.onConfirm()}
+                className={`flex-1 py-2.5 text-white font-medium rounded-lg ${confirmModal.confirmButtonClass}`}
+              >
+                {confirmModal.confirmText}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -569,6 +636,17 @@ export default function PhuHuynhManagement() {
                     onChange={(e) => setEditFormData({ ...editFormData, dia_chi: e.target.value })}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                  <select
+                    value={editFormData.trang_thai}
+                    onChange={(e) => setEditFormData({ ...editFormData, trang_thai: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="da_duyet">Đang hoạt động</option>
+                    <option value="khoa">Bị khóa</option>
+                  </select>
                 </div>
               </div>
               <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">

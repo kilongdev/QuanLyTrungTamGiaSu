@@ -81,6 +81,18 @@ export const giaSuAPI = {
             body: JSON.stringify(data),
         }),
 
+    lock: (id) =>
+        request(`/giasu/update/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ trang_thai: 'khoa' }),
+        }),
+
+    unlock: (id) =>
+        request(`/giasu/update/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ trang_thai: 'da_duyet' }),
+        }),
+
     /**
      * Xóa gia sư
      * @param {number} id - ID gia sư

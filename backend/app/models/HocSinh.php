@@ -16,7 +16,7 @@ class HocSinh
         $params[] = $offset;
 
         $data = Database::query(
-            "SELECT hs.*, ph.ho_ten as phu_huynh_ten, ph.so_dien_thoai as phu_huynh_sdt
+            "SELECT hs.*, ph.ho_ten as phu_huynh_ten, ph.so_dien_thoai as phu_huynh_sdt, ph.trang_thai as phu_huynh_trang_thai
              FROM hoc_sinh hs
              LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
              $where 

@@ -125,28 +125,6 @@ class PhuHuynhController
     public static function destroy(string $id): void
     {
         try {
-            // Kiểm tra xem phụ huynh có học sinh không trước khi xóa
-            $children = HocSinh::getByPhuHuynhId($id);
-            if (!empty($children)) {
-                http_response_code(400);
-                echo json_encode([
-                    'status' => 'error',
-                    'message' => 'Không thể xóa phụ huynh vì đang có học sinh liên kết.'
-                ], JSON_UNESCAPED_UNICODE);
-                return;
-            }
-
-            // Kiểm tra xem phụ huynh có đánh giá nào không
-            if (DanhGia::hasRatingsByPhuHuynh($id)) {
-                http_response_code(400);
-                echo json_encode([
-                    'status' => 'error',
-                    'message' => 'Không thể xóa phụ huynh vì đã có đánh giá gia sư liên quan.'
-                ], JSON_UNESCAPED_UNICODE);
-                return;
-            }
-
-
             $affected = PhuHuynh::delete($id);
             
             if ($affected === 0) {
@@ -160,7 +138,7 @@ class PhuHuynhController
 
             echo json_encode([
                 'status' => 'success',
-                'message' => 'Xóa phụ huynh thành công'
+                'message' => 'Đã khóa tài khoản phụ huynh'
             ], JSON_UNESCAPED_UNICODE);
 
         } catch (Exception $e) {

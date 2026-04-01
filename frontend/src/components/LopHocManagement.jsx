@@ -152,7 +152,7 @@ export default function LopHocManagement() {
     const confirmDelete = confirm(
       `Bạn có chắc chắn muốn xóa học sinh "${student?.name || 'N/A'}" khỏi lớp này?`
     )
-    
+
     if (!confirmDelete) return
 
     try {
@@ -348,20 +348,6 @@ export default function LopHocManagement() {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
-      return
-    }
-    try {
-      await lopHocAPI.delete(id)
-      toast.success('Xóa lớp học thành công!')
-      fetchLopHocs()
-    } catch (error) {
-      console.error('Lỗi khi xóa lớp học:', error)
-      toast.error(error.message || 'Không thể xóa lớp học này')
-    }
-  }
-
   const resetForm = () => {
     setFormData({
       mon_hoc_id: '',
@@ -431,6 +417,21 @@ export default function LopHocManagement() {
       'tu_choi': 'bg-red-100 text-red-700 border border-red-400 font-bold shadow-sm'
     }
     return colors[trangThai] || 'bg-gray-100 text-gray-700'
+  }
+
+  const handleDelete = async (id) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
+      return
+    }
+
+    try {
+      await lopHocAPI.delete(id)
+      toast.success('Xóa lớp học thành công!')
+      fetchLopHocs()
+    } catch (error) {
+      console.error('Lỗi khi xóa lớp học:', error)
+      toast.error(error.message || 'Không thể xóa lớp học này')
+    }
   }
 
   const toAlphabetSuffix = (index) => {
@@ -587,7 +588,7 @@ export default function LopHocManagement() {
                               <div className="absolute top-9 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
                                 <button
                                   onClick={() => {
-                                    handleEdit(lopHoc)
+                                    navigate(`/dashboard/lophoc/${lopHoc.lop_hoc_id}/edit`)
                                     setShowSettings(null)
                                   }}
                                   className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-2 border-b border-gray-100"
@@ -597,12 +598,7 @@ export default function LopHocManagement() {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    // Set data and switch to attendance tab
-                                    setEditingId(lopHoc.lop_hoc_id)
-                                    fetchClassStudents(lopHoc.lop_hoc_id)
-                                    fetchAttendanceByClass(lopHoc.lop_hoc_id)
-                                    setCurrentViewTab('attendance')
-                                    setShowModal(true)
+                                    navigate(`/dashboard/lophoc/${lopHoc.lop_hoc_id}/attendance`)
                                     setShowSettings(null)
                                   }}
                                   className="w-full text-left px-3 py-2 text-xs text-green-600 hover:bg-green-50 flex items-center gap-2 border-b border-gray-100"
@@ -894,8 +890,8 @@ export default function LopHocManagement() {
                         <option value="dang_hoc">Đang học</option>
                         <option value="ket_thuc">Kết thúc</option>
                         <option value="dong">Đóng</option>
-                        {/* THÊM OPTION TRẠNG THÁI MỚI VÀO ĐÂY */}
                         <option value="cho_gia_su">Chờ gia sư xác nhận</option>
+                        <option value="tu_choi">Gia sư từ chối</option>
                       </select>
                     </div>
 
@@ -1331,6 +1327,7 @@ export default function LopHocManagement() {
           </div>
         </div>
       )}
+
     </div>
   )
 }
