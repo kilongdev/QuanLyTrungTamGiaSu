@@ -1,41 +1,41 @@
-import { useState } from 'react'
-import DashboardSidebar from './DashboardSidebar'
-import DashboardNavbar from './DashboardNavbar'
-import DashboardFooter from './DashboardFooter'
-import EditProfileModal from '../components/EditProfileModal'
+import { useState } from "react";
+import DashboardSidebar from "./DashboardSidebar";
+import DashboardNavbar from "./DashboardNavbar";
+import DashboardFooter from "./DashboardFooter";
+import EditProfileModal from "../components/EditProfileModal";
 
-export default function DashboardLayout({ 
-  children, 
-  user, 
+export default function DashboardLayout({
+  children,
+  user,
   onLogout,
   showEditProfile,
   setShowEditProfile,
-  menuItems, 
-  activeItem, 
+  menuItems,
+  activeItem,
   onMenuClick,
-  pageTitle 
+  pageTitle,
 }) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [hoverExpanded, setHoverExpanded] = useState(false)
-  const [modalTab, setModalTab] = useState('profile')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [hoverExpanded, setHoverExpanded] = useState(false);
 
-  // Sidebar hiển thị mở rộng khi không collapsed HOẶC khi hover
-  const isSidebarExpanded = !sidebarCollapsed || hoverExpanded
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  const [modalTab, setModalTab] = useState("profile");
 
   const handleEditProfile = () => {
-    setModalTab('profile')
-    setShowEditProfile(true)
-  }
+    setModalTab("profile");
+    setShowEditProfile(true);
+  };
 
   const handleChangePassword = () => {
-    setModalTab('password')
-    setShowEditProfile(true)
-  }
+    setModalTab("password");
+    setShowEditProfile(true);
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Sidebar */}
-      <DashboardSidebar 
+      <DashboardSidebar
         menuItems={menuItems}
         activeItem={activeItem}
         onMenuClick={onMenuClick}
@@ -44,38 +44,48 @@ export default function DashboardLayout({
         hoverExpanded={hoverExpanded}
         onHoverEnter={() => sidebarCollapsed && setHoverExpanded(true)}
         onHoverLeave={() => setHoverExpanded(false)}
+        isMobileOpen={isMobileOpen}
+        onCloseMobile={() => setIsMobileOpen(false)}
       />
 
-      {/* Main Content Area */}
+      {/* Main */}
       <div className="flex-1 flex flex-col">
         {/* Navbar */}
-        <DashboardNavbar 
-          user={user} 
+        <DashboardNavbar
+          user={user}
           onLogout={onLogout}
           onEditProfile={handleEditProfile}
           onChangePassword={handleChangePassword}
           pageTitle={pageTitle}
           sidebarCollapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+          onOpenMobileSidebar={() => setIsMobileOpen(true)}
+          isMobileOpen={isMobileOpen}
+          onCloseMobile={() => setIsMobileOpen(false)}
         />
 
         {/* Content */}
-        <main className={`flex-1 p-4 mt-16 transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'} bg-gray-100 rounded-tl-3xl min-h-[calc(100vh-64px)]`}>
+        <main
+          className={`
+            flex-1 p-4 mt-16 bg-gray-100 transition-all duration-300
+            ${sidebarCollapsed ? "md:ml-20" : "md:ml-64"}
+            ml-0
+          `}
+        >
           {children}
         </main>
 
-        {/* Footer */}
         <DashboardFooter sidebarCollapsed={sidebarCollapsed} />
       </div>
 
       {/* Modal */}
       {showEditProfile && (
-        <EditProfileModal 
+        <EditProfileModal
           user={user}
           onClose={() => setShowEditProfile(false)}
           initialTab={modalTab}
         />
       )}
     </div>
-  )
+  );
 }

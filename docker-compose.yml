@@ -1,0 +1,20 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quanlytrungtamgiasu_app
+    ports:
+      - "80:80"
+      - "3307:3306"
+    volumes:
+      - ./:/var/www/html/QuanLyTrungTamGiaSu
+      - qlyttgsu_db_data:/var/lib/mysql
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      DB_NAME: quanlytrungtamgiasu
+    restart: unless-stopped
+
+volumes:
+  qlyttgsu_db_data:
+    name: qlyttgsu_db_data
