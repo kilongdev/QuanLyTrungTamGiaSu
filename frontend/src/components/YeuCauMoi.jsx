@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Briefcase, DollarSign, Clock, GraduationCap, CheckCircle, XCircle, Info, Calendar } from "lucide-react";
+import { Briefcase, DollarSign, Clock, GraduationCap, CheckCircle, XCircle, Info, Calendar, CalendarRange, Users } from "lucide-react";
 import { yeuCauAPI } from "@/api/yeucauApi"; 
 import { toast } from "sonner";
 
@@ -7,7 +7,6 @@ export default function YeuCauMoi({ user }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State Modal Xác nhận
   const [confirmModal, setConfirmModal] = useState({ open: false, type: "", data: null });
 
   useEffect(() => {
@@ -33,6 +32,13 @@ export default function YeuCauMoi({ user }) {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
   };
 
+  // Format ngày YYYY-MM-DD sang DD/MM/YYYY
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "Chưa xác định";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('vi-VN');
+  }
+
   const handleResponse = async (id, statusType) => {
     try {
       const payload = {
@@ -43,12 +49,14 @@ export default function YeuCauMoi({ user }) {
       
       const res = await yeuCauAPI.updateStatus(id, payload);
       if (res.status === "success") {
-        toast.success(statusType === "da_duyet" ? "Nhận lớp thành công! Lớp đã được thêm vào danh sách của bạn." : "Đã từ chối yêu cầu.");
+        toast.success(statusType === "da_duyet" ? "Nhận lớp thành công! Lớp đã được thêm vào Lịch dạy của bạn." : "Đã từ chối lời mời nhận lớp.");
         setConfirmModal({ open: false, type: "", data: null });
-        fetchRequests(); // Tải lại danh sách
+        fetchRequests(); 
       }
     } catch (error) {
-      toast.error("Lỗi: " + error.message);
+      // Thông báo lỗi cực xịn nếu bị TRÙNG LỊCH (Lấy từ message của Backend)
+      toast.error(error.response?.data?.message || error.message || "Có lỗi xảy ra, vui lòng thử lại.");
+      setConfirmModal({ open: false, type: "", data: null });
     }
   };
 
@@ -61,7 +69,7 @@ export default function YeuCauMoi({ user }) {
         <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
           <Briefcase className="text-blue-600" size={28} /> Yêu cầu Nhận lớp
         </h2>
-        <p className="text-gray-500 mt-2">Danh sách các lớp học Trung tâm đề xuất cho bạn. Vui lòng phản hồi sớm!</p>
+        <p className="text-gray-500 mt-2">Danh sách các lớp học Trung tâm đề xuất cho bạn. Vui lòng kiểm tra kỹ lịch học trước khi nhận!</p>
       </div>
 
       {requests.length === 0 ? (
@@ -76,11 +84,11 @@ export default function YeuCauMoi({ user }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {requests.map((req) => (
             <div key={req.yeu_cau_id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col relative">
-              {/* Badge Mới */}
               <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg shadow-sm z-10 animate-pulse">
                 NEW
               </div>
 
+              {/* CARD HEADER */}
               <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50">
                 <div className="flex items-start gap-3">
                   <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shrink-0 mt-1">
@@ -96,12 +104,15 @@ export default function YeuCauMoi({ user }) {
                 </div>
               </div>
 
+              {/* CARD BODY */}
               <div className="p-6 space-y-4 flex-1">
+                {/* Lời nhắn Admin */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                   <p className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1 mb-2"><Info size={14}/> Lời nhắn từ Admin:</p>
                   <p className="text-sm text-gray-800 font-medium italic">"{req.noi_dung}"</p>
                 </div>
 
+                {/* Khối Thông tin Thu nhập & Thời lượng */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-green-50 rounded-lg text-green-600 shrink-0"><DollarSign size={18} /></div>
@@ -113,15 +124,40 @@ export default function YeuCauMoi({ user }) {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-purple-50 rounded-lg text-purple-600 shrink-0"><Clock size={18} /></div>
+                    <div className="p-2 bg-purple-50 rounded-lg text-purple-600 shrink-0"><Users size={18} /></div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium mb-0.5">Thời lượng</p>
-                      <p className="font-bold text-gray-900 text-sm">{req.so_buoi_hoc} buổi</p>
+                      <p className="text-xs text-gray-500 font-medium mb-0.5">Quy mô lớp</p>
+                      <p className="font-bold text-gray-900 text-sm">Tối đa {req.so_luong_toi_da} HS</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Khối Lịch học Chi tiết (MỚI THÊM) */}
+                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-3">
+                  <p className="text-xs font-bold text-blue-800 uppercase flex items-center gap-1"><CalendarRange size={14}/> Thông tin Lịch dạy:</p>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="p-1.5 bg-white rounded text-gray-500 shrink-0 shadow-sm"><Clock size={14} /></div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium mb-0.5">Thời gian biểu:</p>
+                      <p className="font-bold text-blue-900 text-sm">{req.lich_hoc_du_kien || 'Chưa xếp lịch'}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-blue-100/50">
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium mb-0.5">Ngày bắt đầu:</p>
+                      <p className="font-semibold text-gray-800 text-sm">{formatDate(req.ngay_bat_dau)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium mb-0.5">Ngày kết thúc:</p>
+                      <p className="font-semibold text-gray-800 text-sm">{formatDate(req.ngay_ket_thuc)}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* CARD FOOTER (NÚT BẤM) */}
               <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-3">
                 <button 
                   onClick={() => setConfirmModal({ open: true, type: "tu_choi", data: req })}
@@ -153,7 +189,7 @@ export default function YeuCauMoi({ user }) {
             </h3>
             <p className="text-gray-500 text-sm mb-6">
               {confirmModal.type === 'da_duyet' 
-                ? 'Lớp học này sẽ được thêm vào danh sách quản lý của bạn.' 
+                ? 'Hệ thống sẽ kiểm tra trùng lịch. Nếu hợp lệ, lớp học này sẽ được thêm vào Lịch dạy của bạn.' 
                 : 'Bạn sẽ bỏ qua lớp học này, hệ thống sẽ thông báo lại cho Admin.'}
             </p>
             <div className="flex gap-3">

@@ -104,7 +104,7 @@ class DangKyLop {
     public static function getAll() {
         $sql = "SELECT dkl.dang_ky_id, dkl.hoc_sinh_id, dkl.lop_hoc_id, dkl.trang_thai, dkl.ngay_dang_ky, dkl.ngay_duyet,
                        hs.ho_ten AS ten_hoc_sinh, hs.phu_huynh_id, ph.ho_ten AS ten_phu_huynh,
-                       lh.ten_lop, lh.gia_moi_buoi, lh.gia_toan_khoa, lh.so_buoi_hoc, lh.khoi_lop, lh.loai_chi_tra, lh.gia_tri_chi_tra,
+                       lh.ten_lop, lh.gia_moi_buoi, lh.gia_toan_khoa, lh.so_buoi_hoc, lh.khoi_lop, lh.loai_chi_tra, lh.gia_tri_chi_tra, lh.ngay_ket_thuc,
                        gs.ho_ten AS ten_gia_su,
                        mh.ten_mon_hoc,
                        (SELECT GROUP_CONCAT(DISTINCT CONCAT(
@@ -114,7 +114,8 @@ class DangKyLop {
                             END,
                             ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
                         ) SEPARATOR ', ') 
-                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien
+                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien,
+                       (SELECT MIN(ngay_hoc) FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS ngay_bat_dau
                 FROM dang_ky_lop dkl
                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
                 LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
@@ -128,7 +129,7 @@ class DangKyLop {
     public static function getByPhuHuynh($phu_huynh_id) {
         $sql = "SELECT dkl.dang_ky_id, dkl.hoc_sinh_id, dkl.lop_hoc_id, dkl.trang_thai, dkl.ngay_dang_ky, dkl.ngay_duyet,
                        hs.ho_ten AS ten_hoc_sinh, hs.phu_huynh_id, ph.ho_ten AS ten_phu_huynh,
-                       lh.ten_lop, lh.gia_moi_buoi, lh.gia_toan_khoa, lh.so_buoi_hoc, lh.khoi_lop, lh.loai_chi_tra, lh.gia_tri_chi_tra,
+                       lh.ten_lop, lh.gia_moi_buoi, lh.gia_toan_khoa, lh.so_buoi_hoc, lh.khoi_lop, lh.loai_chi_tra, lh.gia_tri_chi_tra, lh.ngay_ket_thuc,
                        gs.ho_ten AS ten_gia_su,
                        mh.ten_mon_hoc,
                        (SELECT GROUP_CONCAT(DISTINCT CONCAT(
@@ -138,15 +139,22 @@ class DangKyLop {
                             END,
                             ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
                         ) SEPARATOR ', ') 
-                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien
+                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien,
+                       (SELECT MIN(ngay_hoc) FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS ngay_bat_dau
                 FROM dang_ky_lop dkl
                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
                 LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
                 JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
                 LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id
-                WHERE hs.phu_huynh_id = :phu_huynh_id AND dkl.trang_thai = 'da_duyet'
-                ORDER BY dkl.ngay_dang_ky DESC";
+                WHERE hs.phu_huynh_id = :phu_huynh_id 
+                ORDER BY 
+                    CASE dkl.trang_thai 
+                        WHEN 'cho_duyet' THEN 1 
+                        WHEN 'da_duyet' THEN 2 
+                        ELSE 3 
+                    END, 
+                    dkl.ngay_dang_ky DESC";
         return Database::query($sql, [':phu_huynh_id' => $phu_huynh_id]);
     }
 

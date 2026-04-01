@@ -166,4 +166,98 @@ class GiaSu
             [$userId]
         );
     }
+
+    public static function getDashboardStats(string $giaSuId): array
+    {
+        // 1. Số lớp (Tính cả những lớp vừa bấm nhận xong 'sap_mo' và đang dạy 'dang_hoc')
+        $lopCount = Database::queryOne(
+            "SELECT COUNT(*) as count FROM lop_hoc 
+             WHERE gia_su_id = ? AND trang_thai IN ('dang_hoc', 'sap_mo')", 
+            [$giaSuId]
+        )['count'] ?? 0;
+
+        // 2. Số học sinh (Đếm học sinh đã duyệt trong các lớp gia sư đang phụ trách)
+        $hsCount = Database::queryOne(
+            "SELECT COUNT(DISTINCT dk.hoc_sinh_id) as count 
+             FROM dang_ky_lop dk 
+             JOIN lop_hoc l ON dk.lop_hoc_id = l.lop_hoc_id 
+             WHERE l.gia_su_id = ? AND dk.trang_thai = 'da_duyet' AND l.trang_thai IN ('dang_hoc', 'sap_mo')", 
+            [$giaSuId]
+        )['count'] ?? 0;
+
+        // 3. Điểm đánh giá trung bình
+        $rating = Database::queryOne(
+            "SELECT diem_danh_gia_trung_binh FROM gia_su WHERE gia_su_id = ?", 
+            [$giaSuId]
+        )['diem_danh_gia_trung_binh'] ?? 0;
+
+        // 4. Số lượng Yêu cầu mới (SỬA LẠI: Đếm chính xác từ bảng yeu_cau với trạng thái chờ)
+        $yeuCauCount = Database::queryOne(
+            "SELECT COUNT(*) as count 
+             FROM yeu_cau 
+             WHERE gia_su_id = ? AND trang_thai IN ('cho_duyet', 'dang_xu_ly')", 
+            [$giaSuId]
+        )['count'] ?? 0;
+
+        // 5. Thu nhập tháng này (Đã thanh toán)
+        $currentMonth = (int)date('m');
+        $currentYear = (int)date('Y');
+        $thuNhapThangNay = Database::queryOne(
+            "SELECT SUM(tien_tra_gia_su) as total FROM luong_gia_su 
+             WHERE gia_su_id = ? AND thang = ? AND nam = ? AND trang_thai_thanh_toan = 'da_thanh_toan'",
+            [$giaSuId, $currentMonth, $currentYear]
+        )['total'] ?? 0;
+
+        // 6. Thu nhập đang chờ thanh toán
+        $thuNhapCho = Database::queryOne(
+            "SELECT SUM(tien_tra_gia_su) as total FROM luong_gia_su 
+             WHERE gia_su_id = ? AND trang_thai_thanh_toan = 'chua_thanh_toan'",
+            [$giaSuId]
+        )['total'] ?? 0;
+
+        // 7. Dữ liệu biểu đồ thu nhập 6 tháng
+        $thuNhapChart = Database::query(
+            "SELECT thang, nam, SUM(tien_tra_gia_su) as total 
+             FROM luong_gia_su 
+             WHERE gia_su_id = ? AND trang_thai_thanh_toan = 'da_thanh_toan' 
+             GROUP BY nam, thang 
+             ORDER BY nam DESC, thang DESC 
+             LIMIT 6",
+            [$giaSuId]
+        ) ?: [];
+
+        // 8. Lịch dạy ngày hôm nay
+        date_default_timezone_set('Asia/Ho_Chi_Minh');
+        $today = date('Y-m-d');
+        
+        $lichHomNay = Database::query(
+            "SELECT lh.lich_hoc_id, lh.gio_bat_dau, lh.gio_ket_thuc, lh.trang_thai, 
+                    l.ten_lop, mh.ten_mon_hoc, 
+                    -- Gom tên các học sinh trong cùng 1 lớp lại thành chuỗi (Ví dụ: Kim Long, Học sinh 2)
+                    GROUP_CONCAT(hs.ho_ten SEPARATOR ', ') as ten_hoc_sinh
+             FROM lich_hoc lh
+             JOIN lop_hoc l ON lh.lop_hoc_id = l.lop_hoc_id
+             LEFT JOIN mon_hoc mh ON l.mon_hoc_id = mh.mon_hoc_id
+             LEFT JOIN dang_ky_lop dk ON l.lop_hoc_id = dk.lop_hoc_id AND dk.trang_thai = 'da_duyet'
+             LEFT JOIN hoc_sinh hs ON dk.hoc_sinh_id = hs.hoc_sinh_id
+             WHERE l.gia_su_id = ? 
+               AND lh.ngay_hoc = ? 
+               AND l.trang_thai IN ('dang_hoc', 'sap_mo')
+               AND lh.trang_thai != 'da_huy' -- Lọc bỏ những buổi đã bị hủy
+             GROUP BY lh.lich_hoc_id, lh.gio_bat_dau, lh.gio_ket_thuc, lh.trang_thai, l.ten_lop, mh.ten_mon_hoc
+             ORDER BY lh.gio_bat_dau ASC",
+            [$giaSuId, $today]
+        ) ?: [];
+        
+        return [
+            'total_lop' => (int)$lopCount,
+            'total_hoc_sinh' => (int)$hsCount,
+            'avg_rating' => (float)$rating,
+            'total_yeu_cau_moi' => (int)$yeuCauCount,
+            'thu_nhap_thang_nay' => (float)$thuNhapThangNay,
+            'thu_nhap_cho' => (float)$thuNhapCho,
+            'lich_hom_nay' => $lichHomNay,
+            'thu_nhap_chart' => $thuNhapChart
+        ];
+    }
 }

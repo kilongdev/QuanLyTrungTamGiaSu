@@ -28,8 +28,8 @@ export default function LopHocManagement() {
   const [classStudents, setClassStudents] = useState([])
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [attendance, setAttendance] = useState([])
-  const [attendanceForToday, setAttendanceForToday] = useState({}) // Track status for each student
-  const [showAttendanceHistory, setShowAttendanceHistory] = useState(false) // Toggle between form and history
+  const [attendanceForToday, setAttendanceForToday] = useState({})
+  const [showAttendanceHistory, setShowAttendanceHistory] = useState(false)
   const [savingAttendance, setSavingAttendance] = useState(false)
   const [createWithSchedule, setCreateWithSchedule] = useState(true)
   const [scheduleForm, setScheduleForm] = useState({
@@ -105,7 +105,7 @@ export default function LopHocManagement() {
       const response = await hocSinhAPI.getAll({ page: 1, limit: 1000 })
       const students = response.data || []
       setAllHocSinh(students
-        .filter(hs => hs && hs.hoc_sinh_id) // Filter out invalid items
+        .filter(hs => hs && hs.hoc_sinh_id)
         .map(hs => ({
           id: hs.hoc_sinh_id,
           code: `HS${hs.hoc_sinh_id}`,
@@ -118,28 +118,23 @@ export default function LopHocManagement() {
 
   const fetchAttendanceByClass = async (lopHocId) => {
     try {
-      // Lấy danh sách lịch học và điểm danh của lớp
       const response = await diemDanhAPI.getByClass(lopHocId)
       const data = response.data || []
       setAttendance(data)
     } catch (error) {
       console.error('Lỗi khi tải điểm danh:', error)
-      // Fallback: để trống nếu API chưa sẵn sàng
       setAttendance([])
     }
   }
 
   const addStudentToClass = async (lopHocId, hocSinhId) => {
     try {
-      // Giả sử có API để thêm học sinh vào lớp
-      // Hoặc lưu thông qua dang_ky_lop
       await lopHocAPI.addStudent(lopHocId, hocSinhId)
       const student = allHocSinh.find(s => s.id === hocSinhId)
       setClassStudents([...classStudents, student])
       toast.success('Thêm học sinh vào lớp thành công')
     } catch (error) {
       console.error('Lỗi khi thêm học sinh:', error)
-      // Fallback: Thêm local nếu API chưa sẵn sàng
       if (error.status === 404) {
         const student = allHocSinh.find(s => s.id === hocSinhId)
         if (student && !classStudents.find(s => s.id === hocSinhId)) {
@@ -166,7 +161,6 @@ export default function LopHocManagement() {
       toast.success('Xóa học sinh khỏi lớp thành công')
     } catch (error) {
       console.error('Lỗi khi xóa học sinh:', error)
-      // Fallback: Xóa local nếu API chưa sẵn sàng
       if (error.status === 404) {
         setClassStudents(classStudents.filter(s => s.id !== studentId))
         toast.success('Xóa học sinh thành công')
@@ -176,17 +170,15 @@ export default function LopHocManagement() {
     }
   }
 
-  // Initialize attendance form for today
   const initializeAttendanceForm = () => {
     const initialStatus = {}
     classStudents.forEach(student => {
-      initialStatus[student.id] = 'co_mat' // Default: present
+      initialStatus[student.id] = 'co_mat'
     })
     setAttendanceForToday(initialStatus)
     setShowAttendanceHistory(false)
   }
 
-  // Update attendance status for a student
   const updateAttendanceStatus = (studentId, status) => {
     setAttendanceForToday({
       ...attendanceForToday,
@@ -194,14 +186,12 @@ export default function LopHocManagement() {
     })
   }
 
-  // Save attendance for today
   const handleSaveAttendanceForToday = async () => {
     if (!editingId) {
       toast.error('Lỗi: Không tìm thấy ID lớp học')
       return
     }
 
-    // Build danh_sach array
     const danh_sach = Object.entries(attendanceForToday).map(([hoc_sinh_id, tinh_trang]) => ({
       hoc_sinh_id: parseInt(hoc_sinh_id),
       tinh_trang: tinh_trang
@@ -216,9 +206,7 @@ export default function LopHocManagement() {
       setSavingAttendance(true)
       await diemDanhAPI.saveAttendanceForToday(editingId, danh_sach)
       toast.success('Đã lưu điểm danh cho hôm nay!')
-      // Reload attendance data
       fetchAttendanceByClass(editingId)
-      // Reset form
       setAttendanceForToday({})
       setShowAttendanceHistory(true)
     } catch (error) {
@@ -281,7 +269,6 @@ export default function LopHocManagement() {
             toast.warning('Vui lòng chọn ngày bắt đầu và ít nhất 1 ngày học trong tuần')
             return
           }
-
           if (!scheduleForm.gio_bat_dau || !scheduleForm.gio_ket_thuc || scheduleForm.gio_bat_dau >= scheduleForm.gio_ket_thuc) {
             toast.warning('Giờ bắt đầu/kết thúc của lịch học không hợp lệ')
             return
@@ -295,15 +282,6 @@ export default function LopHocManagement() {
           if (!createdClassId) {
             throw new Error('Không lấy được ID lớp vừa tạo để tạo lịch học')
           }
-
-          if (!scheduleForm.ngay_bat_dau || scheduleForm.ngay_trong_tuan.length === 0) {
-            throw new Error('Vui lòng nhập đầy đủ lịch học định kỳ trước khi tạo lớp')
-          }
-
-          if (!scheduleForm.gio_bat_dau || !scheduleForm.gio_ket_thuc || scheduleForm.gio_bat_dau >= scheduleForm.gio_ket_thuc) {
-            throw new Error('Giờ học không hợp lệ')
-          }
-
           const thoiGianTungNgay = {}
           scheduleForm.ngay_trong_tuan.forEach((thu) => {
             thoiGianTungNgay[thu] = {
@@ -311,7 +289,6 @@ export default function LopHocManagement() {
               gio_ket_thuc: scheduleForm.gio_ket_thuc
             }
           })
-
           await lichHocAPI.create({
             lop_hoc_id: createdClassId,
             tao_chu_ky: true,
@@ -320,7 +297,6 @@ export default function LopHocManagement() {
             thoi_gian_tung_ngay: thoiGianTungNgay
           })
         }
-
         toast.success('Thêm lớp học thành công!')
       }
       
@@ -348,9 +324,7 @@ export default function LopHocManagement() {
       trang_thai: lopHoc.trang_thai || 'sap_mo',
       ngay_ket_thuc: lopHoc.ngay_ket_thuc ? lopHoc.ngay_ket_thuc.split(' ')[0] : ''
     })
-    // Load học sinh của lớp từ database
     fetchClassStudents(lopHoc.lop_hoc_id)
-    // Load điểm danh
     fetchAttendanceByClass(lopHoc.lop_hoc_id)
     setCurrentViewTab('info')
     setShowModal(true)
@@ -358,12 +332,10 @@ export default function LopHocManagement() {
 
   const fetchClassStudents = async (lopHocId) => {
     try {
-      // Lấy danh sách học sinh đã đăng ký lớp này
-      // Sử dụng API để lấy dữ liệu từ dang_ky_lop và hoc_sinh
       const response = await lopHocAPI.getStudentsByClass(lopHocId)
       const students = response.data || []
       const mappedStudents = students
-        .filter(item => item && item.hoc_sinh_id) // Filter out invalid items
+        .filter(item => item && item.hoc_sinh_id)
         .map(item => ({
           id: item.hoc_sinh_id,
           code: item.hoc_sinh_id ? `HS${item.hoc_sinh_id}` : 'N/A',
@@ -372,7 +344,6 @@ export default function LopHocManagement() {
       setClassStudents(mappedStudents)
     } catch (error) {
       console.error('Lỗi khi tải danh sách học sinh lớp:', error)
-      // Fallback: để trống nếu API chưa sẵn sàng
       setClassStudents([])
     }
   }
@@ -381,7 +352,6 @@ export default function LopHocManagement() {
     if (!confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
       return
     }
-
     try {
       await lopHocAPI.delete(id)
       toast.success('Xóa lớp học thành công!')
@@ -436,12 +406,17 @@ export default function LopHocManagement() {
     return giaSu ? giaSu.ho_ten : 'N/A'
   }
 
+  // =========================================
+  // ĐÃ CẬP NHẬT TRẠNG THÁI 'cho_gia_su' Ở ĐÂY
+  // =========================================
   const getTrangThaiLabel = (trangThai) => {
     const labels = {
       'sap_mo': 'Sắp mở',
       'dang_hoc': 'Đang học',
       'ket_thuc': 'Kết thúc',
-      'dong': 'Đóng'
+      'dong': 'Đóng',
+      'cho_gia_su': '⏳ Đang chờ Gia sư',
+      'tu_choi': '❌ Gia sư từ chối'
     }
     return labels[trangThai] || trangThai
   }
@@ -450,8 +425,10 @@ export default function LopHocManagement() {
     const colors = {
       'sap_mo': 'bg-blue-100 text-blue-700',
       'dang_hoc': 'bg-green-100 text-green-700',
-      'ket_thuc': 'bg-yellow-100 text-yellow-700',
-      'dong': 'bg-red-100 text-red-700'
+      'ket_thuc': 'bg-gray-100 text-gray-700',
+      'dong': 'bg-red-100 text-red-700',
+      'cho_gia_su': 'bg-orange-100 text-orange-700 border border-orange-300 animate-pulse',
+      'tu_choi': 'bg-red-100 text-red-700 border border-red-400 font-bold shadow-sm'
     }
     return colors[trangThai] || 'bg-gray-100 text-gray-700'
   }
@@ -610,7 +587,7 @@ export default function LopHocManagement() {
                               <div className="absolute top-9 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
                                 <button
                                   onClick={() => {
-                                    navigate(`/dashboard/lophoc/${lopHoc.lop_hoc_id}/edit`)
+                                    handleEdit(lopHoc)
                                     setShowSettings(null)
                                   }}
                                   className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-2 border-b border-gray-100"
@@ -620,7 +597,12 @@ export default function LopHocManagement() {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    navigate(`/dashboard/lophoc/${lopHoc.lop_hoc_id}/attendance`)
+                                    // Set data and switch to attendance tab
+                                    setEditingId(lopHoc.lop_hoc_id)
+                                    fetchClassStudents(lopHoc.lop_hoc_id)
+                                    fetchAttendanceByClass(lopHoc.lop_hoc_id)
+                                    setCurrentViewTab('attendance')
+                                    setShowModal(true)
                                     setShowSettings(null)
                                   }}
                                   className="w-full text-left px-3 py-2 text-xs text-green-600 hover:bg-green-50 flex items-center gap-2 border-b border-gray-100"
@@ -853,7 +835,6 @@ export default function LopHocManagement() {
                     />
                   </div>
 
-                  {/* Hiển thị giá mỗi buổi tính tự động */}
                   {formData.gia_toan_khoa && formData.so_buoi_hoc && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                       <p className="text-sm text-gray-600 font-medium">Giá mỗi buổi (tính tự động):</p>
@@ -913,6 +894,8 @@ export default function LopHocManagement() {
                         <option value="dang_hoc">Đang học</option>
                         <option value="ket_thuc">Kết thúc</option>
                         <option value="dong">Đóng</option>
+                        {/* THÊM OPTION TRẠNG THÁI MỚI VÀO ĐÂY */}
+                        <option value="cho_gia_su">Chờ gia sư xác nhận</option>
                       </select>
                     </div>
 
