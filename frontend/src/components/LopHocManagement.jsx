@@ -31,6 +31,7 @@ export default function LopHocManagement() {
   const [attendanceForToday, setAttendanceForToday] = useState({})
   const [showAttendanceHistory, setShowAttendanceHistory] = useState(false)
   const [savingAttendance, setSavingAttendance] = useState(false)
+  
   const [createWithSchedule, setCreateWithSchedule] = useState(true)
   const [scheduleForm, setScheduleForm] = useState({
     ngay_bat_dau: '',
@@ -219,10 +220,8 @@ export default function LopHocManagement() {
 
   const calculatePricePerSession = (totalPrice, sessions, paymentType, paymentValue) => {
     if (!totalPrice || !sessions || sessions <= 0 || !paymentValue) return 0
-    
     const total = parseInt(totalPrice) || 0
     const buois = parseInt(sessions) || 0
-    
     if (paymentType === 'phan_tram') {
       const percent = parseInt(paymentValue) || 0
       return Math.round((total * percent / 100) / buois)
@@ -253,6 +252,25 @@ export default function LopHocManagement() {
       setFormData((prev) => ({ ...prev, ten_lop: autoName }))
     }
 
+    if (!editingId && createWithSchedule) {
+      if (!scheduleForm.ngay_bat_dau || scheduleForm.ngay_trong_tuan.length === 0) {
+        toast.warning('Vui lòng chọn ngày bắt đầu và ít nhất 1 ngày học trong tuần')
+        return
+      }
+      if (!scheduleForm.gio_bat_dau || !scheduleForm.gio_ket_thuc || scheduleForm.gio_bat_dau >= scheduleForm.gio_ket_thuc) {
+        toast.warning('Giờ bắt đầu/kết thúc của lịch học không hợp lệ')
+        return
+      }
+      
+      payload.thoi_gian_du_kien = {
+        ngay_trong_tuan: scheduleForm.ngay_trong_tuan,
+        gio_bat_dau: scheduleForm.gio_bat_dau,
+        gio_ket_thuc: scheduleForm.gio_ket_thuc,
+        ngay_bat_dau: scheduleForm.ngay_bat_dau,
+        ngay_ket_thuc: formData.ngay_ket_thuc 
+      }
+    }
+
     const validationMessage = validateClassForm(payload)
     if (validationMessage) {
       toast.warning(validationMessage)
@@ -264,17 +282,6 @@ export default function LopHocManagement() {
         await lopHocAPI.update(editingId, payload)
         toast.success('Cập nhật lớp học thành công!')
       } else {
-        if (createWithSchedule) {
-          if (!scheduleForm.ngay_bat_dau || scheduleForm.ngay_trong_tuan.length === 0) {
-            toast.warning('Vui lòng chọn ngày bắt đầu và ít nhất 1 ngày học trong tuần')
-            return
-          }
-          if (!scheduleForm.gio_bat_dau || !scheduleForm.gio_ket_thuc || scheduleForm.gio_bat_dau >= scheduleForm.gio_ket_thuc) {
-            toast.warning('Giờ bắt đầu/kết thúc của lịch học không hợp lệ')
-            return
-          }
-        }
-
         const createResult = await lopHocAPI.create(payload)
         const createdClassId = createResult?.data?.lop_hoc_id
 
@@ -306,45 +313,6 @@ export default function LopHocManagement() {
     } catch (error) {
       console.error('Lỗi khi lưu lớp học:', error)
       toast.error(error.message || 'Có lỗi xảy ra khi lưu lớp học')
-    }
-  }
-
-  const handleEdit = (lopHoc) => {
-    setEditingId(lopHoc.lop_hoc_id)
-    setFormData({
-      mon_hoc_id: lopHoc.mon_hoc_id || '',
-      ten_lop: lopHoc.ten_lop || '',
-      gia_su_id: lopHoc.gia_su_id || '',
-      khoi_lop: lopHoc.khoi_lop || '',
-      gia_toan_khoa: normalizeNumberInputValue(lopHoc.gia_toan_khoa),
-      so_buoi_hoc: normalizeNumberInputValue(lopHoc.so_buoi_hoc),
-      so_luong_toi_da: normalizeNumberInputValue(lopHoc.so_luong_toi_da || '1'),
-      loai_chi_tra: lopHoc.loai_chi_tra || 'phan_tram',
-      gia_tri_chi_tra: normalizeNumberInputValue(lopHoc.gia_tri_chi_tra),
-      trang_thai: lopHoc.trang_thai || 'sap_mo',
-      ngay_ket_thuc: lopHoc.ngay_ket_thuc ? lopHoc.ngay_ket_thuc.split(' ')[0] : ''
-    })
-    fetchClassStudents(lopHoc.lop_hoc_id)
-    fetchAttendanceByClass(lopHoc.lop_hoc_id)
-    setCurrentViewTab('info')
-    setShowModal(true)
-  }
-
-  const fetchClassStudents = async (lopHocId) => {
-    try {
-      const response = await lopHocAPI.getStudentsByClass(lopHocId)
-      const students = response.data || []
-      const mappedStudents = students
-        .filter(item => item && item.hoc_sinh_id)
-        .map(item => ({
-          id: item.hoc_sinh_id,
-          code: item.hoc_sinh_id ? `HS${item.hoc_sinh_id}` : 'N/A',
-          name: item.ho_ten || 'N/A'
-        }))
-      setClassStudents(mappedStudents)
-    } catch (error) {
-      console.error('Lỗi khi tải danh sách học sinh lớp:', error)
-      setClassStudents([])
     }
   }
 
@@ -392,9 +360,6 @@ export default function LopHocManagement() {
     return giaSu ? giaSu.ho_ten : 'N/A'
   }
 
-  // =========================================
-  // ĐÃ CẬP NHẬT TRẠNG THÁI 'cho_gia_su' Ở ĐÂY
-  // =========================================
   const getTrangThaiLabel = (trangThai) => {
     const labels = {
       'sap_mo': 'Sắp mở',
@@ -511,7 +476,6 @@ export default function LopHocManagement() {
   return (
     <div>
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-5 border-b border-gray-200">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Quản lý lớp học</h2>
@@ -526,7 +490,6 @@ export default function LopHocManagement() {
           </button>
         </div>
 
-        {/* Search */}
         <div className="p-5 border-b border-gray-200">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -540,7 +503,6 @@ export default function LopHocManagement() {
           </div>
         </div>
 
-        {/* Grouped Content */}
         <div className="p-5">
           {filteredLopHocs.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-300 p-12 text-center">
@@ -586,6 +548,7 @@ export default function LopHocManagement() {
 
                             {showSettings === lopHoc.lop_hoc_id && (
                               <div className="absolute top-9 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
+                                {/* TRẢ LẠI NÚT NAVIGATE GỐC CỦA BẠN */}
                                 <button
                                   onClick={() => {
                                     navigate(`/dashboard/lophoc/${lopHoc.lop_hoc_id}/edit`)
@@ -670,14 +633,13 @@ export default function LopHocManagement() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal TẠO MỚI (Đã gỡ bỏ logic Edit) */}
       {showModal && currentViewTab !== 'attendance' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-200 px-5 py-3 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-800">
-                {editingId ? 'Chỉnh sửa lớp học' : 'Thêm lớp học mới'}
+                Thêm lớp học mới
               </h3>
               <button
                 onClick={() => {
@@ -690,7 +652,6 @@ export default function LopHocManagement() {
               </button>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-0 border-b border-gray-200 px-5">
               <button
                 onClick={() => setCurrentViewTab('info')}
@@ -702,22 +663,8 @@ export default function LopHocManagement() {
               >
                 Thông tin lớp
               </button>
-              {editingId && (
-                <button
-                  onClick={() => setCurrentViewTab('students')}
-                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                    currentViewTab === 'students'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  <Users size={16} />
-                  Học sinh
-                </button>
-              )}
             </div>
 
-            {/* Content */}
             <div className="flex-1 overflow-y-auto">
               {currentViewTab === 'info' && (
                 <form onSubmit={handleSubmit} className="p-5 space-y-3">
@@ -908,84 +855,82 @@ export default function LopHocManagement() {
                     </div>
                   </div>
 
-                  {!editingId && (
-                    <div className="border-t border-gray-200 pt-3 mt-2 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-gray-800 text-sm">Lịch học khi tạo lớp</h4>
-                        <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                          <input
-                            type="checkbox"
-                            checked={createWithSchedule}
-                            onChange={(e) => setCreateWithSchedule(e.target.checked)}
-                          />
-                          Tạo lịch học ngay
-                        </label>
-                      </div>
+                  <div className="border-t border-gray-200 pt-3 mt-2 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-gray-800 text-sm">Lịch học khi tạo lớp</h4>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={createWithSchedule}
+                          onChange={(e) => setCreateWithSchedule(e.target.checked)}
+                        />
+                        Tạo lịch học ngay
+                      </label>
+                    </div>
 
-                      {createWithSchedule && (
-                        <>
-                          <div className="grid grid-cols-2 gap-3">
+                    {createWithSchedule && (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Ngày bắt đầu</label>
+                            <input
+                              type="date"
+                              value={scheduleForm.ngay_bat_dau}
+                              onChange={(e) => setScheduleForm((prev) => ({ ...prev, ngay_bat_dau: e.target.value }))}
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              required
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Ngày bắt đầu</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Giờ bắt đầu</label>
                               <input
-                                type="date"
-                                value={scheduleForm.ngay_bat_dau}
-                                onChange={(e) => setScheduleForm((prev) => ({ ...prev, ngay_bat_dau: e.target.value }))}
+                                type="time"
+                                value={scheduleForm.gio_bat_dau}
+                                onChange={(e) => setScheduleForm((prev) => ({ ...prev, gio_bat_dau: e.target.value }))}
                                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
                               />
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Giờ bắt đầu</label>
-                                <input
-                                  type="time"
-                                  value={scheduleForm.gio_bat_dau}
-                                  onChange={(e) => setScheduleForm((prev) => ({ ...prev, gio_bat_dau: e.target.value }))}
-                                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  required
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Giờ kết thúc</label>
-                                <input
-                                  type="time"
-                                  value={scheduleForm.gio_ket_thuc}
-                                  onChange={(e) => setScheduleForm((prev) => ({ ...prev, gio_ket_thuc: e.target.value }))}
-                                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  required
-                                />
-                              </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Giờ kết thúc</label>
+                              <input
+                                type="time"
+                                value={scheduleForm.gio_ket_thuc}
+                                onChange={(e) => setScheduleForm((prev) => ({ ...prev, gio_ket_thuc: e.target.value }))}
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                              />
                             </div>
                           </div>
+                        </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Ngày học trong tuần</label>
-                            <div className="grid grid-cols-3 gap-2">
-                              {WEEKDAY_OPTIONS.map((day) => (
-                                <label key={day.value} className="inline-flex items-center gap-2 text-sm text-gray-700">
-                                  <input
-                                    type="checkbox"
-                                    checked={scheduleForm.ngay_trong_tuan.includes(day.value)}
-                                    onChange={(e) => {
-                                      const checked = e.target.checked
-                                      setScheduleForm((prev) => ({
-                                        ...prev,
-                                        ngay_trong_tuan: checked
-                                          ? [...prev.ngay_trong_tuan, day.value].sort((a, b) => a - b)
-                                          : prev.ngay_trong_tuan.filter((v) => v !== day.value)
-                                      }))
-                                    }}
-                                  />
-                                  {day.label}
-                                </label>
-                              ))}
-                            </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Ngày học trong tuần</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {WEEKDAY_OPTIONS.map((day) => (
+                              <label key={day.value} className="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input
+                                  type="checkbox"
+                                  checked={scheduleForm.ngay_trong_tuan.includes(day.value)}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked
+                                    setScheduleForm((prev) => ({
+                                      ...prev,
+                                      ngay_trong_tuan: checked
+                                        ? [...prev.ngay_trong_tuan, day.value].sort((a, b) => a - b)
+                                        : prev.ngay_trong_tuan.filter((v) => v !== day.value)
+                                    }))
+                                  }}
+                                />
+                                {day.label}
+                              </label>
+                            ))}
                           </div>
-                        </>
-                      )}
-                    </div>
-                  )}
+                        </div>
+                      </>
+                    )}
+                  </div>
 
                   <div className="flex gap-3 pt-3 border-t border-gray-100 mt-3">
                     <button
@@ -1002,137 +947,19 @@ export default function LopHocManagement() {
                       type="submit"
                       className="flex-1 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      {editingId ? 'Cập nhật' : 'Thêm mới'}
+                      Thêm mới
                     </button>
                   </div>
                 </form>
               )}
-
-              {currentViewTab === 'students' && (
-                <div className="p-5 space-y-3">
-                  {/* Search */}
-                  <div className="mb-4">
-                    <input
-                      type="text"
-                      placeholder="Tìm kiếm theo tên hoặc mã học sinh..."
-                      value={studentSearchTerm}
-                      onChange={(e) => setStudentSearchTerm(e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  {/* Nút Thêm học sinh */}
-                  <button
-                    onClick={() => setShowAddStudentModal(true)}
-                    className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
-                  >
-                    <Plus size={16} />
-                    Thêm học sinh
-                  </button>
-
-                  {/* Danh sách học sinh */}
-                  <div className="space-y-2">
-                    {classStudents && classStudents.length > 0 ? (
-                      classStudents
-                        .filter(s => {
-                          const name = (s.name || '').toString().toLowerCase()
-                          const code = (s.code || '').toString().toLowerCase()
-                          const search = studentSearchTerm.toLowerCase()
-                          return name.includes(search) || code.includes(search)
-                        })
-                        .map((student, idx) => (
-                          <div key={`${student.id}-${idx}`} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                            <div>
-                              <p className="text-sm font-medium text-gray-800">{student.name || 'N/A'}</p>
-                              <p className="text-xs text-gray-500">{student.code || 'N/A'}</p>
-                            </div>
-                            <button
-                              onClick={() => removeStudentFromClass(editingId, student.id)}
-                              className="text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        ))
-                    ) : (
-                      <p className="text-center text-gray-500 text-sm py-8">Chưa có học sinh nào</p>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
-
-          {/* Modal Thêm học sinh */}
-          {showAddStudentModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-              <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-                  <h4 className="font-semibold text-gray-800">Chọn học sinh để thêm</h4>
-                  <button
-                    onClick={() => {
-                      setShowAddStudentModal(false)
-                      setAddStudentSearchTerm('')
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-
-                {/* Search */}
-                <div className="sticky top-12 bg-white border-b border-gray-200 px-4 py-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                    <input
-                      type="text"
-                      placeholder="Tìm kiếm theo tên hoặc mã..."
-                      value={addStudentSearchTerm}
-                      onChange={(e) => setAddStudentSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-custom">
-                  {allHocSinh && allHocSinh.length > 0 ? (
-                    allHocSinh
-                      .filter(student => {
-                        if (classStudents && classStudents.find(s => s && s.id === student.id)) {
-                          return false
-                        }
-                        const name = (student.name || '').toString().toLowerCase()
-                        const code = (student.code || '').toString().toLowerCase()
-                        const search = addStudentSearchTerm.toLowerCase()
-                        return name.includes(search) || code.includes(search)
-                      })
-                      .map((student, idx) => (
-                        <button
-                          key={`add-${student.id}-${idx}`}
-                          onClick={() => {
-                            addStudentToClass(editingId, student.id)
-                            setShowAddStudentModal(false)
-                            setAddStudentSearchTerm('')
-                          }}
-                          className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition"
-                        >
-                          <p className="text-sm font-medium text-gray-800">{student.name || 'N/A'}</p>
-                          <p className="text-xs text-gray-500">{student.code || 'N/A'}</p>
-                        </button>
-                      ))
-                  ) : (
-                    <p className="text-center text-gray-500 text-sm py-8">Không có học sinh nào</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Attendance View Modal */}
+      {/* Attendance View Modal (Giữ nguyên của bạn) */}
       {showModal && currentViewTab === 'attendance' && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-5 py-3 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-800">Điểm danh</h3>
@@ -1150,7 +977,6 @@ export default function LopHocManagement() {
               </button>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-0 border-b border-gray-200 px-5 bg-white sticky top-14">
               <button
                 onClick={() => {
@@ -1181,7 +1007,6 @@ export default function LopHocManagement() {
 
             <div className="flex-1 overflow-y-auto p-5">
               {!showAttendanceHistory ? (
-                // Attendance Marking Form for Today
                 <div className="space-y-4">
                   {classStudents && classStudents.length > 0 ? (
                     <>
@@ -1206,7 +1031,6 @@ export default function LopHocManagement() {
                               </div>
                             </div>
 
-                            {/* Status buttons */}
                             <div className="flex gap-2">
                               <button
                                 onClick={() => updateAttendanceStatus(student.id, 'co_mat')}
@@ -1243,7 +1067,6 @@ export default function LopHocManagement() {
                         ))}
                       </div>
 
-                      {/* Save button */}
                       <div className="flex gap-2 pt-4 border-t border-gray-200 mt-4">
                         <button
                           onClick={() => {
@@ -1271,7 +1094,6 @@ export default function LopHocManagement() {
                   )}
                 </div>
               ) : (
-                // Attendance History View
                 <div className="space-y-4">
                   {attendance.length > 0 ? (
                     <>

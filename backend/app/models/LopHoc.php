@@ -8,12 +8,10 @@ class LopHoc {
         if ($tenLop !== '') {
             return $tenLop;
         }
-
         return self::buildAutoTenLop($data, $excludeId);
     }
 
     private static function buildAutoTenLop($data, $excludeId = null) {
-
         $tenMonHoc = 'Môn';
         if (!empty($data['mon_hoc_id'])) {
             $monHoc = Database::query(
@@ -24,10 +22,8 @@ class LopHoc {
                 $tenMonHoc = $monHoc[0]['ten_mon_hoc'];
             }
         }
-
         $khoiLop = isset($data['khoi_lop']) ? trim((string)$data['khoi_lop']) : '';
         $khoiLop = $khoiLop !== '' ? $khoiLop : '...';
-
         $baseName = $tenMonHoc . ' - Lớp ' . $khoiLop;
         return self::buildUniqueAutoTenLop($baseName, $excludeId);
     }
@@ -35,23 +31,19 @@ class LopHoc {
     private static function buildUniqueAutoTenLop($baseName, $excludeId = null) {
         $sql = "SELECT ten_lop FROM lop_hoc WHERE ten_lop LIKE :pattern";
         $params = [':pattern' => $baseName . ' (%'];
-
         if ($excludeId !== null) {
             $sql .= " AND lop_hoc_id != :exclude_id";
             $params[':exclude_id'] = $excludeId;
         }
-
         $existingRows = Database::query($sql, $params);
         $usedSuffixes = [];
         $escapedBase = preg_quote($baseName, '/');
-
         foreach ($existingRows as $row) {
             $name = isset($row['ten_lop']) ? (string)$row['ten_lop'] : '';
             if (preg_match('/^' . $escapedBase . ' \(([A-Z]+)\)$/u', $name, $matches)) {
                 $usedSuffixes[$matches[1]] = true;
             }
         }
-
         $index = 0;
         while (true) {
             $suffix = self::suffixByIndex($index);
@@ -65,20 +57,15 @@ class LopHoc {
     private static function suffixByIndex($index) {
         $index = (int)$index;
         $result = '';
-
         do {
             $result = chr(65 + ($index % 26)) . $result;
             $index = intdiv($index, 26) - 1;
         } while ($index >= 0);
-
         return $result;
     }
 
     private static function normalizeNgayKetThuc($value) {
-        if ($value === null) {
-            return null;
-        }
-
+        if ($value === null) return null;
         $ngayKetThuc = trim((string)$value);
         return $ngayKetThuc === '' ? null : $ngayKetThuc;
     }
@@ -104,21 +91,20 @@ class LopHoc {
             ':trang_thai' => $data['trang_thai'] ?? 'sap_mo',
             ':ngay_ket_thuc' => self::normalizeNgayKetThuc($data['ngay_ket_thuc'] ?? null)
         ];
-
         return Database::execute($sql, $params);
     }
 
     public static function getAll() {
         $sql = "SELECT lh.*, gs.ho_ten as ten_gia_su, gs.bang_cap, mh.ten_mon_hoc,
-                       (SELECT GROUP_CONCAT(DISTINCT CONCAT(
-                            CASE DAYOFWEEK(ngay_hoc)
-                                WHEN 1 THEN 'CN' WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' 
-                                WHEN 4 THEN 'T4' WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7'
+                       (SELECT GROUP_CONCAT(CONCAT(
+                            CASE ldk.thu_trong_tuan
+                                WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' WHEN 4 THEN 'T4' 
+                                WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7' WHEN 8 THEN 'CN'
                             END,
-                            ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
-                        ) SEPARATOR ', ') 
-                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien,
-                       (SELECT MIN(ngay_hoc) FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS ngay_bat_dau
+                            ' (', TIME_FORMAT(ldk.gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(ldk.gio_ket_thuc, '%H:%i'), ')'
+                       ) ORDER BY ldk.thu_trong_tuan ASC SEPARATOR ', ') 
+                       FROM lich_dinh_ky ldk WHERE ldk.lop_hoc_id = lh.lop_hoc_id AND ldk.trang_thai = 'hoat_dong') AS lich_hoc_du_kien,
+                       (SELECT MIN(ngay_bat_dau) FROM lich_dinh_ky ldk WHERE ldk.lop_hoc_id = lh.lop_hoc_id AND ldk.trang_thai = 'hoat_dong') AS ngay_bat_dau
                 FROM lop_hoc lh 
                 LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id 
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id 
@@ -128,19 +114,10 @@ class LopHoc {
 
     public static function update($id, $data) {
         $sql = "UPDATE lop_hoc SET 
-                mon_hoc_id = :mon_hoc_id,
-                ten_lop = :ten_lop,
-                gia_su_id = :gia_su_id, 
-                khoi_lop = :khoi_lop, 
-                gia_toan_khoa = :gia_toan_khoa, 
-                so_buoi_hoc = :so_buoi_hoc, 
-                gia_moi_buoi = :gia_moi_buoi, 
-                so_luong_toi_da = :so_luong_toi_da,
-                loai_chi_tra = :loai_chi_tra,
-                gia_tri_chi_tra = :gia_tri_chi_tra,
-                chu_ky_thanh_toan = :chu_ky_thanh_toan,
-                trang_thai = :trang_thai,
-                ngay_ket_thuc = :ngay_ket_thuc
+                mon_hoc_id = :mon_hoc_id, ten_lop = :ten_lop, gia_su_id = :gia_su_id, khoi_lop = :khoi_lop, 
+                gia_toan_khoa = :gia_toan_khoa, so_buoi_hoc = :so_buoi_hoc, gia_moi_buoi = :gia_moi_buoi, 
+                so_luong_toi_da = :so_luong_toi_da, loai_chi_tra = :loai_chi_tra, gia_tri_chi_tra = :gia_tri_chi_tra,
+                chu_ky_thanh_toan = :chu_ky_thanh_toan, trang_thai = :trang_thai, ngay_ket_thuc = :ngay_ket_thuc
                 WHERE lop_hoc_id = :id";
                 
         $params = [
@@ -159,7 +136,6 @@ class LopHoc {
             ':trang_thai' => $data['trang_thai'] ?? 'sap_mo',
             ':ngay_ket_thuc' => self::normalizeNgayKetThuc($data['ngay_ket_thuc'] ?? null)
         ];
-
         return Database::execute($sql, $params);
     }
 
@@ -170,23 +146,19 @@ class LopHoc {
 
     public static function updateStatus($id, $trangThai) {
         $sql = "UPDATE lop_hoc SET trang_thai = :trang_thai WHERE lop_hoc_id = :id";
-        return Database::execute($sql, [
-            ':id' => $id,
-            ':trang_thai' => $trangThai
-        ]);
+        return Database::execute($sql, [':id' => $id, ':trang_thai' => $trangThai]);
     }
 
     public static function getById($id) {
         $sql = "SELECT lh.*, gs.ho_ten as ten_gia_su, gs.bang_cap, mh.ten_mon_hoc,
-                       -- Dùng truy vấn con lấy ngày trong tuần (T2, T3...) ghép với giờ học
-                       (SELECT GROUP_CONCAT(DISTINCT CONCAT(
-                            CASE DAYOFWEEK(ngay_hoc)
-                                WHEN 1 THEN 'CN' WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' 
-                                WHEN 4 THEN 'T4' WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7'
+                       (SELECT GROUP_CONCAT(CONCAT(
+                            CASE ldk.thu_trong_tuan
+                                WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' WHEN 4 THEN 'T4' 
+                                WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7' WHEN 8 THEN 'CN'
                             END,
-                            ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
-                        ) SEPARATOR ', ') 
-                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien
+                            ' (', TIME_FORMAT(ldk.gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(ldk.gio_ket_thuc, '%H:%i'), ')'
+                       ) ORDER BY ldk.thu_trong_tuan ASC SEPARATOR ', ') 
+                       FROM lich_dinh_ky ldk WHERE ldk.lop_hoc_id = lh.lop_hoc_id AND ldk.trang_thai = 'hoat_dong') AS lich_hoc_du_kien
                 FROM lop_hoc lh 
                 LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id 
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id 
@@ -197,17 +169,15 @@ class LopHoc {
 
     public static function getByGiaSuId($giaSuId) {
         $sql = "SELECT lh.*, mh.ten_mon_hoc,
-                       -- Lấy lịch học dự kiến
-                       (SELECT GROUP_CONCAT(DISTINCT CONCAT(
-                            CASE DAYOFWEEK(ngay_hoc)
-                                WHEN 1 THEN 'CN' WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' 
-                                WHEN 4 THEN 'T4' WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7'
+                       (SELECT GROUP_CONCAT(CONCAT(
+                            CASE ldk.thu_trong_tuan
+                                WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' WHEN 4 THEN 'T4' 
+                                WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7' WHEN 8 THEN 'CN'
                             END,
-                            ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
-                        ) SEPARATOR ', ') 
-                        FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien,
-                       -- LẤY NGÀY BẮT ĐẦU TỪ LỊCH HỌC
-                       (SELECT MIN(ngay_hoc) FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS ngay_bat_dau
+                            ' (', TIME_FORMAT(ldk.gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(ldk.gio_ket_thuc, '%H:%i'), ')'
+                       ) ORDER BY ldk.thu_trong_tuan ASC SEPARATOR ', ') 
+                       FROM lich_dinh_ky ldk WHERE ldk.lop_hoc_id = lh.lop_hoc_id AND ldk.trang_thai = 'hoat_dong') AS lich_hoc_du_kien,
+                       (SELECT MIN(ngay_bat_dau) FROM lich_dinh_ky ldk WHERE ldk.lop_hoc_id = lh.lop_hoc_id AND ldk.trang_thai = 'hoat_dong') AS ngay_bat_dau
                 FROM lop_hoc lh 
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id 
                 WHERE lh.gia_su_id = :gia_su_id
