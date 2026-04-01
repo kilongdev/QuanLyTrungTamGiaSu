@@ -16,6 +16,7 @@ import {
   SearchIcon,
   ClockIcon,
   BookCheck,
+  CalendarRange
 } from "lucide-react";
 import { dangKyAPI } from "../api/dangkyApi";
 import { lichHocAPI } from "../api/lichhocApi";
@@ -50,7 +51,6 @@ export default function DangKyLopManagement({ user }) {
     onConfirm: null,
   });
 
-  // State quản lý Modal Chi tiết dùng chung
   const [detailModal, setDetailModal] = useState({ show: false, data: null });
 
   const existingRegistration =
@@ -179,6 +179,12 @@ export default function DangKyLopManagement({ user }) {
     }
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "Chưa cập nhật";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("vi-VN");
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "cho_duyet":
@@ -240,8 +246,9 @@ export default function DangKyLopManagement({ user }) {
   function renderPopups() {
     return (
       <>
+        {/* ĐÃ FIX: Sửa lớp nền bg-black bg-opacity-50 thành bg-black/40 backdrop-blur-sm */}
         {confirmModal.show && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 ">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden p-6 text-center">
               <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle size={32} className="text-amber-600" />
@@ -276,8 +283,9 @@ export default function DangKyLopManagement({ user }) {
           </div>
         )}
 
+        {/* ĐÃ FIX: Sửa lớp nền cho modal cảnh báo đồng bộ */}
         {alertModal.show && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl p-6 text-center">
               <div
                 className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${alertModal.type === "success" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}
@@ -304,7 +312,6 @@ export default function DangKyLopManagement({ user }) {
           </div>
         )}
 
-        {/* MODAL XEM CHI TIẾT ĐƠN ĐĂNG KÝ DÙNG CHUNG CHO CẢ PHỤ HUYNH VÀ ADMIN */}
         {detailModal.show && detailModal.data && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
@@ -319,8 +326,8 @@ export default function DangKyLopManagement({ user }) {
                   <X size={20} />
                 </button>
               </div>
-
-              <div className="p-6 space-y-4">
+              
+              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Mã đơn:</span>
                   <span className="font-bold text-gray-800">
@@ -350,8 +357,7 @@ export default function DangKyLopManagement({ user }) {
                     {detailModal.data.ten_mon_hoc || "Đang cập nhật"}
                   </span>
                 </div>
-
-                {/* THÊM KHỐI LỚP VÀ GIA SƯ */}
+                
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Khối lớp:</span>
                   <span className="font-medium text-gray-800">
@@ -375,10 +381,24 @@ export default function DangKyLopManagement({ user }) {
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Lịch học:</span>
-                  <span className="font-medium text-gray-800">
+                  <span className="font-medium text-gray-800 max-w-[60%] text-right">
                     {detailModal.data.lich_hoc_du_kien || "Chưa có lịch"}
                   </span>
                 </div>
+
+                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                  <span className="text-gray-500 text-sm">Ngày bắt đầu:</span>
+                  <span className="font-medium text-gray-800">
+                    {formatDate(detailModal.data.ngay_bat_dau)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                  <span className="text-gray-500 text-sm">Ngày kết thúc:</span>
+                  <span className="font-medium text-gray-800">
+                    {formatDate(detailModal.data.ngay_ket_thuc)}
+                  </span>
+                </div>
+
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-500 text-sm">Học phí:</span>
                   <span className="font-bold text-red-600 text-base">
@@ -558,7 +578,6 @@ export default function DangKyLopManagement({ user }) {
                       </td>
                       <td className="px-6 py-4">
                         <div className="grid grid-cols-[38px_92px_92px] items-center justify-center gap-2">
-                          {/* NÚT CHI TIẾT CỦA ADMIN */}
                           <button
                             onClick={() =>
                               setDetailModal({ show: true, data: dk })
@@ -739,10 +758,26 @@ export default function DangKyLopManagement({ user }) {
                           <Clock size={16} className="text-amber-500" /> Lịch
                           học
                         </div>
-                        <span className="font-semibold text-gray-800">
+                        <span className="font-semibold text-gray-800 max-w-[60%] text-right">
                           {lop.lich_hoc_du_kien || "Chưa có lịch"}
                         </span>
                       </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-col bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                          <span className="text-xs text-gray-500 mb-1">Ngày bắt đầu</span>
+                          <span className="font-semibold text-gray-800 text-sm">
+                            {formatDate(lop.ngay_bat_dau)}
+                          </span>
+                        </div>
+                        <div className="flex flex-col bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                          <span className="text-xs text-gray-500 mb-1">Ngày kết thúc</span>
+                          <span className="font-semibold text-gray-800 text-sm">
+                            {formatDate(lop.ngay_ket_thuc)}
+                          </span>
+                        </div>
+                      </div>
+
                       <div className="flex justify-between items-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
                         <div className="flex items-center gap-2">
                           <Users size={16} className="text-blue-500" /> Số học
@@ -767,7 +802,7 @@ export default function DangKyLopManagement({ user }) {
                           <p className="text-xs text-gray-500 mb-0.5">
                             Học phí toàn khóa
                           </p>
-                          <p className="font-bold text-lg">
+                          <p className="font-bold text-lg text-red-600">
                             {Number(lop.gia_toan_khoa).toLocaleString("vi-VN")}{" "}
                             đ
                           </p>
@@ -896,6 +931,16 @@ export default function DangKyLopManagement({ user }) {
                   <span className="text-gray-500">Khối lớp</span>
                   <span className="font-medium text-gray-800">
                     {selectedLop.khoi_lop}
+                  </span>
+
+                  <span className="text-gray-500">Ngày bắt đầu</span>
+                  <span className="font-medium text-gray-800">
+                    {formatDate(selectedLop.ngay_bat_dau)}
+                  </span>
+
+                  <span className="text-gray-500">Ngày kết thúc</span>
+                  <span className="font-medium text-gray-800">
+                    {formatDate(selectedLop.ngay_ket_thuc)}
                   </span>
                 </div>
 

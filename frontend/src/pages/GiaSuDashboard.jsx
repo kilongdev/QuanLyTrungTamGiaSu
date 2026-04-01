@@ -8,6 +8,7 @@ import LopDangDay from '../components/LopDangDay'
 import DanhSachHocSinh from '../components/DanhSachHocSinh'
 import YeuCauMoi from '../components/YeuCauMoi'
 import ThuNhapGiaSu from '@/components/ThuNhapGiaSu'
+import TongQuanGiaSu from '../components/TongQuanGiaSu'
 
 export default function GiaSuDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState(() => localStorage.getItem('giasu_active_item') || 'dashboard')
@@ -45,7 +46,7 @@ export default function GiaSuDashboard({ user, onLogout }) {
   const renderContent = () => {
     switch (activeMenu) {
       case 'dashboard':
-        return <DashboardContent />
+        return <TongQuanGiaSu user={user} onNavigate={handleMenuClick} />
       case 'schedule':
         return <LichDayGiaSu user={user} />
       case 'classes':

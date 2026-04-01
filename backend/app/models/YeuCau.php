@@ -83,12 +83,24 @@ class YeuCau {
     }
 
     public static function getYeuCauMoiGiaSu($giaSuId) {
-        $sql = "SELECT yc.*, lh.ten_lop, lh.so_buoi_hoc, lh.gia_toan_khoa, lh.gia_moi_buoi, lh.loai_chi_tra, lh.khoi_lop, mh.ten_mon_hoc 
+        // CẬP NHẬT: Kéo theo Lịch dự kiến, Ngày bắt đầu, Ngày kết thúc và Sĩ số
+        $sql = "SELECT yc.*, lh.ten_lop, lh.so_buoi_hoc, lh.gia_toan_khoa, lh.gia_moi_buoi, 
+                       lh.loai_chi_tra, lh.khoi_lop, lh.ngay_ket_thuc, lh.so_luong_toi_da, mh.ten_mon_hoc,
+                       (SELECT GROUP_CONCAT(DISTINCT CONCAT(
+                            CASE DAYOFWEEK(ngay_hoc)
+                                WHEN 1 THEN 'CN' WHEN 2 THEN 'T2' WHEN 3 THEN 'T3' 
+                                WHEN 4 THEN 'T4' WHEN 5 THEN 'T5' WHEN 6 THEN 'T6' WHEN 7 THEN 'T7'
+                            END,
+                            ' (', TIME_FORMAT(gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(gio_ket_thuc, '%H:%i'), ')'
+                       ) SEPARATOR ', ') 
+                       FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS lich_hoc_du_kien,
+                       (SELECT MIN(ngay_hoc) FROM lich_hoc sub_lh WHERE sub_lh.lop_hoc_id = lh.lop_hoc_id) AS ngay_bat_dau
                 FROM yeu_cau yc 
                 JOIN lop_hoc lh ON yc.lop_hoc_id = lh.lop_hoc_id 
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id 
                 WHERE yc.gia_su_id = :gia_su_id 
-                  AND yc.trang_thai = 'cho_duyet'";
+                  AND yc.trang_thai IN ('cho_duyet', 'dang_xu_ly')
+                ORDER BY yc.ngay_tao DESC";
         return Database::query($sql, [':gia_su_id' => $giaSuId]);
     }
 }
