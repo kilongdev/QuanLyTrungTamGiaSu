@@ -4,7 +4,7 @@ import DataPagination from '@/components/ui/DataPagination'
 import { toast } from 'sonner'
 import { luongGiaSuAPI } from '@/api/luongGiaSuApi'
 
-const API_BASE = `${import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public'}/api.php`
+const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com'}/api.php`
 
 // Component hiển thị badge trạng thái thanh toán
 function StatusBadge({ status, edited }) {

@@ -6,7 +6,7 @@ import { dangKyAPI } from "@/api/dangkyApi";
 import { toast } from 'sonner'
 import { normalizeNumberInputValue } from '@/lib/numberUtils'
 
-const API_BASE = `${import.meta.env.VITE_API_URL || 'http://localhost/QuanLyTrungTamGiaSu/backend/public'}/api.php`
+const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com'}/api.php`
 
 export default function HocPhiManagement({ user }) {
   const [hocPhiData, setHocPhiData] = useState([])
