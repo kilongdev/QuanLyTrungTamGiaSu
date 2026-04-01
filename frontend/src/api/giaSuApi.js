@@ -101,4 +101,13 @@ export const giaSuAPI = {
         request(`/giasu/delete/${id}`, {
             method: 'DELETE',
         }),
+
+      /**
+   * Lấy dữ liệu tổng quan cho Dashboard
+   * @param {number} giaSuId - ID của gia sư
+   */
+    getDashboard: (giaSuId) =>
+        request(`/giasu/dashboard?gia_su_id=${giaSuId}`, {
+            method: "GET",
+    }),  
 };

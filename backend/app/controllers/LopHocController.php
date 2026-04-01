@@ -6,13 +6,42 @@ require_once __DIR__ . '/../core/Database.php';
 class LopHocController {
 
     public function index() {
-        // Kiểm tra xem có truyền gia_su_id lên không
         $giaSuId = $_GET['gia_su_id'] ?? null;
         
         if ($giaSuId) {
             $lopHocs = LopHoc::getByGiaSuId($giaSuId);
         } else {
             $lopHocs = LopHoc::getAll();
+            
+            // =========================================================
+            // PHÉP THUẬT "TRẠNG THÁI ẢO" - ĐÁNH TRÁO DỮ LIỆU TRƯỚC KHI GỬI
+            // =========================================================
+            foreach ($lopHocs as &$lop) {
+                // Nếu lớp chưa chốt gia sư (gia_su_id bị NULL)
+                if (empty($lop['gia_su_id'])) {
+                    // Chạy sang bảng yeu_cau tìm xem có đang mời ai không
+                    $yeuCau = Database::queryOne(
+                        "SELECT yc.trang_thai, gs.ho_ten, gs.gia_su_id 
+                         FROM yeu_cau yc 
+                         JOIN gia_su gs ON yc.gia_su_id = gs.gia_su_id 
+                         WHERE yc.lop_hoc_id = ? AND yc.phan_loai = 'mo_lop' 
+                         ORDER BY yc.yeu_cau_id DESC LIMIT 1", 
+                        [$lop['lop_hoc_id']]
+                    );
+                    
+                    if ($yeuCau) {
+                        if ($yeuCau['trang_thai'] === 'dang_xu_ly') {
+                            $lop['trang_thai'] = 'cho_gia_su'; // Trạng thái ảo hiển thị màu Cam
+                            $lop['ten_gia_su'] = $yeuCau['ho_ten']; // Hiện tên để Admin biết đang mời ai
+                            $lop['gia_su_id'] = $yeuCau['gia_su_id']; // Hỗ trợ Modal Edit
+                        } else if ($yeuCau['trang_thai'] === 'tu_choi') {
+                            $lop['trang_thai'] = 'tu_choi'; // Trạng thái ảo hiển thị màu Đỏ
+                            $lop['ten_gia_su'] = $yeuCau['ho_ten'];
+                            $lop['gia_su_id'] = $yeuCau['gia_su_id'];
+                        }
+                    }
+                }
+            }
         }
         
         echo json_encode(["status" => "success", "data" => $lopHocs]);
@@ -26,32 +55,45 @@ class LopHocController {
             return;
         }
 
+        // ==========================================
+        // KHÓA TRẠNG THÁI NẾU CÓ MỜI GIA SƯ
+        // ==========================================
+        $giaSuDuKien = $data['gia_su_id'] ?? null;
+        if (!empty($giaSuDuKien)) {
+            $data['gia_su_id'] = null; // Ép thành NULL để chưa chốt cứng vào DB
+        }
+        // Luôn ép lưu 'sap_mo' xuống DB để không vi phạm ENUM
+        $data['trang_thai'] = 'sap_mo'; 
+
         try {
             $result = LopHoc::create($data);
             if ($result) {
                 $createdId = (int)Database::lastInsertId();
-                // Lấy tên lớp vừa tạo
                 $lopHoc = LopHoc::getById($createdId);
                 $tenLop = $lopHoc ? $lopHoc['ten_lop'] : 'lớp học mới';
                 
-                // Thông báo cho Admin về lớp học mới
+                // 1. Thông báo cho Admin
                 ThongBaoModel::guiThongBao(
-                    1, // Admin ID
-                    'admin',
-                    'Lớp học mới được tạo',
-                    "Lớp {$tenLop} đã được tạo. Vui lòng kiểm tra.",
-                    'lop_hoc'
+                    1, 'admin', 'Lớp học mới được tạo',
+                    "Lớp {$tenLop} đã được tạo. Vui lòng kiểm tra.", 'lop_hoc'
                 );
                 
-                // Nếu có phân công gia sư, thông báo cho gia sư
-                if (!empty($data['gia_su_id'])) {
+                // 2. TẠO YÊU CẦU ĐẾN GIA SƯ (Nếu có chọn)
+                if (!empty($giaSuDuKien)) {
                     ThongBaoModel::guiThongBao(
-                        $data['gia_su_id'],
-                        'gia_su',
-                        'Được phân công dạy lớp mới',
-                        "Bạn đã được phân công dạy lớp {$tenLop}. Vui lòng kiểm tra lịch dạy.",
-                        'lop_hoc'
+                        $giaSuDuKien, 'gia_su', 'Lời mời nhận lớp mới',
+                        "Trung tâm vừa gửi cho bạn một yêu cầu nhận lớp: {$tenLop}. Vui lòng vào mục Yêu cầu mới để xác nhận.", 'lop_hoc'
                     );
+
+                    // Dùng phan_loai là 'mo_lop' để báo đây là yêu cầu giao lớp
+                    $sqlYeuCau = "INSERT INTO yeu_cau 
+                        (nguoi_tao_id, loai_nguoi_tao, phan_loai, tieu_de, noi_dung, lop_hoc_id, gia_su_id, trang_thai) 
+                        VALUES (1, 'admin', 'mo_lop', 'Yêu cầu nhận lớp mới', :noi_dung, :lop_hoc_id, :gia_su_id, 'dang_xu_ly')";
+                    Database::execute($sqlYeuCau, [
+                        ':noi_dung' => "Trung tâm mời bạn giảng dạy lớp {$tenLop}. Bạn có muốn nhận lớp này không?",
+                        ':lop_hoc_id' => $createdId,
+                        ':gia_su_id' => $giaSuDuKien
+                    ]);
                 }
                 
                 http_response_code(201);
@@ -84,37 +126,60 @@ class LopHocController {
         }
 
         try {
+            // Lấy thông tin lớp học cũ để xem có thay đổi gia sư không
+            $lopHocCu = LopHoc::getById($id);
+            $giaSuCu = $lopHocCu ? $lopHocCu['gia_su_id'] : null;
+
+            // Lấy yêu cầu mời gần nhất (nếu có) để biết lớp này đang kẹt với ai
+            $yeuCauCu = Database::queryOne("SELECT gia_su_id, trang_thai FROM yeu_cau WHERE lop_hoc_id = ? AND phan_loai = 'mo_lop' ORDER BY yeu_cau_id DESC LIMIT 1", [$id]);
+            $giaSuDangMoi = ($yeuCauCu && $yeuCauCu['trang_thai'] === 'dang_xu_ly') ? $yeuCauCu['gia_su_id'] : null;
+
+            $giaSuMoi = $data['gia_su_id'] ?? null;
+            $tenLop = $lopHocCu['ten_lop'] ?? "Lớp $id";
+
+            $dangMoiGiaSu = false;
+
+            // NẾU ADMIN GÁN LỚP CHO MỘT GIA SƯ MỚI HOÀN TOÀN
+            if (!empty($giaSuMoi)) {
+                if ($giaSuMoi != $giaSuCu && $giaSuMoi != $giaSuDangMoi) {
+                    $dangMoiGiaSu = true;
+                    $data['gia_su_id'] = $giaSuCu; // Giữ nguyên gia sư cũ của DB (hoặc NULL) khoan hãy cập nhật DB
+                } else {
+                    $data['gia_su_id'] = $giaSuCu; // Chống ghi đè sai
+                }
+            } else {
+                $data['gia_su_id'] = null; // Hủy gia sư
+            }
+
+            // Lọc trạng thái ảo bị tuồn xuống
+            if (in_array($data['trang_thai'], ['cho_gia_su', 'tu_choi'])) {
+                $data['trang_thai'] = 'sap_mo'; 
+            }
+
             $result = LopHoc::update($id, $data);
             if ($result !== false) {
-                // Nếu có phân công gia sư, gửi thông báo cho gia sư
-                if (!empty($data['gia_su_id'])) {
+                
+                if ($dangMoiGiaSu) {
                     ThongBaoModel::guiThongBao(
-                        $data['gia_su_id'],
-                        'gia_su',
-                        'Được phân công dạy lớp mới',
-                        "Bạn đã được phân công dạy một lớp học mới. Vui lòng kiểm tra lịch dạy.",
-                        'lop_hoc'
+                        $giaSuMoi, 'gia_su', 'Lời mời nhận lớp mới',
+                        "Trung tâm vừa gửi cho bạn một yêu cầu nhận lớp: {$tenLop}. Vui lòng vào mục Yêu cầu mới để xác nhận.", 'lop_hoc'
                     );
+
+                    // Tự động sinh ra phiếu yêu cầu mới
+                    $sqlYeuCau = "INSERT INTO yeu_cau 
+                        (nguoi_tao_id, loai_nguoi_tao, phan_loai, tieu_de, noi_dung, lop_hoc_id, gia_su_id, trang_thai) 
+                        VALUES (1, 'admin', 'mo_lop', 'Yêu cầu nhận lớp mới', :noi_dung, :lop_hoc_id, :gia_su_id, 'dang_xu_ly')";
+                    Database::execute($sqlYeuCau, [
+                        ':noi_dung' => "Trung tâm mời bạn đảm nhiệm giảng dạy lớp {$tenLop}. Bạn có muốn nhận lớp này không?",
+                        ':lop_hoc_id' => $id,
+                        ':gia_su_id' => $giaSuMoi
+                    ]);
                 }
+
                 // Thông báo cho phụ huynh và học sinh khi lịch học thay đổi
-                if (!empty($data['lich_hoc'])) {
-                    $lopHoc = LopHoc::getById($id);
-                    if ($lopHoc) {
-                        ThongBaoModel::guiThongBao(
-                            $lopHoc['phu_huynh_id'],
-                            'phu_huynh',
-                            'Lịch học đã thay đổi',
-                            "Lịch học của lớp " . $lopHoc['ten_lop'] . " đã thay đổi. Vui lòng kiểm tra lại.",
-                            'lop_hoc'
-                        );
-                        ThongBaoModel::guiThongBao(
-                            $lopHoc['hoc_sinh_id'],
-                            'hoc_sinh',
-                            'Lịch học đã thay đổi',
-                            "Lịch học của lớp " . $lopHoc['ten_lop'] . " đã thay đổi. Vui lòng kiểm tra lại.",
-                            'lop_hoc'
-                        );
-                    }
+                if (!empty($data['lich_hoc']) && $lopHocCu) {
+                    ThongBaoModel::guiThongBao($lopHocCu['phu_huynh_id'], 'phu_huynh', 'Lịch học đã thay đổi', "Lịch học của lớp " . $lopHocCu['ten_lop'] . " đã thay đổi. Vui lòng kiểm tra lại.", 'lop_hoc');
+                    ThongBaoModel::guiThongBao($lopHocCu['hoc_sinh_id'], 'hoc_sinh', 'Lịch học đã thay đổi', "Lịch học của lớp " . $lopHocCu['ten_lop'] . " đã thay đổi. Vui lòng kiểm tra lại.", 'lop_hoc');
                 }
                 echo json_encode(["status" => "success", "message" => "Cập nhật lớp học thành công!"]);
             }
@@ -246,7 +311,6 @@ class LopHocController {
                 return;
             }
             
-            // Check if already registered with approved status
             $checkSql = "SELECT dang_ky_id, trang_thai FROM dang_ky_lop WHERE hoc_sinh_id = :hs_id AND lop_hoc_id = :lop_id";
             $exist = Database::query($checkSql, [
                 ':hs_id' => $data['hoc_sinh_id'],
@@ -259,7 +323,6 @@ class LopHocController {
                 return;
             }
 
-            // Lấy thông tin lớp
             $checkCapacity = "SELECT so_luong_hien_tai, so_luong_toi_da FROM lop_hoc WHERE lop_hoc_id = :lop_hoc_id";
             $lop = Database::query($checkCapacity, [':lop_hoc_id' => $id]);
             
@@ -275,13 +338,11 @@ class LopHocController {
                 return;
             }
 
-            // Nếu đã có bản ghi với trạng thái không phải da_duyet, cập nhật thành da_duyet
             if ($exist) {
                 $updateSql = "UPDATE dang_ky_lop SET trang_thai = 'da_duyet', ngay_duyet = CURRENT_TIMESTAMP 
                               WHERE dang_ky_id = :id";
                 $result = Database::execute($updateSql, [':id' => $exist[0]['dang_ky_id']]);
             } else {
-                // Tạo bản ghi mới với trạng thái da_duyet (tự động duyệt từ admin)
                 $insertSql = "INSERT INTO dang_ky_lop (hoc_sinh_id, lop_hoc_id, trang_thai, ngay_duyet) 
                               VALUES (:hoc_sinh_id, :lop_hoc_id, 'da_duyet', CURRENT_TIMESTAMP)";
                 $result = Database::execute($insertSql, [
@@ -291,7 +352,6 @@ class LopHocController {
             }
             
             if ($result) {
-                // Cập nhật số lượng học sinh hiện tại của lớp
                 Database::execute(
                     "UPDATE lop_hoc SET so_luong_hien_tai = so_luong_hien_tai + 1 WHERE lop_hoc_id = :lop_id",
                     [':lop_id' => $id]
@@ -316,7 +376,6 @@ class LopHocController {
         try {
             require_once __DIR__ . '/../models/DangKyLop.php';
 
-            // Get the registration record to get current status
             $checkSql = "SELECT dang_ky_id, trang_thai FROM dang_ky_lop WHERE lop_hoc_id = :lop_id AND hoc_sinh_id = :hs_id";
             $record = Database::query($checkSql, [
                 ':lop_id' => $id,
@@ -329,7 +388,6 @@ class LopHocController {
                 return;
             }
 
-            // Update status to da_huy instead of deleting
             DangKyLop::updateStatus($record[0]['dang_ky_id'], 'da_huy');
 
             echo json_encode(["status" => "success", "message" => "Đã xóa học sinh khỏi lớp"]);

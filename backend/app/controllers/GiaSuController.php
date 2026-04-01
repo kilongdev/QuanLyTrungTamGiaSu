@@ -270,4 +270,35 @@ class GiaSuController
             ], JSON_UNESCAPED_UNICODE);
         }
     }
+
+    public static function getDashboard(): void
+    {
+        // Lấy gia_su_id từ tham số URL (GET)
+        $giaSuId = $_GET['gia_su_id'] ?? null;
+
+        if (!$giaSuId) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Thiếu tham số gia_su_id'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        try {
+            $stats = GiaSu::getDashboardStats($giaSuId);
+
+            echo json_encode([
+                'status' => 'success',
+                'data' => $stats
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
 }
