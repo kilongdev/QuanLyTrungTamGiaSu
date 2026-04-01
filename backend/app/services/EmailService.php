@@ -12,9 +12,9 @@ class EmailService
         return [
             'host' => Env::get('SMTP_HOST', 'smtp.gmail.com'),
             'port' => Env::get('SMTP_PORT', 587),
-            'username' => Env::get('SMTP_USERNAME', 'n.kimlong205@gmail.com'),
-            'password' => Env::get('SMTP_PASSWORD', 'xtsr aaox xbmc xias'),
-            'fromEmail' => Env::get('SMTP_FROM_EMAIL', 'n.kimlong205@gmail.com'),
+            'username' => Env::get('SMTP_USERNAME', ''),
+            'password' => Env::get('SMTP_PASSWORD', ''),
+            'fromEmail' => Env::get('SMTP_FROM_EMAIL', 'no-reply@example.com'),
             'fromName' => Env::get('SMTP_FROM_NAME', 'Trung Tâm Gia Sư'),
         ];
     }

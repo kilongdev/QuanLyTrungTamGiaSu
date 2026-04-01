@@ -238,7 +238,7 @@ CREATE TABLE `gia_su` (
   `dia_chi` text DEFAULT NULL,
   `anh_dai_dien` varchar(255) DEFAULT NULL,
   `bang_cap` text DEFAULT NULL,
-  `chung_chi` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`chung_chi`)),
+  `chung_chi` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `gioi_thieu` text DEFAULT NULL,
   `kinh_nghiem` text DEFAULT NULL,
   `so_tai_khoan_ngan_hang` varchar(50) DEFAULT NULL,
@@ -484,7 +484,7 @@ CREATE TABLE `lop_hoc` (
   `gia_tri_chi_tra` decimal(10,2) DEFAULT NULL,
   `chu_ky_thanh_toan` varchar(20) DEFAULT 'theo_thang',
   `trang_thai` enum('sap_mo','dang_hoc','ket_thuc','dong') DEFAULT 'sap_mo',
-  `ngay_tao` date DEFAULT current_timestamp(),
+  `ngay_tao` datetime DEFAULT current_timestamp(),
   `ngay_bat_dau` date DEFAULT NULL,
   `ngay_ket_thuc` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

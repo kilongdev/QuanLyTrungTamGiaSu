@@ -7,6 +7,7 @@ import {
   Trash2,
   Edit2,
   MessageSquare,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,6 +19,12 @@ export default function YeuCauManagement({ user }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    message: "",
+    onConfirm: null,
+  });
 
   const currentUserId =
     user?.id ||
@@ -117,15 +124,30 @@ export default function YeuCauManagement({ user }) {
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa yêu cầu này?")) return;
-    try {
-      await yeuCauAPI.delete(id);
-      toast.success("Xóa yêu cầu thành công!");
-      fetchYeuCaus();
-    } catch (error) {
-      toast.error(error.message || "Không thể xóa yêu cầu này");
-    }
+  const handleDelete = (id) => {
+    setConfirmModal({
+      show: true,
+      message: `Bạn có chắc chắn muốn xoá yêu cầu này?`,
+      onConfirm: async () => {
+        setConfirmModal({ show: false, message: "", onConfirm: null });
+
+        const loadingToast = toast.loading("Đang xoá yêu cầu...");
+
+        try {
+          await yeuCauAPI.delete(id);
+
+          toast.success("Xóa yêu cầu thành công!", {
+            id: loadingToast,
+          });
+
+          fetchYeuCaus(); // hoặc fetchData()
+        } catch (error) {
+          toast.error(error.message || "Không thể xóa yêu cầu này", {
+            id: loadingToast,
+          });
+        }
+      },
+    });
   };
 
   const resetForm = () => {
@@ -189,8 +211,13 @@ export default function YeuCauManagement({ user }) {
     const creatorRole = String(yc.loai_nguoi_tao || "").toLowerCase();
     const type = String(yc.phan_loai || "").toLowerCase();
 
-    const keywordMatch = !keyword || title.includes(keyword) || creatorRole.includes(keyword) || type.includes(keyword);
-    const statusMatch = selectedStatus === "all" || yc.trang_thai === selectedStatus;
+    const keywordMatch =
+      !keyword ||
+      title.includes(keyword) ||
+      creatorRole.includes(keyword) ||
+      type.includes(keyword);
+    const statusMatch =
+      selectedStatus === "all" || yc.trang_thai === selectedStatus;
     const typeMatch = selectedType === "all" || yc.phan_loai === selectedType;
 
     return keywordMatch && statusMatch && typeMatch;
@@ -209,8 +236,12 @@ export default function YeuCauManagement({ user }) {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-5 border-b border-gray-200">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Quản lý Yêu cầu hỗ trợ</h2>
-            <p className="text-gray-500 text-sm mt-1">Tổng số: {yeuCaus.length} yêu cầu</p>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Quản lý Yêu cầu hỗ trợ
+            </h2>
+            <p className="text-gray-500 text-sm mt-1">
+              Tổng số: {yeuCaus.length} yêu cầu
+            </p>
           </div>
           {user?.role !== "admin" && (
             <button
@@ -229,7 +260,10 @@ export default function YeuCauManagement({ user }) {
         <div className="p-5 border-b border-gray-200">
           <div className="flex flex-col md:flex-row md:items-center rounded-xl border border-gray-200 bg-gray-50 overflow-hidden">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+              />
               <input
                 type="text"
                 placeholder="Tìm theo tiêu đề, người gửi hoặc phân loại..."
@@ -273,55 +307,102 @@ export default function YeuCauManagement({ user }) {
 
         {filteredYeuCaus.length === 0 ? (
           <div className="p-16 text-center border-b border-gray-200">
-            <p className="text-gray-600 text-lg font-medium">Không có dữ liệu yêu cầu</p>
-            <p className="text-gray-400 text-sm mt-2">Thử thay đổi từ khóa hoặc bộ lọc nâng cao</p>
+            <p className="text-gray-600 text-lg font-medium">
+              Không có dữ liệu yêu cầu
+            </p>
+            <p className="text-gray-400 text-sm mt-2">
+              Thử thay đổi từ khóa hoặc bộ lọc nâng cao
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto border-b border-gray-200">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">STT</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tiêu đề</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Người gửi</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Phân loại</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Ngày gửi</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Thao tác</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    STT
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Tiêu đề
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Người gửi
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Phân loại
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Ngày gửi
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Trạng thái
+                  </th>
+                  <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Thao tác
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredYeuCaus.map((yc, index) => (
-                  <tr key={yc.yeu_cau_id} className="hover:bg-red-50/40 transition-colors duration-200">
-                    <td className="px-6 py-4 text-sm text-gray-500">{index + 1}</td>
+                  <tr
+                    key={yc.yeu_cau_id}
+                    className="hover:bg-red-50/40 transition-colors duration-200"
+                  >
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {index + 1}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="min-w-[220px] max-w-[360px]">
-                        <p className="text-sm font-semibold text-gray-900 line-clamp-1" title={yc.tieu_de}>{yc.tieu_de}</p>
-                        <p className="text-xs text-gray-500 line-clamp-1 mt-0.5" title={yc.noi_dung}>{yc.noi_dung}</p>
+                        <p
+                          className="text-sm font-semibold text-gray-900 line-clamp-1"
+                          title={yc.tieu_de}
+                        >
+                          {yc.tieu_de}
+                        </p>
+                        <p
+                          className="text-xs text-gray-500 line-clamp-1 mt-0.5"
+                          title={yc.noi_dung}
+                        >
+                          {yc.noi_dung}
+                        </p>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
                       <span className="inline-flex items-center gap-1">
                         <MessageSquare size={14} className="text-blue-500" />
-                        {yc.loai_nguoi_tao === "gia_su" ? "Gia sư" : "Phụ huynh"}
+                        {yc.loai_nguoi_tao === "gia_su"
+                          ? "Gia sư"
+                          : "Phụ huynh"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{getPhanLoaiLabel(yc.phan_loai)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {getPhanLoaiLabel(yc.phan_loai)}
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {yc.ngay_tao ? new Date(yc.ngay_tao).toLocaleDateString("vi-VN") : "N/A"}
+                      {yc.ngay_tao
+                        ? new Date(yc.ngay_tao).toLocaleDateString("vi-VN")
+                        : "N/A"}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getTrangThaiColor(yc.trang_thai)}`}>
+                      <span
+                        className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getTrangThaiColor(yc.trang_thai)}`}
+                      >
                         {getTrangThaiLabel(yc.trang_thai)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
-                        {(user?.role === "admin" || (user?.role !== "admin" && yc.trang_thai === "cho_duyet")) && (
+                        {(user?.role === "admin" ||
+                          (user?.role !== "admin" &&
+                            yc.trang_thai === "cho_duyet")) && (
                           <button
                             onClick={() => handleEdit(yc)}
                             className="p-2 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                            title={user?.role === "admin" ? "Xử lý/Cập nhật" : "Chỉnh sửa nội dung"}
+                            title={
+                              user?.role === "admin"
+                                ? "Xử lý/Cập nhật"
+                                : "Chỉnh sửa nội dung"
+                            }
                           >
                             <Edit2 size={18} />
                           </button>
@@ -345,6 +426,43 @@ export default function YeuCauManagement({ user }) {
       </div>
 
       {/* Modal Form */}
+
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 ">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden p-6 text-center">
+            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={32} className="text-amber-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Xác nhận Xoá
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={() =>
+                  setConfirmModal({
+                    show: false,
+                    message: "",
+                    onConfirm: null,
+                  })
+                }
+                className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() =>
+                  confirmModal.onConfirm && confirmModal.onConfirm()
+                }
+                className="flex-1 py-2.5 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-700"
+              >
+                Đồng ý
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">

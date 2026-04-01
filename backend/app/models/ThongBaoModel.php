@@ -5,17 +5,37 @@ class ThongBaoModel extends BaseModel {
     protected $table = 'thong_bao';
     protected $primaryKey = 'thong_bao_id';
 
+    private static function normalizeLoaiNguoiGui($loaiNguoiGui) {
+        $allowed = ['admin', 'gia_su', 'phu_huynh'];
+        return in_array($loaiNguoiGui, $allowed, true) ? $loaiNguoiGui : null;
+    }
+
+    private static function normalizeLoaiThongBao($loaiThongBao) {
+        $allowed = ['he_thong', 'lop_hoc', 'thanh_toan', 'hoc_phi', 'yeu_cau', 'danh_gia', 'khac'];
+
+        if (in_array($loaiThongBao, $allowed, true)) {
+            return $loaiThongBao;
+        }
+
+        $map = [
+            'lich_hoc' => 'lop_hoc',
+            'tin_nhan' => 'he_thong'
+        ];
+
+        return $map[$loaiThongBao] ?? 'khac';
+    }
+
     /**
      * Gửi thông báo - helper method static để gọi từ controller khác
      */
     public static function guiThongBao($nguoiNhanId, $loaiNguoiNhan, $tieuDe, $noiDung, $loaiThongBao = 'he_thong', $nguoiGuiId = 0, $loaiNguoiGui = 'system') {
         $model = new self();
         return $model->create([
-            'nguoi_gui_id' => $nguoiGuiId,
-            'loai_nguoi_gui' => $loaiNguoiGui,
+            'nguoi_gui_id' => $nguoiGuiId > 0 ? $nguoiGuiId : null,
+            'loai_nguoi_gui' => self::normalizeLoaiNguoiGui($loaiNguoiGui),
             'nguoi_nhan_id' => $nguoiNhanId,
             'loai_nguoi_nhan' => $loaiNguoiNhan,
-            'loai_thong_bao' => $loaiThongBao,
+            'loai_thong_bao' => self::normalizeLoaiThongBao($loaiThongBao),
             'tieu_de' => $tieuDe,
             'noi_dung' => $noiDung
         ]);
@@ -26,11 +46,11 @@ class ThongBaoModel extends BaseModel {
                 VALUES (:gui_id, :loai_gui, :nhan_id, :loai_nhan, :loai_tb, :tieu_de, :noi_dung, 0, NOW())";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([
-            ':gui_id' => $data['nguoi_gui_id'],
-            ':loai_gui' => $data['loai_nguoi_gui'],
+            ':gui_id' => $data['nguoi_gui_id'] ?? null,
+            ':loai_gui' => self::normalizeLoaiNguoiGui($data['loai_nguoi_gui'] ?? null),
             ':nhan_id' => $data['nguoi_nhan_id'],
             ':loai_nhan' => $data['loai_nguoi_nhan'],
-            ':loai_tb' => $data['loai_thong_bao'] ?? 'he_thong',
+            ':loai_tb' => self::normalizeLoaiThongBao($data['loai_thong_bao'] ?? 'he_thong'),
             ':tieu_de' => $data['tieu_de'],
             ':noi_dung' => $data['noi_dung']
         ]);

@@ -8,22 +8,21 @@ import { lopHocAPI } from '@/api/lophocApi';
 import { doanhThuAPI } from '@/api/doanhThuApi';
 
 function StatCard({ icon, label, value, color, loading, subtext }) {
+  const bgColor = color.replace('border-', 'bg-').replace('-500', '-50');
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border-l-4 ${color} hover:shadow-md transition-shadow h-[140px] p-5 flex flex-col justify-between`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
-          {loading ? (
-            <div className="mt-3 h-7 w-20 bg-gray-200 rounded animate-pulse"></div>
-          ) : (
-            <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
-          )}
-        </div>
-        <div className={`p-2.5 rounded-full flex-shrink-0 ${color.replace('border-', 'bg-').replace('-500', '-100')}`}>
-          {icon}
-        </div>
+    <div className="flex items-center gap-4">
+      <div className={`${bgColor} p-3 rounded-lg flex-shrink-0`}>
+        {icon}
       </div>
-      {subtext && !loading && <p className="text-xs text-gray-400 mt-auto">{subtext}</p>}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
+        {loading ? (
+          <div className="mt-2 h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+        ) : (
+          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+        )}
+        {subtext && !loading && <p className="text-xs text-gray-400 mt-1">{subtext}</p>}
+      </div>
     </div>
   );
 }

@@ -53,12 +53,82 @@ class LichHocController {
                 http_response_code(400);
                 echo json_encode(["status" => "error", "message" => "Thiếu thông tin chu kỳ"]); return;
             }
-            if ($so_buoi_can_tao <= 0) {
-                http_response_code(400);
-                echo json_encode(["status" => "error", "message" => "Lớp này đã xếp đủ {$tong_so_buoi} buổi. Không thể tạo thêm!"]); return;
-            }
 
             try {
+                // Không xóa cứng để tránh vỡ FK từ lich_hoc -> lich_dinh_ky.
+                // Luồng đúng: cập nhật bản ghi theo thứ trong tuần, ngày nào bỏ chọn thì chuyển sang 'dung'.
+                $ngay_ket_thuc = !empty($data['ngay_ket_thuc']) ? $data['ngay_ket_thuc'] : null;
+                $selectedDays = array_map('intval', $data['ngay_trong_tuan']);
+
+                $existingRecurring = Database::query(
+                    "SELECT lich_dinh_ky_id, thu_trong_tuan
+                     FROM lich_dinh_ky
+                     WHERE lop_hoc_id = ?
+                     ORDER BY lich_dinh_ky_id ASC",
+                    [$lop_hoc_id]
+                );
+
+                $existingByDay = [];
+                foreach ($existingRecurring as $row) {
+                    $thu = (int)$row['thu_trong_tuan'];
+                    if (!isset($existingByDay[$thu])) {
+                        $existingByDay[$thu] = (int)$row['lich_dinh_ky_id'];
+                    }
+                }
+
+                foreach ($selectedDays as $thu) {
+                    if (!isset($data['thoi_gian_tung_ngay'][$thu]['gio_bat_dau']) || !isset($data['thoi_gian_tung_ngay'][$thu]['gio_ket_thuc'])) {
+                        continue;
+                    }
+
+                    $gio_bat_dau = $data['thoi_gian_tung_ngay'][$thu]['gio_bat_dau'];
+                    $gio_ket_thuc = $data['thoi_gian_tung_ngay'][$thu]['gio_ket_thuc'];
+
+                    if (isset($existingByDay[$thu])) {
+                        Database::execute(
+                            "UPDATE lich_dinh_ky
+                             SET gio_bat_dau = ?,
+                                 gio_ket_thuc = ?,
+                                 ngay_bat_dau = ?,
+                                 ngay_ket_thuc = ?,
+                                 trang_thai = 'hoat_dong'
+                             WHERE lich_dinh_ky_id = ?",
+                            [$gio_bat_dau, $gio_ket_thuc, $data['ngay_bat_dau'], $ngay_ket_thuc, $existingByDay[$thu]]
+                        );
+                    } else {
+                        Database::execute(
+                            "INSERT INTO lich_dinh_ky (lop_hoc_id, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, ngay_bat_dau, ngay_ket_thuc, trang_thai)
+                             VALUES (?, ?, ?, ?, ?, ?, 'hoat_dong')",
+                            [$lop_hoc_id, $thu, $gio_bat_dau, $gio_ket_thuc, $data['ngay_bat_dau'], $ngay_ket_thuc]
+                        );
+                    }
+                }
+
+                // Ngày không còn được chọn: chuyển trạng thái 'dung' để giữ toàn vẹn dữ liệu lịch sử.
+                if (!empty($existingRecurring)) {
+                    foreach ($existingRecurring as $row) {
+                        $thu = (int)$row['thu_trong_tuan'];
+                        if (!in_array($thu, $selectedDays, true)) {
+                            Database::execute(
+                                "UPDATE lich_dinh_ky
+                                 SET trang_thai = 'dung', ngay_ket_thuc = COALESCE(ngay_ket_thuc, ?)
+                                 WHERE lich_dinh_ky_id = ?",
+                                [$ngay_ket_thuc ?: date('Y-m-d'), (int)$row['lich_dinh_ky_id']]
+                            );
+                        }
+                    }
+                }
+
+                // Nếu đã đủ số buổi thì chỉ cập nhật mẫu lịch định kỳ, không tạo thêm buổi học mới
+                if ($so_buoi_can_tao <= 0) {
+                    http_response_code(200);
+                    echo json_encode([
+                        "status" => "success",
+                        "message" => "Đã cập nhật lịch định kỳ. Lớp đã đủ {$tong_so_buoi} buổi nên không tạo thêm lịch học mới."
+                    ]);
+                    return;
+                }
+
                 $current_date = $data['ngay_bat_dau'];
                 $count_created = 0; $count_conflict = 0; $loop_guard = 0;
                 $ngay_trong_tuan = $data['ngay_trong_tuan'];
