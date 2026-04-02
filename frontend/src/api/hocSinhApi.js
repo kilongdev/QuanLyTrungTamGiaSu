@@ -3,7 +3,7 @@
  */
 
 // Sử dụng biến môi trường từ Vite hoặc fallback về localhost
-const API_URL = import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api';
 
 /**
  * Gửi request đến API

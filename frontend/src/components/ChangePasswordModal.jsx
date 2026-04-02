@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { X, Save, Eye, EyeOff } from 'lucide-react'
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api'
+
 export default function ChangePasswordModal({ user, onClose }) {
   const [formData, setFormData] = useState({
     oldPassword: '',
@@ -51,7 +53,7 @@ export default function ChangePasswordModal({ user, onClose }) {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/profile/change-password', {
+      const response = await fetch(`${API_URL}/profile/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

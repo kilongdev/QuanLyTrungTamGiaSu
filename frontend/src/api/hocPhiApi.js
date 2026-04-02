@@ -1,4 +1,4 @@
-const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com'}/api.php`;
+const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api'}`;
 
 const getAuthHeaders = () => ({
   'Content-Type': 'application/json',
@@ -8,7 +8,7 @@ const getAuthHeaders = () => ({
 export const hocPhiAPI = {
   getAll: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    const url = `${API_BASE}?route=/hocphi${queryString ? '&' + queryString : ''}`;
+    const url = `${API_BASE}/hocphi${queryString ? `?${queryString}` : ''}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: getAuthHeaders()
@@ -17,7 +17,7 @@ export const hocPhiAPI = {
   },
 
   getByDangKy: async (dangKyId) => {
-    const response = await fetch(`${API_BASE}?route=/hocphi/${dangKyId}`, {
+    const response = await fetch(`${API_BASE}/hocphi/${dangKyId}`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -25,7 +25,7 @@ export const hocPhiAPI = {
   },
 
   create: async (data) => {
-    const response = await fetch(`${API_BASE}?route=/hocphi/create`, {
+    const response = await fetch(`${API_BASE}/hocphi/create`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
@@ -34,7 +34,7 @@ export const hocPhiAPI = {
   },
 
   updateStatus: async (id, data) => {
-    const response = await fetch(`${API_BASE}?route=/hocphi/update/${id}`, {
+    const response = await fetch(`${API_BASE}/hocphi/update/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
@@ -43,7 +43,7 @@ export const hocPhiAPI = {
   },
 
   delete: async (id) => {
-    const response = await fetch(`${API_BASE}?route=/hocphi/delete/${id}`, {
+    const response = await fetch(`${API_BASE}/hocphi/delete/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
@@ -51,7 +51,7 @@ export const hocPhiAPI = {
   },
 
   checkOverdue: async () => {
-    const response = await fetch(`${API_BASE}?route=/hocphi/check-overdue`, {
+    const response = await fetch(`${API_BASE}/hocphi/check-overdue`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -59,7 +59,7 @@ export const hocPhiAPI = {
   },
 
   sendOverdueNotifications: async () => {
-    const response = await fetch(`${API_BASE}?route=/hocphi/send-overdue-notifications`, {
+    const response = await fetch(`${API_BASE}/hocphi/send-overdue-notifications`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -67,7 +67,7 @@ export const hocPhiAPI = {
   },
 
   getDetail: async (hocPhiId) => {
-    const response = await fetch(`${API_BASE}?route=/hocphi/chitiet/${hocPhiId}`, {
+    const response = await fetch(`${API_BASE}/hocphi/chitiet/${hocPhiId}`, {
       method: 'GET',
       headers: getAuthHeaders()
     });

@@ -1,4 +1,4 @@
-const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com'}/api.php`;
+const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api'}`;
 
 const getAuthHeaders = () => ({
   'Content-Type': 'application/json',
@@ -7,7 +7,7 @@ const getAuthHeaders = () => ({
 
 export const luongGiaSuAPI = {
   getAll: async () => {
-    const response = await fetch(`${API_BASE}?route=/luonggiasu`, {
+    const response = await fetch(`${API_BASE}/luonggiasu`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -15,7 +15,7 @@ export const luongGiaSuAPI = {
   },
 
   getByGiaSu: async (giaSuId) => {
-    const response = await fetch(`${API_BASE}?route=/luonggiasu/giasu/${giaSuId}`, {
+    const response = await fetch(`${API_BASE}/luonggiasu/giasu/${giaSuId}`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -23,7 +23,7 @@ export const luongGiaSuAPI = {
   },
 
   getDetail: async (luongId) => {
-    const response = await fetch(`${API_BASE}?route=/luonggiasu/chitiet/${luongId}`, {
+    const response = await fetch(`${API_BASE}/luonggiasu/chitiet/${luongId}`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -31,7 +31,7 @@ export const luongGiaSuAPI = {
   },
 
   getDetailByGroup: async (giaSuId, thang, nam) => {
-    const response = await fetch(`${API_BASE}?route=/luonggiasu/group/${giaSuId}/${thang}/${nam}`, {
+    const response = await fetch(`${API_BASE}/luonggiasu/group/${giaSuId}/${thang}/${nam}`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -39,7 +39,7 @@ export const luongGiaSuAPI = {
   },
 
   create: async (data) => {
-    const response = await fetch(`${API_BASE}?route=/luonggiasu/create`, {
+    const response = await fetch(`${API_BASE}/luonggiasu/create`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
@@ -48,7 +48,7 @@ export const luongGiaSuAPI = {
   },
 
   update: async (luongId, data) => {
-    const response = await fetch(`${API_BASE}?route=/luonggiasu/update/${luongId}`, {
+    const response = await fetch(`${API_BASE}/luonggiasu/update/${luongId}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
@@ -57,7 +57,7 @@ export const luongGiaSuAPI = {
   },
 
   delete: async (luongId) => {
-    const response = await fetch(`${API_BASE}?route=/luonggiasu/delete/${luongId}`, {
+    const response = await fetch(`${API_BASE}/luonggiasu/delete/${luongId}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
@@ -65,7 +65,7 @@ export const luongGiaSuAPI = {
   },
 
   checkOverdue: async () => {
-    const response = await fetch(`${API_BASE}?route=/luonggiasu/check-overdue`, {
+    const response = await fetch(`${API_BASE}/luonggiasu/check-overdue`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
