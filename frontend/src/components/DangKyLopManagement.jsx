@@ -211,6 +211,12 @@ export default function DangKyLopManagement({ user }) {
             <AlertTriangle size={12} /> Đã hủy
           </span>
         );
+        case "da_duyet_truc_tiep":
+          return (
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 flex items-center gap-1 w-max">
+              <CheckCircle size={12} /> Đã duyệt trực tiếp
+            </span>
+          );
       default:
         return (
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600">

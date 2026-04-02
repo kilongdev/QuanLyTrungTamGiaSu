@@ -21,6 +21,15 @@ const WEEKDAY_OPTIONS = [
   { value: 8, label: 'Chủ nhật' }
 ]
 
+const CLASS_STATUS_OPTIONS = [
+  { value: 'sap_mo', label: 'Sắp mở' },
+  { value: 'cho_gia_su_xac_nhan', label: 'Chờ gia sư xác nhận' },
+  { value: 'dang_hoc', label: 'Đang học' },
+  { value: 'gia_su_tu_choi', label: 'Gia sư từ chối' },
+  { value: 'ket_thuc', label: 'Kết thúc' },
+  { value: 'dong', label: 'Đóng' }
+]
+
 export default function LopHocEditPage({ classId }) {
   const id = classId
   const navigate = useNavigate()
@@ -253,6 +262,25 @@ export default function LopHocEditPage({ classId }) {
       
       // GỌI API CẬP NHẬT LỚP HỌC (Nếu kẹt lịch, Backend sẽ văng lỗi đỏ ngay lập tức)
       await lopHocAPI.update(id, payload)
+
+      if (shouldSaveRecurringSchedule) {
+        const thoiGianTungNgay = scheduleForm.ngay_trong_tuan.reduce((acc, thu) => {
+          acc[thu] = {
+            gio_bat_dau: scheduleForm.gio_bat_dau,
+            gio_ket_thuc: scheduleForm.gio_ket_thuc
+          }
+          return acc
+        }, {})
+
+        await lichHocAPI.create({
+          tao_chu_ky: true,
+          lop_hoc_id: id,
+          ngay_bat_dau: scheduleForm.ngay_bat_dau,
+          ngay_ket_thuc: formData.ngay_ket_thuc || null,
+          ngay_trong_tuan: scheduleForm.ngay_trong_tuan,
+          thoi_gian_tung_ngay: thoiGianTungNgay
+        })
+      }
 
       toast.success(shouldSaveRecurringSchedule ? 'Đã cập nhật lớp học và lịch học mới' : 'Cập nhật lớp học thành công')
       
@@ -488,10 +516,9 @@ export default function LopHocEditPage({ classId }) {
               onChange={(e) => setFormData((prev) => ({ ...prev, trang_thai: e.target.value }))}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
             >
-              <option value="sap_mo">Sắp mở</option>
-              <option value="dang_hoc">Đang học</option>
-              <option value="ket_thuc">Kết thúc</option>
-              <option value="dong">Đóng</option>
+              {CLASS_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
           </div>
 
