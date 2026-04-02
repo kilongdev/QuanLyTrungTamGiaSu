@@ -366,8 +366,11 @@ export default function LopHocManagement() {
       'dang_hoc': 'Đang học',
       'ket_thuc': 'Kết thúc',
       'dong': 'Đóng',
-      'cho_gia_su': '⏳ Đang chờ Gia sư',
-      'tu_choi': '❌ Gia sư từ chối'
+        'cho_gia_su': 'Chờ gia sư xác nhận',
+        'tu_choi': 'Gia sư từ chối',
+        'cho_gia_su_xac_nhan': 'Chờ gia sư xác nhận',
+        'gia_su_tu_choi': 'Gia sư từ chối',
+        'da_duyet_truc_tiep': 'Đã duyệt trực tiếp'
     }
     return labels[trangThai] || trangThai
   }
@@ -378,8 +381,11 @@ export default function LopHocManagement() {
       'dang_hoc': 'bg-green-100 text-green-700',
       'ket_thuc': 'bg-gray-100 text-gray-700',
       'dong': 'bg-red-100 text-red-700',
-      'cho_gia_su': 'bg-orange-100 text-orange-700 border border-orange-300 animate-pulse',
-      'tu_choi': 'bg-red-100 text-red-700 border border-red-400 font-bold shadow-sm'
+        'cho_gia_su': 'bg-orange-100 text-orange-700 border border-orange-300',
+        'tu_choi': 'bg-red-100 text-red-700 border border-red-400 font-bold shadow-sm',
+        'cho_gia_su_xac_nhan': 'bg-orange-100 text-orange-700 border border-orange-300',
+        'gia_su_tu_choi': 'bg-red-100 text-red-700 border border-red-400 font-bold shadow-sm',
+        'da_duyet_truc_tiep': 'bg-purple-100 text-purple-700 border border-purple-300'
     }
     return colors[trangThai] || 'bg-gray-100 text-gray-700'
   }

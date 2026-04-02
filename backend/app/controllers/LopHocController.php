@@ -176,7 +176,8 @@ class LopHocController {
                 } else { $data['gia_su_id'] = $giaSuCu; }
             } else { $data['gia_su_id'] = null; }
 
-            if (in_array($data['trang_thai'], ['cho_gia_su', 'tu_choi', 'cho_gia_su_xac_nhan', 'gia_su_tu_choi'], true)) { $data['trang_thai'] = 'sap_mo'; }
+            if (($data['trang_thai'] ?? null) === 'cho_gia_su') { $data['trang_thai'] = 'cho_gia_su_xac_nhan'; }
+            if (($data['trang_thai'] ?? null) === 'tu_choi') { $data['trang_thai'] = 'gia_su_tu_choi'; }
 
             $result = LopHoc::update($id, $data);
             if ($result !== false) {
