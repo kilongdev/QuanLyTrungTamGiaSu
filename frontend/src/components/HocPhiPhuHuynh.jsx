@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { Wallet, CreditCard, Clock, CheckCircle, AlertCircle, ChevronRight, User, ReceiptText } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Wallet, CreditCard, Clock, CheckCircle, AlertCircle, ChevronRight, User, Loader2 } from "lucide-react";
 import { phuHuynhAPI } from "../api/phuHuynhApi";
-import { hocPhiAPI } from "../api/hocPhiApi";
 import { cn } from "@/lib/utils";
 
 export default function HocPhiPhuHuynh() {
@@ -32,13 +31,12 @@ export default function HocPhiPhuHuynh() {
     setSelectedStudent(student);
     setLoading(true);
     try {
-      // Gọi API chi tiết con
-      // Backend trả về: { status: 'success', data: { hoc_phi_lich_su: [...] } }
+      // Gọi API chi tiết học sinh của phụ huynh để lấy lịch sử học phí
+      // Gọi API chi tiết con (đã bao gồm hoc_phi_lich_su như bạn đã xác nhận)
       const res = await phuHuynhAPI.getChildDetails(student.hoc_sinh_id);
-
-      // Lấy chính xác mảng lịch sử học phí từ data học sinh
-      const tuitionHistory = res.data?.hoc_phi_lich_su || [];
-      setTuitionData(tuitionHistory);
+      
+      // Dữ liệu trả về từ PhuHuynhController::getChildDetails nằm trong res.data
+      setTuitionData(res.data?.hoc_phi_lich_su || []);
     } catch (error) {
       console.error("Lỗi lấy học phí:", error);
     } finally {
@@ -66,15 +64,65 @@ export default function HocPhiPhuHuynh() {
     return "Chưa thanh toán";
   };
 
+  const summary = tuitionData.reduce((acc, hp) => {
+    const amount = Number(hp.so_tien);
+    if (hp.trang_thai_thanh_toan !== 'da_thanh_toan') {
+        acc.unpaid += amount;
+        acc.unpaidCount += 1;
+    } else {
+        acc.paid += amount;
+        acc.paidCount += 1;
+    }
+    return acc;
+  }, { unpaid: 0, paid: 0, unpaidCount: 0, paidCount: 0 });
+
+  // Component Card cho mỗi khoản phí
+  function FeeCard({ fee }) {
+    return (
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300 animate-in fade-in-50">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+          {/* Left side: Info */}
+          <div className="flex-1">
+            <div className="flex justify-between items-start">
+              <h4 className="font-bold text-lg text-gray-900">{fee.ten_lop}</h4>
+              <span className={cn("px-3 py-1 rounded-full text-xs font-bold border", getStatusStyle(fee.trang_thai_thanh_toan))}>
+                {getStatusText(fee.trang_thai_thanh_toan)}
+              </span>
+            </div>
+            <p className="text-sm text-gray-500">{fee.ten_mon_hoc}</p>
+            <div className="mt-2 text-sm text-gray-600 flex items-center gap-2">
+              <Clock size={14} className="text-gray-400" />
+              Hạn đóng: {fee.ngay_den_han ? new Date(fee.ngay_den_han).toLocaleDateString("vi-VN") : "---"}
+            </div>
+          </div>
+          {/* Right side: Amount and Action */}
+          <div className="flex-shrink-0 text-right sm:ml-4">
+            <p className="font-bold text-red-600 text-2xl">{Number(fee.so_tien).toLocaleString("vi-VN")} đ</p>
+            {fee.trang_thai_thanh_toan !== "da_thanh_toan" && (
+              <button className="mt-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg py-2 px-4 transition-colors shadow-md shadow-blue-100">
+                Thanh toán
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Wallet className="text-blue-600" /> Quản lý Học phí
-          </h1>
-          <p className="text-gray-500 text-sm">Theo dõi và thanh toán học phí cho các con của bạn</p>
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-white rounded-full shadow-md">
+            <Wallet className="text-blue-600" size={28} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Quản lý Học phí
+            </h1>
+            <p className="text-gray-600 mt-1">Theo dõi và thanh toán học phí cho các con của bạn.</p>
+          </div>
         </div>
       </div>
 
@@ -105,79 +153,52 @@ export default function HocPhiPhuHuynh() {
         </div>
 
         {/* Nội dung học phí */}
-        <div className="lg:col-span-3">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-5 border-b border-gray-50 bg-gray-50/50">
-              <h3 className="font-bold text-gray-800">
-                Học phí của bé: <span className="text-blue-600">{selectedStudent?.ho_ten}</span>
-              </h3>
-            </div>
+        <div className="lg:col-span-3 space-y-6">
+          {/* Header */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-bold text-gray-800 text-xl">
+              Học phí của bé: <span className="text-blue-600">{selectedStudent?.ho_ten || "..."}</span>
+            </h3>
+          </div>
 
+          {/* Summary Cards */}
+          { !loading && tuitionData.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in-50">
+              <div className="bg-red-50 border border-red-200 p-5 rounded-xl">
+                  <p className="text-sm font-medium text-red-800">Tổng tiền cần thanh toán</p>
+                  <p className="text-3xl font-bold text-red-700 mt-1">{summary.unpaid.toLocaleString('vi-VN')} đ</p>
+                  <p className="text-xs text-red-600 mt-1">{summary.unpaidCount} khoản chưa đóng</p>
+              </div>
+              <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-xl">
+                  <p className="text-sm font-medium text-emerald-800">Tổng tiền đã thanh toán</p>
+                  <p className="text-3xl font-bold text-emerald-700 mt-1">{summary.paid.toLocaleString('vi-VN')} đ</p>
+                  <p className="text-xs text-emerald-600 mt-1">{summary.paidCount} khoản đã đóng</p>
+              </div>
+            </div>
+          )}
+
+          {/* Fee List */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-700 text-lg pt-2">Chi tiết các khoản phí</h4>
             {loading ? (
-              <div className="p-20 text-center text-gray-400">Đang tải dữ liệu...</div>
+              <div className="p-10 text-center text-gray-400 bg-white rounded-2xl shadow-sm border flex flex-col items-center justify-center min-h-[200px]">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
+                Đang tải dữ liệu...
+              </div>
             ) : tuitionData.length === 0 ? (
-              <div className="p-20 text-center space-y-3">
+              <div className="p-10 text-center space-y-3 bg-white rounded-2xl shadow-sm border min-h-[200px] flex flex-col items-center justify-center">
                 <CreditCard size={48} className="mx-auto text-gray-200" />
                 <p className="text-gray-500">Bé hiện chưa có thông tin học phí.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="text-xs uppercase text-gray-400 font-bold border-b border-gray-100">
-                      <th className="px-6 py-4">Lớp học</th>
-                      <th className="px-6 py-4 text-center">Kỳ hạn</th>
-                      <th className="px-6 py-4 text-right">Số tiền</th>
-                      <th className="px-6 py-4">Hạn đóng</th>
-                      <th className="px-6 py-4">Trạng thái</th>
-                      <th className="px-6 py-4"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {tuitionData.map((hp) => (
-                      <tr key={hp.hoc_phi_id} className="hover:bg-gray-50/80 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-gray-800">{hp.ten_lop}</div>
-                          <div className="text-xs text-gray-500">{hp.ten_mon_hoc}</div>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="text-sm text-gray-600">
-                            {hp.thang && hp.nam ? `Tháng ${hp.thang}/${hp.nam}` : "Cả khóa"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className="font-bold text-red-600">
-                            {Number(hp.so_tien).toLocaleString("vi-VN")} đ
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Clock size={14} />
-                            {hp.ngay_den_han ? new Date(hp.ngay_den_han).toLocaleDateString("vi-VN") : "---"}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={cn("px-3 py-1 rounded-full text-xs font-bold border", getStatusStyle(hp.trang_thai_thanh_toan))}>
-                            {getStatusText(hp.trang_thai_thanh_toan)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {hp.trang_thai_thanh_toan !== "da_thanh_toan" && (
-                            <button className="text-xs font-bold text-blue-600 hover:underline">
-                              Thanh toán ngay
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              tuitionData.map((hp) => (
+                <FeeCard key={hp.hoc_phi_id} fee={hp} />
+              ))
             )}
           </div>
 
           {/* Gợi ý chuyển khoản */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-4">
+          <div className="p-5 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-4">
             <div className="p-2 bg-white rounded-lg shadow-sm">
               <AlertCircle className="text-blue-600" size={20} />
             </div>
