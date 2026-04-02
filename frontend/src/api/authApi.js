@@ -2,7 +2,7 @@
  * Xử lý đăng nhập, đăng ký, JWT cho Admin, Gia Sư, Phụ Huynh
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api';
 
 /**
  * Gửi request đến API

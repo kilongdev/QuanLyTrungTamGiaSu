@@ -3,7 +3,7 @@
  * Quản lý thông tin cá nhân admin
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api';
 
 /**
  * Gửi request đến API

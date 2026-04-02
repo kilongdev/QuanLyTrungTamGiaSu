@@ -5,7 +5,7 @@ import { validateTutorForm } from '@/lib/validators'
 import DataPagination from '@/components/ui/DataPagination'
 import { toast } from 'sonner'
 
-const API_URL = (import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com').replace(/\/$/, '')
+const API_URL = (import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api').replace(/\/$/, '')
 
 export default function GiaSuManagement() {
   const [tutors, setTutors] = useState([])

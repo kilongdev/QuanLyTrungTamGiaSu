@@ -4,7 +4,7 @@ import DataPagination from '@/components/ui/DataPagination'
 import { toast } from 'sonner'
 import { luongGiaSuAPI } from '@/api/luongGiaSuApi'
 
-const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com'}/api.php`
+const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api'}`
 
 // Component hiển thị badge trạng thái thanh toán
 function StatusBadge({ status, edited }) {
@@ -62,7 +62,7 @@ export default function LuongGiaSuManagement({ user }) {
 
   const fetchGiaSuList = async () => {
     try {
-      const response = await fetch(`${API_BASE}?route=/giasu&limit=100`, {
+      const response = await fetch(`${API_BASE}/giasu?limit=100`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       })
       const data = await response.json()
@@ -74,7 +74,7 @@ export default function LuongGiaSuManagement({ user }) {
 
   const fetchLopHocList = async () => {
     try {
-      const response = await fetch(`${API_BASE}?route=/lophoc`, {
+      const response = await fetch(`${API_BASE}/lophoc`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       })
       const data = await response.json()

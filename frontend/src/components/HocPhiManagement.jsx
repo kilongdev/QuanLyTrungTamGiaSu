@@ -6,7 +6,7 @@ import { dangKyAPI } from "@/api/dangkyApi";
 import { toast } from 'sonner'
 import { normalizeNumberInputValue } from '@/lib/numberUtils'
 
-const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com'}/api.php`
+const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api'}`
 
 export default function HocPhiManagement({ user }) {
   const [hocPhiData, setHocPhiData] = useState([])
@@ -51,7 +51,7 @@ export default function HocPhiManagement({ user }) {
   // Fetch danh sách học sinh
   const fetchHocSinhList = async () => {
     try {
-      const response = await fetch(`${API_BASE}?route=/hocsinh&limit=500`, {
+      const response = await fetch(`${API_BASE}/hocsinh?limit=500`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       })
       const data = await response.json()

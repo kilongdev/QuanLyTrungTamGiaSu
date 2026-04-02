@@ -1,4 +1,4 @@
-const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com'}/api.php`;
+const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api'}`;
 
 const getAuthHeaders = () => ({
   'Content-Type': 'application/json',
@@ -8,7 +8,7 @@ const getAuthHeaders = () => ({
 export const doanhThuAPI = {
   getOverview: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    const url = `${API_BASE}?route=/doanhthu/overview${queryString ? `&${queryString}` : ''}`;
+    const url = `${API_BASE}/doanhthu/overview${queryString ? `?${queryString}` : ''}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: getAuthHeaders(),
@@ -17,7 +17,7 @@ export const doanhThuAPI = {
   },
 
   processMonthly: async (payload = {}) => {
-    const response = await fetch(`${API_BASE}?route=/doanhthu/process`, {
+    const response = await fetch(`${API_BASE}/doanhthu/process`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(payload),
@@ -27,7 +27,7 @@ export const doanhThuAPI = {
 
   getReport: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    const url = `${API_BASE}?route=/doanhthu${queryString ? `&${queryString}` : ''}`;
+    const url = `${API_BASE}/doanhthu${queryString ? `?${queryString}` : ''}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: getAuthHeaders(),
@@ -36,7 +36,7 @@ export const doanhThuAPI = {
   },
 
   getDetails: async (doanhThuId) => {
-    const response = await fetch(`${API_BASE}?route=/doanhthu/${doanhThuId}`, {
+    const response = await fetch(`${API_BASE}/doanhthu/${doanhThuId}`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });

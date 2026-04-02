@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api';
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem("token");
