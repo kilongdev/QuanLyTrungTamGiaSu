@@ -8,7 +8,10 @@ class LopHocController {
     private function checkTutorConflict($giaSuId, $lopHocId, $thuTrongTuanArr, $gioBatDau, $gioKetThuc, $ngayBatDau, $ngayKetThuc) {
         if (empty($giaSuId) || empty($thuTrongTuanArr)) return false;
 
-        $sql = "SELECT ldk.thu_trong_tuan, ldk.gio_bat_dau, ldk.gio_ket_thuc, ldk.ngay_bat_dau, lh.ngay_ket_thuc, lh.ten_lop 
+        // Bổ sung: Lấy ngày học cuối cùng thực tế (max_ngay_hoc) để chặn lỗi vĩnh cửu 2099
+        $sql = "SELECT ldk.thu_trong_tuan, ldk.gio_bat_dau, ldk.gio_ket_thuc, ldk.ngay_bat_dau, 
+                       (SELECT MAX(ngay_hoc) FROM lich_hoc WHERE lop_hoc_id = lh.lop_hoc_id) as max_ngay_hoc,
+                       lh.ngay_ket_thuc, lh.ten_lop 
                 FROM lich_dinh_ky ldk
                 JOIN lop_hoc lh ON ldk.lop_hoc_id = lh.lop_hoc_id
                 WHERE lh.gia_su_id = :gia_su_id 
@@ -26,16 +29,20 @@ class LopHocController {
             foreach ($existingSchedules as $es) {
                 // Kiểm tra trùng Thứ
                 if (in_array($es['thu_trong_tuan'], $thuTrongTuanArr)) {
-                    // Kiểm tra trùng Giờ
+                    
+                    // Giữ nguyên thiết kế so sánh chuỗi của nhóm trưởng
                     if ($gioBatDau < $es['gio_ket_thuc'] && $gioKetThuc > $es['gio_bat_dau']) {
                         
-                        // Kiểm tra trùng Khoảng thời gian (Tháng/Năm)
+                        // Sửa lỗi 2099: Ưu tiên lấy ngày học thực tế cuối cùng làm mốc kết thúc
+                        $old_end_str = !empty($es['max_ngay_hoc']) ? $es['max_ngay_hoc'] : (!empty($es['ngay_ket_thuc']) ? $es['ngay_ket_thuc'] : '2099-12-31');
+                        
                         $start1 = !empty($es['ngay_bat_dau']) ? strtotime($es['ngay_bat_dau']) : strtotime('2000-01-01');
-                        $end1   = !empty($es['ngay_ket_thuc']) ? strtotime($es['ngay_ket_thuc']) : strtotime('2099-12-31');
+                        $end1   = strtotime($old_end_str); // Đã áp dụng mốc kết thúc thực tế
                         
                         $start2 = !empty($ngayBatDau) ? strtotime($ngayBatDau) : strtotime('2000-01-01');
                         $end2   = !empty($ngayKetThuc) ? strtotime($ngayKetThuc) : strtotime('2099-12-31');
                         
+                        // Kiểm tra trùng Khoảng thời gian (Tháng/Năm)
                         if ($start1 <= $end2 && $end1 >= $start2) {
                             return $es['ten_lop'] ? $es['ten_lop'] : "một lớp khác";
                         }
@@ -87,7 +94,8 @@ class LopHocController {
             $conflictClass = $this->checkTutorConflict(
                 $giaSuDuKien, null, 
                 $tg['ngay_trong_tuan'], $tg['gio_bat_dau'], $tg['gio_ket_thuc'],
-                $tg['ngay_bat_dau'] ?? null, $tg['ngay_ket_thuc'] ?? null
+                $tg['ngay_bat_dau'] ?? null, 
+                $data['ngay_ket_thuc'] ?? null
             );
             
             if ($conflictClass) {
@@ -110,6 +118,19 @@ class LopHocController {
                 $lopHoc = LopHoc::getById($createdId);
                 $tenLop = $lopHoc ? $lopHoc['ten_lop'] : 'lớp học mới';
                 
+                // Đồng bộ lịch thực tế
+                if (!empty($data['thoi_gian_du_kien'])) {
+                    $tg = $data['thoi_gian_du_kien'];
+                    $tong_so_buoi = (int)($data['so_buoi_hoc'] ?? 0);
+                    
+                    require_once __DIR__ . '/../models/LichHoc.php';
+                    $thoi_gian_tung_ngay = [];
+                    foreach ($tg['ngay_trong_tuan'] as $thu) {
+                        $thoi_gian_tung_ngay[$thu] = ['gio_bat_dau' => $tg['gio_bat_dau'], 'gio_ket_thuc' => $tg['gio_ket_thuc']];
+                    }
+                    LichHoc::syncLichDinhKy($createdId, $tg['ngay_bat_dau'], $tg['ngay_trong_tuan'], $thoi_gian_tung_ngay, $tong_so_buoi);
+                }
+
                 ThongBaoModel::guiThongBao(1, 'admin', 'Lớp học mới được tạo', "Lớp {$tenLop} đã được tạo.", 'lop_hoc');
                 
                 if (!empty($giaSuDuKien)) {
@@ -118,12 +139,14 @@ class LopHocController {
                                   VALUES (1, 'admin', 'mo_lop', 'Yêu cầu nhận lớp mới', :noi_dung, :lop_hoc_id, :gia_su_id, 'dang_xu_ly')";
                     Database::execute($sqlYeuCau, [':noi_dung' => "Trung tâm mời bạn giảng dạy lớp {$tenLop}. Bạn có muốn nhận lớp này không?", ':lop_hoc_id' => $createdId, ':gia_su_id' => $giaSuDuKien]);
                 }
-                http_response_code(201); echo json_encode(["status" => "success", "message" => "Tạo lớp học thành công!", "data" => ["lop_hoc_id" => $createdId, "ten_lop" => $tenLop]]);
+                
+                http_response_code(201); 
+                echo json_encode(["status" => "success", "message" => "Tạo lớp học thành công!", "data" => ["id" => $createdId, "lop_hoc_id" => $createdId, "ten_lop" => $tenLop]]);
             }
         } catch (Exception $e) { http_response_code(500); echo json_encode(["status" => "error", "message" => "Lỗi Database: " . $e->getMessage()]); }
     }
 
- public function update($id) {
+    public function update($id) {
         if (empty($id)) { http_response_code(400); echo json_encode(["status" => "error", "message" => "Thiếu ID lớp học"]); return; }
         $data = json_decode(file_get_contents("php://input"), true);
 
@@ -140,7 +163,6 @@ class LopHocController {
 
             $giaSuCheck = !empty($giaSuMoi) ? $giaSuMoi : $giaSuCu;
 
-            // Chặn trùng lịch khi Chỉnh sửa
             if (!empty($data['thoi_gian_du_kien'])) {
                 $tg = $data['thoi_gian_du_kien'];
                 $conflictClass = $this->checkTutorConflict(
@@ -181,6 +203,32 @@ class LopHocController {
 
             $result = LopHoc::update($id, $data);
             if ($result !== false) {
+                
+                // Đồng bộ lịch sau khi sửa lớp
+                if (!empty($data['thoi_gian_du_kien']) || isset($data['so_buoi_hoc'])) {
+                    require_once __DIR__ . '/../models/LichHoc.php';
+                    $tg = $data['thoi_gian_du_kien'] ?? null;
+                    $tong_so_buoi = (int)($data['so_buoi_hoc'] ?? $lopHocCu['so_buoi_hoc']);
+
+                    if ($tg) {
+                        $thoi_gian_tung_ngay = [];
+                        foreach ($tg['ngay_trong_tuan'] as $thu) {
+                            $thoi_gian_tung_ngay[$thu] = ['gio_bat_dau' => $tg['gio_bat_dau'], 'gio_ket_thuc' => $tg['gio_ket_thuc']];
+                        }
+                        LichHoc::syncLichDinhKy($id, $tg['ngay_bat_dau'], $tg['ngay_trong_tuan'], $thoi_gian_tung_ngay, $tong_so_buoi);
+                    } else {
+                        $lichHienTai = Database::query("SELECT thu_trong_tuan, gio_bat_dau, gio_ket_thuc, ngay_bat_dau FROM lich_dinh_ky WHERE lop_hoc_id = ?", [$id]);
+                        if ($lichHienTai) {
+                            $ngay_trong_tuan = array_column($lichHienTai, 'thu_trong_tuan');
+                            $thoi_gian_tung_ngay = [];
+                            foreach ($lichHienTai as $lh) {
+                                $thoi_gian_tung_ngay[$lh['thu_trong_tuan']] = ['gio_bat_dau' => $lh['gio_bat_dau'], 'gio_ket_thuc' => $lh['gio_ket_thuc']];
+                            }
+                            LichHoc::syncLichDinhKy($id, $lichHienTai[0]['ngay_bat_dau'], $ngay_trong_tuan, $thoi_gian_tung_ngay, $tong_so_buoi);
+                        }
+                    }
+                }
+
                 if ($dangMoiGiaSu) {
                     Database::execute(
                         "DELETE FROM yeu_cau 
