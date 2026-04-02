@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, Search, Eye, X, AlertTriangle } from 'lucide-react
 import DataPagination from '@/components/ui/DataPagination'
 import { toast } from 'sonner'
 import { luongGiaSuAPI } from '@/api/luongGiaSuApi'
+import { doanhThuAPI } from '@/api/doanhThuApi'
 
 const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api'}`
 
@@ -84,11 +85,18 @@ export default function LuongGiaSuManagement({ user }) {
     }
   }
 
-  const fetchLuongData = async () => {
+  const fetchLuongData = async (runOverdueCheck = true) => {
     try {
       setLoading(true)
-      // Kiểm tra và cập nhật lương quá hạn trước
-      await luongGiaSuAPI.checkOverdue()
+      if (runOverdueCheck) {
+        // Kiểm tra và cập nhật lương quá hạn trước
+        try {
+          await luongGiaSuAPI.checkOverdue()
+        } catch (overdueError) {
+          console.warn('Không thể kiểm tra lương quá hạn:', overdueError)
+        }
+      }
+
       // Sau đó lấy dữ liệu
       const response = await luongGiaSuAPI.getAll()
       if (response.success) {
@@ -228,7 +236,11 @@ export default function LuongGiaSuManagement({ user }) {
       soBuoiIds.forEach(luongId => {
         const trangThai = editedTrangThai[luongId] // có thể undefined
         const ngayDenHan = editedNgayDenHan[luongId] // có thể undefined
-        const updateData = { so_buoi_day: editedSoBuoi[luongId] }
+        const updateData = {
+          so_buoi_day: editedSoBuoi[luongId],
+          skip_revenue_sync: true,
+          skip_notifications: true
+        }
         if (trangThai) {
           updateData.trang_thai_thanh_toan = trangThai
         }
@@ -242,7 +254,11 @@ export default function LuongGiaSuManagement({ user }) {
       trangThaiIds.forEach(luongId => {
         if (!soBuoiIds.includes(luongId)) {
           const ngayDenHan = editedNgayDenHan[luongId]
-          const updateData = { trang_thai_thanh_toan: editedTrangThai[luongId] }
+          const updateData = {
+            trang_thai_thanh_toan: editedTrangThai[luongId],
+            skip_revenue_sync: true,
+            skip_notifications: true
+          }
           if (ngayDenHan) {
             updateData.ngay_den_han = ngayDenHan
           }
@@ -253,11 +269,38 @@ export default function LuongGiaSuManagement({ user }) {
       // Lưu thay đổi ngày đến hạn (những cái chưa được lưu ở trên)
       ngayDenHanIds.forEach(luongId => {
         if (!soBuoiIds.includes(luongId) && !trangThaiIds.includes(luongId)) {
-          promises.push(luongGiaSuAPI.update(parseInt(luongId), { ngay_den_han: editedNgayDenHan[luongId] }))
+          promises.push(luongGiaSuAPI.update(parseInt(luongId), {
+            ngay_den_han: editedNgayDenHan[luongId],
+            skip_revenue_sync: true,
+            skip_notifications: true
+          }))
         }
       })
       
       await Promise.all(promises)
+
+      // Đồng bộ doanh thu theo tháng một lần sau khi lưu hàng loạt
+      if (editGroupModal.data?.danh_sach_lop?.length) {
+        const targets = new Map()
+
+        editGroupModal.data.danh_sach_lop.forEach((lop) => {
+          const thang = parseInt(lop.thang)
+          const nam = parseInt(lop.nam)
+
+          if (!Number.isNaN(thang) && !Number.isNaN(nam) && thang > 0 && nam > 0) {
+            targets.set(`${nam}-${thang}`, { thang, nam })
+          }
+        })
+
+        if (targets.size > 0) {
+          await Promise.all(
+            Array.from(targets.values()).map((target) =>
+              doanhThuAPI.processMonthly({ thang: target.thang, nam: target.nam })
+            )
+          )
+        }
+      }
+
       toast.success('Đã lưu tất cả thay đổi!')
       
       // Cập nhật UI
@@ -277,7 +320,7 @@ export default function LuongGiaSuManagement({ user }) {
       setEditedSoBuoi({})
       setEditedTrangThai({})
       setEditedNgayDenHan({})
-      fetchLuongData()
+      fetchLuongData(false)
     } catch (error) {
       toast.error('Lỗi lưu thay đổi')
     }

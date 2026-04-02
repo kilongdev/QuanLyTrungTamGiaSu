@@ -44,7 +44,16 @@ class Router
             $params = self::matchRoute($pattern, $uri);
             
             if ($params !== false) {
-                self::callHandler($handler, $params);
+                try {
+                    self::callHandler($handler, $params);
+                } catch (Throwable $e) {
+                    http_response_code(500);
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode([
+                        'status' => 'error',
+                        'message' => 'Router error: ' . $e->getMessage()
+                    ], JSON_UNESCAPED_UNICODE);
+                }
                 return;
             }
         }
@@ -107,7 +116,12 @@ class Router
             [$class, $method] = $handler;
             // Instantiate class nếu là class name string
             if (is_string($class)) {
-                $instance = new $class();
+                $resolvedClass = self::resolveControllerClass($class);
+                if (!method_exists($resolvedClass, $method)) {
+                    throw new Exception("Method {$method} not found in {$resolvedClass}");
+                }
+
+                $instance = new $resolvedClass();
                 call_user_func_array([$instance, $method], $positionalParams);
             } else {
                 call_user_func_array([$class, $method], $positionalParams);
@@ -115,5 +129,30 @@ class Router
         } else {
             call_user_func_array($handler, $positionalParams);
         }
+    }
+
+    private static function resolveControllerClass(string $class): string
+    {
+        if (class_exists($class)) {
+            return $class;
+        }
+
+        // Try loading controller file directly in case route/controller autoload order changes.
+        $controllerPath = __DIR__ . '/../controllers/' . $class . '.php';
+        if (file_exists($controllerPath)) {
+            require_once $controllerPath;
+            if (class_exists($class)) {
+                return $class;
+            }
+        }
+
+        // Fallback: resolve class name case-insensitively for Linux environments.
+        foreach (get_declared_classes() as $declaredClass) {
+            if (strcasecmp($declaredClass, $class) === 0) {
+                return $declaredClass;
+            }
+        }
+
+        throw new Exception("Class {$class} not found");
     }
 }

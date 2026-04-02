@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Edit2, Eye, Search, Plus, X, Lock, Unlock, AlertTriangle } from 'lucide-react'
+import { Edit2, Eye, Search, Plus, X, Lock, Unlock, AlertTriangle, Trash2, Calendar, User, Hash } from 'lucide-react'
 import { phuHuynhAPI } from '@/api/phuHuynhApi'
+import { hocSinhAPI } from '@/api/hocSinhApi'
 import { validateParentForm } from '@/lib/validators'
 import DataPagination from '@/components/ui/DataPagination'
 import { toast } from 'sonner'
@@ -21,6 +22,8 @@ export default function PhuHuynhManagement() {
   // State cho modal thêm mới
   const [addModal, setAddModal] = useState(false)
   const [addFormData, setAddFormData] = useState({ ho_ten: '', email: '', mat_khau: '', so_dien_thoai: '', dia_chi: '' })
+  const [studentsList, setStudentsList] = useState([])
+  const [studentForm, setStudentForm] = useState({ ho_ten: '', ngay_sinh: '', khoi_lop: '' })
   const [confirmModal, setConfirmModal] = useState({
     show: false,
     title: '',
@@ -104,6 +107,25 @@ export default function PhuHuynhManagement() {
     }
   }
 
+  // Thêm học sinh vào danh sách tạm thời
+  const handleAddStudentToList = () => {
+    if (!studentForm.ho_ten.trim()) {
+      toast.warning('Vui lòng nhập tên học sinh')
+      return
+    }
+    const newStudent = {
+      id: Date.now(),
+      ...studentForm
+    }
+    setStudentsList([...studentsList, newStudent])
+    setStudentForm({ ho_ten: '', ngay_sinh: '', khoi_lop: '' })
+  }
+
+  // Xóa học sinh khỏi danh sách tạm thời
+  const handleRemoveStudentFromList = (studentId) => {
+    setStudentsList(studentsList.filter(s => s.id !== studentId))
+  }
+
   // Xử lý submit form thêm mới
   const handleAddSubmit = async (e) => {
     e.preventDefault()
@@ -114,13 +136,42 @@ export default function PhuHuynhManagement() {
     }
     setModalLoading(true)
     try {
-      const result = await phuHuynhAPI.create(addFormData)
-      if (result.status === 'success') {
-        toast.success('Thêm phụ huynh thành công!')
+      // Tạo phụ huynh
+      const parentResult = await phuHuynhAPI.create(addFormData)
+      if (parentResult.status === 'success') {
+        const newParentId = parentResult.data.phu_huynh_id
+
+        // Tạo các học sinh liên kết với phụ huynh này
+        if (studentsList.length > 0) {
+          const studentCreationPromises = studentsList.map(student =>
+            hocSinhAPI.create({
+              ho_ten: student.ho_ten,
+              ngay_sinh: student.ngay_sinh || null,
+              khoi_lop: student.khoi_lop || '',
+              phu_huynh_id: newParentId
+            })
+          )
+
+          try {
+            const results = await Promise.all(studentCreationPromises)
+            const successCount = results.filter(r => r.status === 'success').length
+            if (successCount > 0) {
+              toast.success(`Thêm phụ huynh và ${successCount} học sinh thành công!`)
+            }
+          } catch (studentErr) {
+            console.error('Lỗi tạo học sinh:', studentErr)
+            toast.warning(`Thêm phụ huynh thành công, nhưng có lỗi tạo một số học sinh`)
+          }
+        } else {
+          toast.success('Thêm phụ huynh thành công!')
+        }
+
         setAddModal(false)
         setAddFormData({ ho_ten: '', email: '', mat_khau: '', so_dien_thoai: '', dia_chi: '' })
+        setStudentsList([])
+        setStudentForm({ ho_ten: '', ngay_sinh: '', khoi_lop: '' })
         fetchParents(1, search)
-      } else { throw new Error(result.message || 'Thêm thất bại') }
+      } else { throw new Error(parentResult.message || 'Thêm phụ huynh thất bại') }
     } catch (err) { toast.error('Lỗi khi thêm: ' + err.message) } finally { setModalLoading(false) }
   }
 
@@ -505,68 +556,170 @@ export default function PhuHuynhManagement() {
       {/* Add Modal */}
       {addModal && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-gray-200 overflow-hidden">
-            <div className="p-5 flex justify-between items-center border-b bg-white">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-200 overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="p-5 flex justify-between items-center border-b bg-white flex-shrink-0">
               <h3 className="text-2xl font-bold text-gray-900">Thêm phụ huynh mới</h3>
-              <button onClick={() => setAddModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition">
+              <button onClick={() => {
+                setAddModal(false)
+                setStudentsList([])
+                setStudentForm({ ho_ten: '', ngay_sinh: '', khoi_lop: '' })
+              }} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition">
                 <X size={24} />
               </button>
             </div>
-            <form onSubmit={handleAddSubmit}>
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={addFormData.ho_ten}
-                    onChange={(e) => setAddFormData({ ...addFormData, ho_ten: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-                  <input
-                    type="email"
-                    value={addFormData.email}
-                    onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu <span className="text-red-500">*</span></label>
-                  <input
-                    type="password"
-                    value={addFormData.mat_khau}
-                    onChange={(e) => setAddFormData({ ...addFormData, mat_khau: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                  <input
-                    type="tel"
-                    value={addFormData.so_dien_thoai}
-                    onChange={(e) => setAddFormData({ ...addFormData, so_dien_thoai: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
-                  <input
-                    type="text"
-                    value={addFormData.dia_chi}
-                    onChange={(e) => setAddFormData({ ...addFormData, dia_chi: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+            <form onSubmit={handleAddSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="overflow-y-auto flex-1">
+                <div className="p-6 space-y-6">
+                  {/* Phần thông tin phụ huynh */}
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-700 mb-4 pb-2 border-b border-gray-200">Thông tin phụ huynh</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          value={addFormData.ho_ten}
+                          onChange={(e) => setAddFormData({ ...addFormData, ho_ten: e.target.value })}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+                        <input
+                          type="email"
+                          value={addFormData.email}
+                          onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu <span className="text-red-500">*</span></label>
+                        <input
+                          type="password"
+                          value={addFormData.mat_khau}
+                          onChange={(e) => setAddFormData({ ...addFormData, mat_khau: e.target.value })}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                        <input
+                          type="tel"
+                          value={addFormData.so_dien_thoai}
+                          onChange={(e) => setAddFormData({ ...addFormData, so_dien_thoai: e.target.value })}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
+                        <input
+                          type="text"
+                          value={addFormData.dia_chi}
+                          onChange={(e) => setAddFormData({ ...addFormData, dia_chi: e.target.value })}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Phần thêm học sinh */}
+                  <div className="border-t pt-6">
+                    <h4 className="text-sm font-bold text-gray-700 mb-4 pb-2 border-b border-gray-200">Thêm học sinh (tùy chọn)</h4>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-blue-700">💡 Bạn có thể thêm các học sinh liên kết với phụ huynh này ngay bây giờ, hoặc thêm sau.</p>
+                    </div>
+                    
+                    {/* Form thêm học sinh */}
+                    <div className="space-y-3 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                          <User size={14} /> Tên học sinh
+                        </label>
+                        <input
+                          type="text"
+                          value={studentForm.ho_ten}
+                          onChange={(e) => setStudentForm({ ...studentForm, ho_ten: e.target.value })}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Nhập tên học sinh"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                            <Calendar size={14} /> Ngày sinh
+                          </label>
+                          <input
+                            type="date"
+                            value={studentForm.ngay_sinh}
+                            onChange={(e) => setStudentForm({ ...studentForm, ngay_sinh: e.target.value })}
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                            <Hash size={14} /> Khối lớp
+                          </label>
+                          <input
+                            type="text"
+                            value={studentForm.khoi_lop}
+                            onChange={(e) => setStudentForm({ ...studentForm, khoi_lop: e.target.value })}
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Ví dụ: 6, 7, 8..."
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddStudentToList}
+                        className="w-full px-3 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                      >
+                        <Plus size={18} />
+                        Thêm học sinh
+                      </button>
+                    </div>
+
+                    {/* Danh sách học sinh */}
+                    {studentsList.length > 0 && (
+                      <div>
+                        <h5 className="text-sm font-semibold text-gray-700 mb-3">Danh sách học sinh sẽ tạo:</h5>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {studentsList.map((student, index) => (
+                            <div key={student.id} className="bg-white border border-gray-200 rounded-lg p-3 flex justify-between items-start gap-3">
+                              <div className="flex-1">
+                                <p className="font-semibold text-gray-900 text-sm">{index + 1}. {student.ho_ten}</p>
+                                <div className="text-xs text-gray-600 mt-1 space-y-1">
+                                  {student.ngay_sinh && <p>📅 Ngày sinh: {student.ngay_sinh}</p>}
+                                  {student.khoi_lop && <p>📚 Khối: {student.khoi_lop}</p>}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveStudentFromList(student.id)}
+                                className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition flex-shrink-0"
+                                title="Xóa"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
+
+              <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t flex-shrink-0">
                 <button
                   type="button"
-                  onClick={() => setAddModal(false)}
+                  onClick={() => {
+                    setAddModal(false)
+                    setStudentsList([])
+                    setStudentForm({ ho_ten: '', ngay_sinh: '', khoi_lop: '' })
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-100 transition"
                 >
                   Hủy
@@ -579,7 +732,7 @@ export default function PhuHuynhManagement() {
                   {modalLoading && (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   )}
-                  Thêm mới
+                  {studentsList.length > 0 ? `Tạo phụ huynh & ${studentsList.length} học sinh` : 'Thêm phụ huynh'}
                 </button>
               </div>
             </form>

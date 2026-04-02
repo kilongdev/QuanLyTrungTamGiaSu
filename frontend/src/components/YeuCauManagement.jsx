@@ -159,7 +159,7 @@ export default function YeuCauManagement({ user }) {
       "1";
     setFormData({
       nguoi_tao_id: userId,
-      loai_nguoi_tao: user?.role === "admin" ? "phu_huynh" : user?.role,
+      loai_nguoi_tao: user?.role || "admin",
       phan_loai: "mo_lop",
       tieu_de: "",
       noi_dung: "",
@@ -180,6 +180,14 @@ export default function YeuCauManagement({ user }) {
       khac: "Yêu cầu khác",
     };
     return labels[phanLoai] || phanLoai;
+  };
+
+  const getCreatorLabel = (creatorType) => {
+    const role = String(creatorType || "").toLowerCase();
+    if (role === "admin") return "Admin";
+    if (role === "gia_su") return "Gia sư";
+    if (role === "guest") return "Khách";
+    return "Phụ huynh";
   };
 
   const getTrangThaiLabel = (trangThai) => {
@@ -370,9 +378,7 @@ export default function YeuCauManagement({ user }) {
                     <td className="px-6 py-4 text-sm text-gray-700">
                       <span className="inline-flex items-center gap-1">
                         <MessageSquare size={14} className="text-blue-500" />
-                        {yc.loai_nguoi_tao === "gia_su"
-                          ? "Gia sư"
-                          : "Phụ huynh"}
+                        {getCreatorLabel(yc.loai_nguoi_tao)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">

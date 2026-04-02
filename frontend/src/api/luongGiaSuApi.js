@@ -5,13 +5,23 @@ const getAuthHeaders = () => ({
   'Authorization': `Bearer ${localStorage.getItem('token')}`
 });
 
+const parseJsonResponse = async (response) => {
+  const responseText = await response.text();
+
+  try {
+    return JSON.parse(responseText);
+  } catch (error) {
+    throw new Error(`Luong API trả về không phải JSON hợp lệ (HTTP ${response.status}): ${responseText.slice(0, 200)}`);
+  }
+};
+
 export const luongGiaSuAPI = {
   getAll: async () => {
     const response = await fetch(`${API_BASE}/luonggiasu`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
-    return response.json();
+    return parseJsonResponse(response);
   },
 
   getByGiaSu: async (giaSuId) => {
@@ -19,7 +29,7 @@ export const luongGiaSuAPI = {
       method: 'GET',
       headers: getAuthHeaders()
     });
-    return response.json();
+    return parseJsonResponse(response);
   },
 
   getDetail: async (luongId) => {
@@ -27,7 +37,7 @@ export const luongGiaSuAPI = {
       method: 'GET',
       headers: getAuthHeaders()
     });
-    return response.json();
+    return parseJsonResponse(response);
   },
 
   getDetailByGroup: async (giaSuId, thang, nam) => {
@@ -35,7 +45,7 @@ export const luongGiaSuAPI = {
       method: 'GET',
       headers: getAuthHeaders()
     });
-    return response.json();
+    return parseJsonResponse(response);
   },
 
   create: async (data) => {
@@ -44,7 +54,7 @@ export const luongGiaSuAPI = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    return response.json();
+    return parseJsonResponse(response);
   },
 
   update: async (luongId, data) => {
@@ -53,7 +63,7 @@ export const luongGiaSuAPI = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    return response.json();
+    return parseJsonResponse(response);
   },
 
   delete: async (luongId) => {
@@ -61,7 +71,7 @@ export const luongGiaSuAPI = {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
-    return response.json();
+    return parseJsonResponse(response);
   },
 
   checkOverdue: async () => {
@@ -69,6 +79,6 @@ export const luongGiaSuAPI = {
       method: 'GET',
       headers: getAuthHeaders()
     });
-    return response.json();
+    return parseJsonResponse(response);
   }
 };

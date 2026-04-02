@@ -289,7 +289,7 @@ class DoanhThuModel extends BaseModel {
         $nam = (int)$nam;
 
         $lopHoc = $this->conn->prepare(
-            "SELECT lop_hoc_id, gia_su_id, gia_moi_buoi, so_buoi_hoc, loai_chi_tra, gia_tri_chi_tra
+            "SELECT lop_hoc_id, gia_su_id, gia_moi_buoi, gia_toan_khoa, so_buoi_hoc, loai_chi_tra, gia_tri_chi_tra
              FROM lop_hoc
              WHERE lop_hoc_id = ?
              LIMIT 1"
@@ -319,33 +319,102 @@ class DoanhThuModel extends BaseModel {
         $soBuoiHocStmt->execute([$lopHocId, $thang, $nam]);
         $soBuoiHocThucTe = (int)(($soBuoiHocStmt->fetch(PDO::FETCH_ASSOC) ?: [])['so_buoi_hoc'] ?? 0);
 
-        $coMatStmt = $this->conn->prepare(
-            "SELECT COUNT(*) AS so_luot_co_mat
-             FROM diem_danh dd
-             JOIN lich_hoc lh ON lh.lich_hoc_id = dd.lich_hoc_id
-             WHERE lh.lop_hoc_id = ?
-               AND MONTH(lh.ngay_hoc) = ?
-               AND YEAR(lh.ngay_hoc) = ?
-               AND dd.tinh_trang = 'co_mat'"
-        );
-        $coMatStmt->execute([$lopHocId, $thang, $nam]);
-        $soLuotCoMat = (int)(($coMatStmt->fetch(PDO::FETCH_ASSOC) ?: [])['so_luot_co_mat'] ?? 0);
+                $coMatStmt = $this->conn->prepare(
+                        "SELECT COUNT(*) AS so_luot_co_mat
+                         FROM diem_danh dd
+                         JOIN lich_hoc lh ON lh.lich_hoc_id = dd.lich_hoc_id
+                         WHERE lh.lop_hoc_id = ?
+                             AND MONTH(lh.ngay_hoc) = ?
+                             AND YEAR(lh.ngay_hoc) = ?
+                             AND dd.tinh_trang = 'co_mat'"
+                );
+                $coMatStmt->execute([$lopHocId, $thang, $nam]);
+                $soLuotCoMat = (int)(($coMatStmt->fetch(PDO::FETCH_ASSOC) ?: [])['so_luot_co_mat'] ?? 0);
+
+                // Tinh phan luong chua thanh toan: chi tinh so luot co mat sau lan thanh toan gan nhat.
+                $paidCheckpointStmt = $this->conn->prepare(
+                        "SELECT MAX(ngay_thanh_toan) AS last_paid_at
+                         FROM luong_gia_su
+                         WHERE lop_hoc_id = ?
+                             AND thang = ?
+                             AND nam = ?
+                             AND trang_thai_thanh_toan = 'da_thanh_toan'"
+                );
+                $paidCheckpointStmt->execute([$lopHocId, $thang, $nam]);
+                $lastPaidAt = ($paidCheckpointStmt->fetch(PDO::FETCH_ASSOC) ?: [])['last_paid_at'] ?? null;
+
+                if (!empty($lastPaidAt)) {
+                        $unpaidCoMatStmt = $this->conn->prepare(
+                                "SELECT COUNT(*) AS so_luot_co_mat_chua_thanh_toan
+                                 FROM diem_danh dd
+                                 JOIN lich_hoc lh ON lh.lich_hoc_id = dd.lich_hoc_id
+                                 WHERE lh.lop_hoc_id = ?
+                                     AND MONTH(lh.ngay_hoc) = ?
+                                     AND YEAR(lh.ngay_hoc) = ?
+                                     AND dd.tinh_trang = 'co_mat'
+                                     AND COALESCE(dd.ngay_diem_danh, CONCAT(lh.ngay_hoc, ' 00:00:00')) > ?"
+                        );
+                        $unpaidCoMatStmt->execute([$lopHocId, $thang, $nam, $lastPaidAt]);
+                        $soLuotCoMatChuaThanhToan = (int)(($unpaidCoMatStmt->fetch(PDO::FETCH_ASSOC) ?: [])['so_luot_co_mat_chua_thanh_toan'] ?? 0);
+                } else {
+                        $soLuotCoMatChuaThanhToan = $soLuotCoMat;
+                }
 
         $giaMoiBuoi = (float)($lopInfo['gia_moi_buoi'] ?? 0);
-        $soBuoiHocCauHinh = (int)($lopInfo['so_buoi_hoc'] ?? 0);
+        if ($giaMoiBuoi <= 0) {
+            $giaToanKhoa = (float)($lopInfo['gia_toan_khoa'] ?? 0);
+            $soBuoiKhoaHoc = (int)($lopInfo['so_buoi_hoc'] ?? 0);
+            if ($giaToanKhoa > 0 && $soBuoiKhoaHoc > 0) {
+                $giaMoiBuoi = $giaToanKhoa / $soBuoiKhoaHoc;
+            }
+        }
         $loaiChiTra = $lopInfo['loai_chi_tra'] ?? 'tien_cu_the';
         $giaTriChiTra = (float)($lopInfo['gia_tri_chi_tra'] ?? 0);
 
-        // Don gia tra gia su tren moi hoc sinh/co mat mot buoi.
-        if ($loaiChiTra === 'phan_tram') {
-            $donGiaGiaSuMoiBuoi = $giaMoiBuoi * ($giaTriChiTra / 100);
-        } else {
-            $mauSo = $soBuoiHocCauHinh > 0 ? $soBuoiHocCauHinh : 1;
-            $donGiaGiaSuMoiBuoi = $giaTriChiTra / $mauSo;
+        // Dong bo cong thuc voi UI "Gia moi buoi (uoc tinh)".
+        $giaToanKhoa = (float)($lopInfo['gia_toan_khoa'] ?? 0);
+        $soBuoiKhoaHoc = (int)($lopInfo['so_buoi_hoc'] ?? 0);
+        $donGiaLuongMoiLuot = $giaMoiBuoi;
+
+        if ($giaToanKhoa > 0 && $soBuoiKhoaHoc > 0 && $giaTriChiTra > 0) {
+            if ($loaiChiTra === 'phan_tram') {
+                $donGiaLuongMoiLuot = ($giaToanKhoa * ($giaTriChiTra / 100)) / $soBuoiKhoaHoc;
+            } elseif ($loaiChiTra === 'tien_cu_the') {
+                $donGiaLuongMoiLuot = ($giaToanKhoa - $giaTriChiTra) / $soBuoiKhoaHoc;
+            }
         }
 
-        $tongThu = $soLuotCoMat * $giaMoiBuoi;
-        $tongChi = $soLuotCoMat * $donGiaGiaSuMoiBuoi;
+        if ($donGiaLuongMoiLuot < 0) {
+            $donGiaLuongMoiLuot = 0;
+        }
+
+        // Luong can thanh toan = tong luot co mat chua thanh toan * don gia luong moi luot.
+        $tongLuongCanThanhToan = $soLuotCoMatChuaThanhToan * $donGiaLuongMoiLuot;
+
+        // Doanh thu/chi phi bao cao theo dong tien da thanh toan trong thang.
+        $thuStmt = $this->conn->prepare(
+            "SELECT COALESCE(SUM(hp.so_tien), 0) AS tong_thu_da_thanh_toan
+             FROM hoc_phi hp
+             JOIN dang_ky_lop dkl ON dkl.dang_ky_id = hp.dang_ky_id
+             WHERE dkl.lop_hoc_id = ?
+               AND hp.thang = ?
+               AND hp.nam = ?
+               AND hp.trang_thai_thanh_toan = 'da_thanh_toan'"
+        );
+        $thuStmt->execute([$lopHocId, $thang, $nam]);
+        $tongThu = (float)(($thuStmt->fetch(PDO::FETCH_ASSOC) ?: [])['tong_thu_da_thanh_toan'] ?? 0);
+
+        $chiStmt = $this->conn->prepare(
+            "SELECT COALESCE(SUM(tien_tra_gia_su), 0) AS tong_chi_da_thanh_toan
+             FROM luong_gia_su
+             WHERE lop_hoc_id = ?
+               AND thang = ?
+               AND nam = ?
+               AND trang_thai_thanh_toan = 'da_thanh_toan'"
+        );
+        $chiStmt->execute([$lopHocId, $thang, $nam]);
+        $tongChi = (float)(($chiStmt->fetch(PDO::FETCH_ASSOC) ?: [])['tong_chi_da_thanh_toan'] ?? 0);
+
         $loiNhuan = $tongThu - $tongChi;
 
         $doanhThuId = $this->getOrCreateMonthlyRevenueId($thang, $nam);
@@ -398,7 +467,8 @@ class DoanhThuModel extends BaseModel {
             $luongExistsStmt = $this->conn->prepare(
                 "SELECT luong_id
                  FROM luong_gia_su
-                 WHERE lop_hoc_id = ? AND thang = ? AND nam = ?
+                                 WHERE lop_hoc_id = ? AND thang = ? AND nam = ?
+                                     AND trang_thai_thanh_toan <> 'da_thanh_toan'
                  LIMIT 1"
             );
             $luongExistsStmt->execute([$lopHocId, $thang, $nam]);
@@ -412,14 +482,33 @@ class DoanhThuModel extends BaseModel {
                      WHERE luong_id = ?"
                 );
                 $updateLuong->execute([
-                    $soLuotCoMat,
-                    $tongThu,
-                    $tongChi,
+                    $soLuotCoMatChuaThanhToan,
+                    $soLuotCoMatChuaThanhToan * $giaMoiBuoi,
+                    $tongLuongCanThanhToan,
                     $loaiChiTra,
                     $giaTriChiTra,
                     (int)$luongExists['luong_id']
                 ]);
             } else {
+                if ($soLuotCoMatChuaThanhToan <= 0) {
+                    if ($refreshMonthly) {
+                        $this->refreshMonthlyRevenueSummaryFromClassDetails($thang, $nam);
+                    }
+
+                    return [
+                        'lop_hoc_id' => $lopHocId,
+                        'thang' => $thang,
+                        'nam' => $nam,
+                        'so_hoc_sinh' => $soHocSinh,
+                        'so_buoi_hoc' => $soBuoiHocThucTe,
+                        'so_luot_co_mat' => $soLuotCoMat,
+                        'so_luot_co_mat_chua_thanh_toan' => $soLuotCoMatChuaThanhToan,
+                        'tong_thu' => $tongThu,
+                        'tien_tra_gia_su' => $tongChi,
+                        'loi_nhuan_lop' => $loiNhuan
+                    ];
+                }
+
                 $insertLuong = $this->conn->prepare(
                     "INSERT INTO luong_gia_su
                      (gia_su_id, lop_hoc_id, thang, nam, so_buoi_day, tong_tien_thu, tien_tra_gia_su, loai_chi_tra, gia_tri_ap_dung, trang_thai_thanh_toan, ngay_tao)
@@ -430,9 +519,9 @@ class DoanhThuModel extends BaseModel {
                     $lopHocId,
                     $thang,
                     $nam,
-                    $soLuotCoMat,
-                    $tongThu,
-                    $tongChi,
+                    $soLuotCoMatChuaThanhToan,
+                    $soLuotCoMatChuaThanhToan * $giaMoiBuoi,
+                    $tongLuongCanThanhToan,
                     $loaiChiTra,
                     $giaTriChiTra
                 ]);
@@ -450,6 +539,7 @@ class DoanhThuModel extends BaseModel {
             'so_hoc_sinh' => $soHocSinh,
             'so_buoi_hoc' => $soBuoiHocThucTe,
             'so_luot_co_mat' => $soLuotCoMat,
+            'so_luot_co_mat_chua_thanh_toan' => $soLuotCoMatChuaThanhToan,
             'tong_thu' => $tongThu,
             'tien_tra_gia_su' => $tongChi,
             'loi_nhuan_lop' => $loiNhuan
@@ -462,10 +552,26 @@ class DoanhThuModel extends BaseModel {
 
         $classStmt = $this->conn->prepare(
             "SELECT DISTINCT lop_hoc_id
-             FROM lich_hoc
-             WHERE MONTH(ngay_hoc) = ? AND YEAR(ngay_hoc) = ?"
+             FROM (
+                 SELECT lop_hoc_id
+                 FROM lich_hoc
+                 WHERE MONTH(ngay_hoc) = ? AND YEAR(ngay_hoc) = ?
+
+                 UNION
+
+                 SELECT dkl.lop_hoc_id
+                 FROM hoc_phi hp
+                 JOIN dang_ky_lop dkl ON dkl.dang_ky_id = hp.dang_ky_id
+                 WHERE hp.thang = ? AND hp.nam = ?
+
+                 UNION
+
+                 SELECT lop_hoc_id
+                 FROM luong_gia_su
+                 WHERE thang = ? AND nam = ?
+             ) AS all_classes"
         );
-        $classStmt->execute([$thang, $nam]);
+        $classStmt->execute([$thang, $nam, $thang, $nam, $thang, $nam]);
         $classRows = $classStmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($classRows as $classRow) {

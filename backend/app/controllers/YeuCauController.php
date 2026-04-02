@@ -153,13 +153,13 @@ class YeuCauController {
             if ($yeuCau['phan_loai'] === 'mo_lop') {
                 if ($data['trang_thai'] === 'da_duyet') {
                     Database::execute(
-                        "UPDATE lop_hoc SET gia_su_id = :gia_su_id, trang_thai = 'sap_mo' WHERE lop_hoc_id = :lop_hoc_id", 
+                        "UPDATE lop_hoc SET gia_su_id = :gia_su_id, trang_thai = 'dang_hoc' WHERE lop_hoc_id = :lop_hoc_id", 
                         [':gia_su_id' => $yeuCau['gia_su_id'], ':lop_hoc_id' => $yeuCau['lop_hoc_id']]
                     );
                 } 
                 else if ($data['trang_thai'] === 'tu_choi') {
                     Database::execute(
-                        "UPDATE lop_hoc SET gia_su_id = NULL WHERE lop_hoc_id = :lop_hoc_id", 
+                        "UPDATE lop_hoc SET gia_su_id = NULL, trang_thai = 'gia_su_tu_choi' WHERE lop_hoc_id = :lop_hoc_id", 
                         [':lop_hoc_id' => $yeuCau['lop_hoc_id']]
                     );
                 }
