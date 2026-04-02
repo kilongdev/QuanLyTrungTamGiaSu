@@ -12,8 +12,12 @@ class LuongGiaSuController {
     }
 
     public function getAll() {
-        $data = $this->model->findAll();
-        $this->sendResponse(true, 'Danh sách lương', $data);
+        try {
+            $data = $this->model->findAll();
+            $this->sendResponse(true, 'Danh sách lương', $data);
+        } catch (Throwable $e) {
+            $this->sendResponse(false, 'Lỗi tải danh sách lương: ' . $e->getMessage(), null, 500);
+        }
     }
 
     public function getByGiaSu($id) {
@@ -111,7 +115,7 @@ class LuongGiaSuController {
         }
         
         $lopHoc = Database::queryOne(
-            "SELECT lop_hoc_id, ten_lop, gia_su_id, gia_toan_khoa, gia_moi_buoi, loai_chi_tra, gia_tri_chi_tra
+            "SELECT lop_hoc_id, ten_lop, gia_su_id, gia_toan_khoa, gia_moi_buoi, so_buoi_hoc, loai_chi_tra, gia_tri_chi_tra
              FROM lop_hoc WHERE lop_hoc_id = ?",
             [$lopHocId]
         );
@@ -145,19 +149,32 @@ class LuongGiaSuController {
         $loaiChiTra = $lopHoc['loai_chi_tra'] ?? 'tien_cu_the';
         $giaTriApDung = (float)($lopHoc['gia_tri_chi_tra'] ?? 0);
         $giaMoiBuoi = (float)($lopHoc['gia_moi_buoi'] ?? 0);
-        $soBuoiHoc = (int)($lopHoc['so_buoi_hoc'] ?? 1);
-        
-        // Công thức tính lương:
-        // - phan_tram: tien_tra_gia_su = so_buoi_day × gia_moi_buoi × (gia_tri_chi_tra / 100)
-        // - tien_cu_the: tien_tra_gia_su = so_buoi_day × (gia_tri_chi_tra / so_buoi_hoc)
-        if ($loaiChiTra === 'phan_tram') {
-            $donGiaBuoiGiaSu = $giaMoiBuoi * ($giaTriApDung / 100);
-            $tienTraGiaSu = $soBuoiDay * $donGiaBuoiGiaSu;
-        } else {
-            // tien_cu_the: giá mỗi buổi = giá trị chi trả / số buổi học của lớp
-            $donGiaBuoiGiaSu = $soBuoiHoc > 0 ? ($giaTriApDung / $soBuoiHoc) : 0;
-            $tienTraGiaSu = $soBuoiDay * $donGiaBuoiGiaSu;
+        if ($giaMoiBuoi <= 0) {
+            $giaToanKhoa = (float)($lopHoc['gia_toan_khoa'] ?? 0);
+            $soBuoiKhoaHoc = (int)($lopHoc['so_buoi_hoc'] ?? 0);
+            if ($giaToanKhoa > 0 && $soBuoiKhoaHoc > 0) {
+                $giaMoiBuoi = $giaToanKhoa / $soBuoiKhoaHoc;
+            }
         }
+
+        // Dong bo cong thuc voi UI "Gia moi buoi (uoc tinh)".
+        $giaToanKhoa = (float)($lopHoc['gia_toan_khoa'] ?? 0);
+        $soBuoiKhoaHoc = (int)($lopHoc['so_buoi_hoc'] ?? 0);
+        $donGiaLuongMoiLuot = $giaMoiBuoi;
+
+        if ($giaToanKhoa > 0 && $soBuoiKhoaHoc > 0 && $giaTriApDung > 0) {
+            if ($loaiChiTra === 'phan_tram') {
+                $donGiaLuongMoiLuot = ($giaToanKhoa * ($giaTriApDung / 100)) / $soBuoiKhoaHoc;
+            } elseif ($loaiChiTra === 'tien_cu_the') {
+                $donGiaLuongMoiLuot = ($giaToanKhoa - $giaTriApDung) / $soBuoiKhoaHoc;
+            }
+        }
+
+        if ($donGiaLuongMoiLuot < 0) {
+            $donGiaLuongMoiLuot = 0;
+        }
+
+        $tienTraGiaSu = $soBuoiDay * $donGiaLuongMoiLuot;
         
         // Nếu không có ngày đến hạn, mặc định là 30 ngày sau
         $ngayDenHan = $data['ngay_den_han'] ?? null;
@@ -218,6 +235,8 @@ class LuongGiaSuController {
 
     public function update($id) {
         $data = json_decode(file_get_contents('php://input'), true);
+        $skipRevenueSync = !empty($data['skip_revenue_sync']);
+        $skipNotifications = !empty($data['skip_notifications']);
         
         try {
             $existing = Database::queryOne("SELECT * FROM luong_gia_su WHERE luong_id = ?", [$id]);
@@ -248,7 +267,7 @@ class LuongGiaSuController {
                 }
                 
                 // Gửi thông báo khi thanh toán thành công
-                if ($data['trang_thai_thanh_toan'] === 'da_thanh_toan') {
+                if (!$skipNotifications && $data['trang_thai_thanh_toan'] === 'da_thanh_toan') {
                     $luongInfo = Database::queryOne(
                         "SELECT lg.*, gs.ho_ten as ten_giasu, gs.gia_su_id, lh.ten_lop
                          FROM luong_gia_su lg
@@ -308,7 +327,7 @@ class LuongGiaSuController {
                 isset($data['tien_tra_gia_su']) ||
                 isset($data['thang']) ||
                 isset($data['nam'])
-            )) {
+            ) && !$skipRevenueSync) {
                 $this->syncDoanhThuForLuongChanges($existing, $updatedLuong);
             }
             
@@ -443,6 +462,6 @@ class LuongGiaSuController {
     }
 
     private function formatCurrency($amount) {
-        return number_format($amount, 0, ',', '.');
+        return number_format((float)($amount ?? 0), 0, ',', '.');
     }
 }

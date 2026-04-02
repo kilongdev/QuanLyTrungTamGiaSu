@@ -354,6 +354,13 @@ export default function HocSinhManagement() {
                 <X size={24} />
               </button>
             </div>
+            {modalMode === 'add' && (
+              <div className="bg-blue-50 border-b border-blue-200 p-4">
+                <p className="text-sm text-blue-700">
+                  💡 <strong>Lưu ý:</strong> Học sinh phải thuộc về một phụ huynh sẵn có. Nếu cần thêm phụ huynh mới, vui lòng thêm ở mục Quản lý Phụ Huynh trước.
+                </p>
+              </div>
+            )}
             <form onSubmit={handleFormSubmit}>
               <div className="p-6 space-y-4">
                 {/* Tên học sinh */}

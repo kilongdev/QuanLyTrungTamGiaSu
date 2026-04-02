@@ -65,11 +65,12 @@ class DiemDanhController {
                 }
             }
 
+            Database::execute("UPDATE lich_hoc SET trang_thai = 'da_hoc' WHERE lich_hoc_id = :id", [':id' => $lich_hoc_id]);
+
             if (!empty($lichHoc['lop_hoc_id']) && !empty($lichHoc['ngay_hoc'])) {
                 $this->syncRevenueForClassMonth($lichHoc['lop_hoc_id'], $lichHoc['ngay_hoc']);
             }
 
-            Database::execute("UPDATE lich_hoc SET trang_thai = 'da_hoc' WHERE lich_hoc_id = :id", [':id' => $lich_hoc_id]);
             $this->createTuitionWhenCourseCompleted($lichHoc['lop_hoc_id'] ?? null, $lichHoc['ngay_hoc'] ?? null);
             echo json_encode(["status" => "success", "message" => "Đã lưu điểm danh thành công!"]);
 
@@ -275,12 +276,13 @@ class DiemDanhController {
                 }
             }
 
+            // Update schedule status to 'da_hoc'
+            Database::execute("UPDATE lich_hoc SET trang_thai = 'da_hoc' WHERE lich_hoc_id = :id", [':id' => $lich_hoc_id]);
+
             if (!empty($lop_hoc_id) && !empty($schedule['ngay_hoc'])) {
                 $this->syncRevenueForClassMonth($lop_hoc_id, $schedule['ngay_hoc']);
             }
 
-            // Update schedule status to 'da_hoc'
-            Database::execute("UPDATE lich_hoc SET trang_thai = 'da_hoc' WHERE lich_hoc_id = :id", [':id' => $lich_hoc_id]);
             $this->createTuitionWhenCourseCompleted($lop_hoc_id, $schedule['ngay_hoc'] ?? null);
             
             echo json_encode([
@@ -332,11 +334,12 @@ class DiemDanhController {
                 DiemDanh::save($hoc_sinh);
             }
 
+            Database::execute("UPDATE lich_hoc SET trang_thai = 'da_hoc' WHERE lich_hoc_id = :id", [':id' => $lich_hoc_id]);
+
             if (!empty($lop_hoc_id) && !empty($schedule['ngay_hoc'])) {
                 $this->syncRevenueForClassMonth($lop_hoc_id, $schedule['ngay_hoc']);
             }
 
-            Database::execute("UPDATE lich_hoc SET trang_thai = 'da_hoc' WHERE lich_hoc_id = :id", [':id' => $lich_hoc_id]);
             $this->createTuitionWhenCourseCompleted($lop_hoc_id, $schedule['ngay_hoc'] ?? null);
 
             echo json_encode([
@@ -381,6 +384,9 @@ class DiemDanhController {
                 [$lopHocId]
             );
             $soBuoiDaHoc = (int)($completedRow['so_buoi_da_hoc'] ?? 0);
+
+            // Khi con 1 buoi nua la ket thuc khoa, gui nhac hoc phi tiep theo cho phu huynh.
+            $this->notifyTuitionOneSessionBeforeCompletion($lopHoc, $soBuoiDaHoc, $soBuoiKhoaHoc);
 
             if ($soBuoiDaHoc < $soBuoiKhoaHoc) {
                 return;
@@ -447,6 +453,67 @@ class DiemDanhController {
             }
         } catch (Exception $e) {
             error_log('createTuitionWhenCourseCompleted error: ' . $e->getMessage());
+        }
+    }
+
+    private function notifyTuitionOneSessionBeforeCompletion($lopHoc, $soBuoiDaHoc, $soBuoiKhoaHoc) {
+        try {
+            if ($soBuoiKhoaHoc <= 1) {
+                return;
+            }
+
+            if ($soBuoiDaHoc < ($soBuoiKhoaHoc - 1) || $soBuoiDaHoc >= $soBuoiKhoaHoc) {
+                return;
+            }
+
+            $lopHocId = (int)($lopHoc['lop_hoc_id'] ?? 0);
+            if ($lopHocId <= 0) {
+                return;
+            }
+
+            $tenLop = $lopHoc['ten_lop'] ?? 'lớp học';
+
+            $registrations = Database::query(
+                "SELECT hs.phu_huynh_id, hs.ho_ten AS ten_hoc_sinh
+                 FROM dang_ky_lop dkl
+                 JOIN hoc_sinh hs ON hs.hoc_sinh_id = dkl.hoc_sinh_id
+                 WHERE dkl.lop_hoc_id = ? AND dkl.trang_thai <> 'da_huy'",
+                [$lopHocId]
+            );
+
+            foreach ($registrations as $registration) {
+                $phuHuynhId = (int)($registration['phu_huynh_id'] ?? 0);
+                if ($phuHuynhId <= 0) {
+                    continue;
+                }
+
+                $existingReminder = Database::queryOne(
+                    "SELECT thong_bao_id
+                     FROM thong_bao
+                     WHERE nguoi_nhan_id = ?
+                       AND loai_nguoi_nhan = 'phu_huynh'
+                       AND tieu_de = 'Nhắc nhở học phí khóa tiếp theo'
+                       AND noi_dung LIKE ?
+                     ORDER BY thong_bao_id DESC
+                     LIMIT 1",
+                    [$phuHuynhId, "%{$tenLop}%"]
+                );
+
+                if ($existingReminder) {
+                    continue;
+                }
+
+                $tenHocSinh = $registration['ten_hoc_sinh'] ?? 'học sinh';
+                ThongBaoModel::guiThongBao(
+                    $phuHuynhId,
+                    'phu_huynh',
+                    'Nhắc nhở học phí khóa tiếp theo',
+                    "Lớp {$tenLop} của học sinh {$tenHocSinh} còn 1 buổi nữa là kết thúc khóa ({$soBuoiDaHoc}/{$soBuoiKhoaHoc}). Vui lòng chuẩn bị đóng học phí cho khóa tiếp theo.",
+                    'hoc_phi'
+                );
+            }
+        } catch (Exception $e) {
+            error_log('notifyTuitionOneSessionBeforeCompletion error: ' . $e->getMessage());
         }
     }
 

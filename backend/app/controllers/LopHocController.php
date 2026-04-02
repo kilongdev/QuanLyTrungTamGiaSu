@@ -62,9 +62,9 @@ class LopHocController {
                     );
                     if ($yeuCau) {
                         if ($yeuCau['trang_thai'] === 'dang_xu_ly') {
-                            $lop['trang_thai'] = 'cho_gia_su'; $lop['ten_gia_su'] = $yeuCau['ho_ten']; $lop['gia_su_id'] = $yeuCau['gia_su_id'];
+                            $lop['trang_thai'] = 'cho_gia_su_xac_nhan'; $lop['ten_gia_su'] = $yeuCau['ho_ten']; $lop['gia_su_id'] = $yeuCau['gia_su_id'];
                         } else if ($yeuCau['trang_thai'] === 'tu_choi') {
-                            $lop['trang_thai'] = 'tu_choi'; $lop['ten_gia_su'] = $yeuCau['ho_ten']; $lop['gia_su_id'] = $yeuCau['gia_su_id'];
+                            $lop['trang_thai'] = 'gia_su_tu_choi'; $lop['ten_gia_su'] = $yeuCau['ho_ten']; $lop['gia_su_id'] = $yeuCau['gia_su_id'];
                         }
                     }
                 }
@@ -96,8 +96,12 @@ class LopHocController {
             }
         }
 
-        if (!empty($giaSuDuKien)) { $data['gia_su_id'] = null; }
-        $data['trang_thai'] = 'sap_mo'; 
+        if (!empty($giaSuDuKien)) {
+            $data['gia_su_id'] = null;
+            $data['trang_thai'] = 'cho_gia_su_xac_nhan';
+        } else {
+            $data['trang_thai'] = 'sap_mo';
+        }
 
         try {
             $result = LopHoc::create($data);
@@ -172,7 +176,7 @@ class LopHocController {
                 } else { $data['gia_su_id'] = $giaSuCu; }
             } else { $data['gia_su_id'] = null; }
 
-            if (in_array($data['trang_thai'], ['cho_gia_su', 'tu_choi'])) { $data['trang_thai'] = 'sap_mo'; }
+            if (in_array($data['trang_thai'], ['cho_gia_su', 'tu_choi', 'cho_gia_su_xac_nhan', 'gia_su_tu_choi'], true)) { $data['trang_thai'] = 'sap_mo'; }
 
             $result = LopHoc::update($id, $data);
             if ($result !== false) {
@@ -252,9 +256,9 @@ class LopHocController {
             if ($lop[0]['so_luong_hien_tai'] >= $lop[0]['so_luong_toi_da']) { http_response_code(400); echo json_encode(["status" => "error", "message" => "Lớp đã đầy"]); return; }
 
             if ($exist) {
-                Database::execute("UPDATE dang_ky_lop SET trang_thai = 'da_duyet', ngay_duyet = CURRENT_TIMESTAMP WHERE dang_ky_id = :id", [':id' => $exist[0]['dang_ky_id']]);
+                Database::execute("UPDATE dang_ky_lop SET trang_thai = 'da_duyet_truc_tiep', ngay_duyet = CURRENT_TIMESTAMP WHERE dang_ky_id = :id", [':id' => $exist[0]['dang_ky_id']]);
             } else {
-                Database::execute("INSERT INTO dang_ky_lop (hoc_sinh_id, lop_hoc_id, trang_thai, ngay_duyet) VALUES (:hoc_sinh_id, :lop_hoc_id, 'da_duyet', CURRENT_TIMESTAMP)", [':hoc_sinh_id' => $data['hoc_sinh_id'], ':lop_hoc_id' => $id]);
+                Database::execute("INSERT INTO dang_ky_lop (hoc_sinh_id, lop_hoc_id, trang_thai, ngay_duyet) VALUES (:hoc_sinh_id, :lop_hoc_id, 'da_duyet_truc_tiep', CURRENT_TIMESTAMP)", [':hoc_sinh_id' => $data['hoc_sinh_id'], ':lop_hoc_id' => $id]);
             }
             Database::execute("UPDATE lop_hoc SET so_luong_hien_tai = so_luong_hien_tai + 1 WHERE lop_hoc_id = :lop_id", [':lop_id' => $id]);
             http_response_code(201); echo json_encode(["status" => "success", "message" => "Thêm học sinh thành công"]);

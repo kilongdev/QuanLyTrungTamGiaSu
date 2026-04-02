@@ -111,7 +111,7 @@ class DangKyLop {
                 FROM dang_ky_lop dkl
                 JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
                 LEFT JOIN phu_huynh ph ON hs.phu_huynh_id = ph.phu_huynh_id
-                WHERE dkl.lop_hoc_id = :lop_hoc_id AND dkl.trang_thai = 'da_duyet'
+                WHERE dkl.lop_hoc_id = :lop_hoc_id AND dkl.trang_thai IN ('da_duyet', 'da_duyet_truc_tiep')
                 ORDER BY hs.ho_ten";
         return Database::query($sql, [':lop_hoc_id' => $lop_hoc_id]);
     }
@@ -137,6 +137,7 @@ class DangKyLop {
                 JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
                 LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id
+                WHERE dkl.trang_thai <> 'da_duyet_truc_tiep'
                 ORDER BY dkl.trang_thai = 'cho_duyet' DESC, dkl.ngay_dang_ky DESC";
         return Database::query($sql);
     }

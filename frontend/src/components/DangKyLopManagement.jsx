@@ -59,7 +59,7 @@ export default function DangKyLopManagement({ user }) {
           (dk) =>
             String(dk.hoc_sinh_id) === String(selectedHocSinhId) &&
             String(dk.lop_hoc_id) === String(selectedLop.lop_hoc_id) &&
-            ["cho_duyet", "da_duyet"].includes(dk.trang_thai),
+            ["cho_duyet", "da_duyet", "da_duyet_truc_tiep"].includes(dk.trang_thai),
         )
       : null;
 
