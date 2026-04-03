@@ -518,10 +518,11 @@ export default function LopHocManagement() {
     }
   }
 
-  const handleAutoFillTenLopIfEmpty = () => {
-    if (!formData.mon_hoc_id) return
-    if (formData.ten_lop?.trim()) return
-    const autoName = generateAutoClassName(formData, editingId)
+  const handleAutoFillTenLopIfEmpty = (nextFormData) => {
+    const source = nextFormData || formData
+    if (!source.mon_hoc_id || !source.khoi_lop) return
+    if (source.ten_lop?.trim()) return
+    const autoName = generateAutoClassName(source, editingId)
     setFormData((prev) => ({ ...prev, ten_lop: autoName }))
   }
 
@@ -801,7 +802,6 @@ export default function LopHocManagement() {
                         type="text"
                         value={formData.ten_lop}
                         onChange={(e) => setFormData({ ...formData, ten_lop: e.target.value })}
-                        onBlur={handleAutoFillTenLopIfEmpty}
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Tự động nếu để trống"
                       />
@@ -811,19 +811,20 @@ export default function LopHocManagement() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Khối lớp
                       </label>
-                      <input
-                        type="text"
-                        list="grade-options-create"
+                      <select
                         value={formData.khoi_lop}
-                        onChange={(e) => setFormData({ ...formData, khoi_lop: e.target.value })}
+                        onChange={(e) => {
+                          const nextFormData = { ...formData, khoi_lop: e.target.value }
+                          setFormData(nextFormData)
+                          handleAutoFillTenLopIfEmpty(nextFormData)
+                        }}
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Chọn khối lớp (1-12)"
-                      />
-                      <datalist id="grade-options-create">
+                      >
+                        <option value="">Chọn khối lớp (1-12)</option>
                         {GRADE_OPTIONS.map((grade) => (
                           <option key={grade} value={grade}>{`Lớp ${grade}`}</option>
                         ))}
-                      </datalist>
+                      </select>
                     </div>
                   </div>
 
@@ -839,8 +840,8 @@ export default function LopHocManagement() {
                       <option value="">-- Chọn giáo viên --</option>
                       {sortedGiaSuOptions.map((gs) => (
                         <option key={gs.gia_su_id} value={gs.gia_su_id}>
-                          {gs.score > 0 ? 'De cu: ' : ''}{gs.ho_ten}
-                          {gs.matchSubject && gs.matchGrade ? ' (phu hop mon + khoi)' : gs.matchSubject ? ' (phu hop mon)' : gs.matchGrade ? ' (da day khoi nay)' : ''}
+                          {gs.score > 0 ? 'Đề cử: ' : ''}{gs.ho_ten}
+                          {gs.matchSubject && gs.matchGrade ? ' (phù hợp môn + khối)' : gs.matchSubject ? ' (phù hợp môn)' : gs.matchGrade ? ' (đã dạy khối này)' : ''}
                         </option>
                       ))}
                     </select>

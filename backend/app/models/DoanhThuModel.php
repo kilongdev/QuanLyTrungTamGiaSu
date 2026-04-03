@@ -283,7 +283,7 @@ class DoanhThuModel extends BaseModel {
         ];
     }
 
-    public function syncClassRevenueFromAttendance($lopHocId, $thang, $nam, $refreshMonthly = true) {
+    public function syncClassRevenueFromAttendance($lopHocId, $thang, $nam, $refreshMonthly = true, $syncTutorSalary = true) {
         $lopHocId = (int)$lopHocId;
         $thang = (int)$thang;
         $nam = (int)$nam;
@@ -469,7 +469,7 @@ class DoanhThuModel extends BaseModel {
             ]);
         }
 
-        if (!empty($lopInfo['gia_su_id'])) {
+        if (!empty($lopInfo['gia_su_id']) && $syncTutorSalary) {
             $luongExistsStmt = $this->conn->prepare(
                 "SELECT luong_id
                  FROM luong_gia_su
@@ -552,7 +552,7 @@ class DoanhThuModel extends BaseModel {
         ];
     }
 
-    public function processMonthlyRevenue($thang, $nam) {
+    public function processMonthlyRevenue($thang, $nam, $syncTutorSalary = true) {
         $thang = (int)$thang;
         $nam = (int)$nam;
 
@@ -581,7 +581,7 @@ class DoanhThuModel extends BaseModel {
         $classRows = $classStmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($classRows as $classRow) {
-            $this->syncClassRevenueFromAttendance((int)$classRow['lop_hoc_id'], $thang, $nam, false);
+            $this->syncClassRevenueFromAttendance((int)$classRow['lop_hoc_id'], $thang, $nam, false, $syncTutorSalary);
         }
 
         return $this->refreshMonthlyRevenueSummaryFromClassDetails($thang, $nam);

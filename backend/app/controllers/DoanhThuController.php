@@ -158,7 +158,8 @@ class DoanhThuController {
                 return;
             }
 
-            $result = $this->model->processMonthlyRevenue($thang, $nam);
+            // Endpoint này dùng để làm mới báo cáo doanh thu, không nên tái đồng bộ bảng lương.
+            $result = $this->model->processMonthlyRevenue($thang, $nam, false);
 
             echo json_encode([
                 'success' => true,

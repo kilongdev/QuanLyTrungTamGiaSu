@@ -339,13 +339,19 @@ class LuongGiaSuController {
                 [$id]
             );
 
+            $hasPaymentStatusChange = isset($data['trang_thai_thanh_toan']);
+
             if ($updatedLuong && (
                 isset($data['trang_thai_thanh_toan']) ||
                 isset($data['tien_tra_gia_su']) ||
                 isset($data['thang']) ||
                 isset($data['nam'])
-            ) && !$skipRevenueSync) {
-                $this->syncDoanhThuForLuongChanges($existing, $updatedLuong);
+            ) && (!$skipRevenueSync || $hasPaymentStatusChange)) {
+                try {
+                    $this->syncDoanhThuForLuongChanges($existing, $updatedLuong);
+                } catch (Throwable $syncError) {
+                    error_log('Luong sync doanh thu failed: ' . $syncError->getMessage());
+                }
             }
             
             $this->sendResponse(true, 'Cập nhật lương thành công');
@@ -449,7 +455,8 @@ class LuongGiaSuController {
         $doanhThuModel = new DoanhThuModel();
         foreach ($targets as $target) {
             [$month, $year] = $target;
-            $doanhThuModel->processMonthlyRevenue($month, $year);
+            // Khi chỉ đổi trạng thái lương, chỉ cần refresh doanh thu; không tái đồng bộ bảng lương.
+            $doanhThuModel->processMonthlyRevenue($month, $year, false);
         }
     }
 

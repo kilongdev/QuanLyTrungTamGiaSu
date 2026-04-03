@@ -3,7 +3,6 @@ import { Plus, Edit2, Trash2, Search, Eye, X, AlertTriangle } from 'lucide-react
 import DataPagination from '@/components/ui/DataPagination'
 import { toast } from 'sonner'
 import { luongGiaSuAPI } from '@/api/luongGiaSuApi'
-import { doanhThuAPI } from '@/api/doanhThuApi'
 import { getAbortSignal } from '@/lib/requestUtils'
 
 const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api'}`
@@ -58,7 +57,7 @@ export default function LuongGiaSuManagement({ user }) {
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, data: null, selectedIds: [], loading: false, confirmDelete: false })
 
   useEffect(() => {
-    fetchLuongData()
+    fetchLuongData(true)
     fetchGiaSuList()
     fetchLopHocList()
   }, [])
@@ -87,7 +86,7 @@ export default function LuongGiaSuManagement({ user }) {
     }
   }
 
-  const fetchLuongData = async (runOverdueCheck = true) => {
+  const fetchLuongData = async (runOverdueCheck = false) => {
     try {
       setLoading(true)
       if (runOverdueCheck) {
@@ -280,28 +279,6 @@ export default function LuongGiaSuManagement({ user }) {
       })
       
       await Promise.all(promises)
-
-      // Đồng bộ doanh thu theo tháng một lần sau khi lưu hàng loạt
-      if (editGroupModal.data?.danh_sach_lop?.length) {
-        const targets = new Map()
-
-        editGroupModal.data.danh_sach_lop.forEach((lop) => {
-          const thang = parseInt(lop.thang)
-          const nam = parseInt(lop.nam)
-
-          if (!Number.isNaN(thang) && !Number.isNaN(nam) && thang > 0 && nam > 0) {
-            targets.set(`${nam}-${thang}`, { thang, nam })
-          }
-        })
-
-        if (targets.size > 0) {
-          await Promise.all(
-            Array.from(targets.values()).map((target) =>
-              doanhThuAPI.processMonthly({ thang: target.thang, nam: target.nam })
-            )
-          )
-        }
-      }
 
       toast.success('Đã lưu tất cả thay đổi!')
       

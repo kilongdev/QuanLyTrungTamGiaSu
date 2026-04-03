@@ -45,7 +45,7 @@ export default function HocPhiManagement({ user }) {
   const [selectedLop, setSelectedLop] = useState(null)
 
   useEffect(() => {
-    fetchHocPhiData()
+    fetchHocPhiData(true)
     fetchDangKyList()
     fetchHocSinhList()
   }, [])
@@ -120,11 +120,13 @@ export default function HocPhiManagement({ user }) {
     }
   }
 
-  const fetchHocPhiData = async () => {
+  const fetchHocPhiData = async (runOverdueCheck = false) => {
     try {
       setLoading(true)
-      // Kiểm tra và cập nhật học phí quá hạn trước
-      await hocPhiAPI.checkOverdue()
+      // Chỉ kiểm tra quá hạn ở lần vào trang để tránh làm chậm các thao tác cập nhật.
+      if (runOverdueCheck) {
+        await hocPhiAPI.checkOverdue()
+      }
       // Sau đó lấy dữ liệu
       const data = await hocPhiAPI.getAll()
       if (data.success) {
