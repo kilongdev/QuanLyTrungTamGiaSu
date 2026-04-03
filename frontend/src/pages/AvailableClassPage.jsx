@@ -6,14 +6,8 @@ import { lopHocAPI } from "@/api/lophocApi";
 import {
   ChevronLeft,
   ChevronRight,
-  CreditCard,
-  DollarSign,
-  FastForward,
   Filter,
-  PlusSquare,
   Search,
-  User2Icon,
-  UserPen,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -163,112 +157,6 @@ const AvailableClassPage = () => {
 
   return (
     <>
-      <div className=" w-full mb-6">
-        <img
-          src="https://giasuongmattroi.com/wp-content/uploads/2017/07/lop-hien-co-tim-lop-day-kem.jpg"
-          alt="Lớp hiện có"
-          className=" w-full h-[240px] md:h-[360px] lg:h-[420px] object-cover"
-        />
-      </div>
-      <section className=" bg-[#f4f4f4] pt-11 pb-8 mb-8 ">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
-          <div className="flex flex-col items-center text-center m-2 p-2">
-            <div>
-              <User2Icon size={50} className=" opacity-60" />
-            </div>
-            <div>
-              <h3 className="font-semibold">
-                <span>
-                  Nhiều{" "}
-                  <span className=" text-blue-700 uppercase">
-                    lớp hiện có cần gia sư
-                  </span>{" "}
-                  cập nhật liên tục mỗi ngày
-                </span>
-              </h3>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center text-center m-2 p-2">
-            <div>
-              <DollarSign size={50} className=" opacity-60" />
-            </div>
-            <div>
-              <h3 className="font-semibold">
-                <span>
-                  Mức phí nhận lớp thấp{" "}
-                  <span className=" text-red-500 uppercase">10% - 35%</span>
-                </span>
-              </h3>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center text-center m-2 p-2">
-            <div>
-              <PlusSquare size={50} className=" opacity-60" />
-            </div>
-            <div>
-              <h3 className="font-semibold">
-                <span>
-                  Lớp được{" "}
-                  <span className=" text-orange-400 uppercase">
-                    bảo hành lên tới 1 tháng
-                  </span>
-                </span>
-              </h3>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center text-center m-2 p-2">
-            <div>
-              <FastForward size={50} className=" opacity-60" />
-            </div>
-            <div>
-              <h3 className="font-semibold">
-                <span>
-                  <span className=" text-purple-400  uppercase">
-                    Hoàn phí nhanh chóng
-                  </span>{" "}
-                  khi lớp hỏng
-                </span>
-              </h3>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center text-center m-2 p-2">
-            <div>
-              <CreditCard size={50} className=" opacity-60" />
-            </div>
-            <div>
-              <h3 className="font-semibold">
-                <span>
-                  <span className=" text-green-400  uppercase">
-                    Cam kết uy tín
-                  </span>{" "}
-                  trong việc giao lớp bằng CHUYỂN KHOẢN
-                </span>
-              </h3>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center text-center m-2 p-2">
-            <div>
-              <UserPen size={50} className=" opacity-60" />
-            </div>
-            <div>
-              <h3 className="font-semibold">
-                <span>
-                  <span className=" text-yellow-400  uppercase">
-                    Tận tình hỗ trợ
-                  </span>{" "}
-                  gia sư trong quá trình nhận lớp và đi dạy
-                </span>
-              </h3>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <div className="flex flex-col items-center mb-6 text-center">
         <h2 className="font-corinthia text-red-500 text-5xl">Lớp hiện</h2>
         <p className="text-4xl uppercase font-semibold">Có tìm gia sư</p>
