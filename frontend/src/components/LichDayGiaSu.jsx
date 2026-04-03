@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, UserCheck, CheckCircle, AlertTriangle, X, FileText, Info } from "lucide-react";
 import { lichHocAPI } from "@/api/lichhocApi"; 
 import { diemDanhAPI } from "@/api/diemdanhApi"; 
 import { toast } from "sonner";
+import { getAbortSignal } from "@/lib/requestUtils";
 
 export default function LichDayGiaSu({ user }) {
   const [lichHocs, setLichHocs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const submitRef = useRef({ isSubmitting: false });
   
   // State quản lý Tháng/Năm đang xem
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -144,6 +146,12 @@ export default function LichDayGiaSu({ user }) {
 
   const handleSaveDiemDanh = async () => {
     try {
+      // Ngăn double-submit
+      if (submitRef.current.isSubmitting) {
+        return;
+      }
+      submitRef.current.isSubmitting = true;
+      const signal = getAbortSignal(`diem-danh-${selectedLichHocId}`);
       await diemDanhAPI.saveDanhSach({
         lich_hoc_id: selectedLichHocId,
         danh_sach: diemDanhList.map((item) => ({
@@ -151,11 +159,15 @@ export default function LichDayGiaSu({ user }) {
           tinh_trang: item.tinh_trang,
           ghi_chu: item.ghi_chu,
         })),
-      });
+      }, { signal });
       toast.success("Đã lưu Điểm danh thành công!");
       setShowDiemDanhModal(false);
     } catch (error) {
-      toast.error("Có lỗi khi lưu Điểm danh!");
+      if (error.name !== 'AbortError') {
+        toast.error(error.message || "Có lỗi khi lưu Điểm danh!");
+      }
+    } finally {
+      submitRef.current.isSubmitting = false;
     }
   };
 

@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, User, Plus, Edit2, Trash2, MoreVertical, X, AlertTriangle, CheckCircle, UserCheck, Lock, ChevronLeft, ChevronRight, FileText, Eye, Search, Filter } from 'lucide-react';
 import { lichHocAPI } from '../api/lichhocApi';
 import { diemDanhAPI } from '../api/diemdanhApi';
+import { getAbortSignal } from '../lib/requestUtils';
 export default function LichHocManagement({ user }) {
     const [lichHocs, setLichHocs] = useState([]);
     const [lopHocs, setLopHocs] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [showModal, setShowModal] = useState(false); 
+    const submitRef = useRef({ isSubmitting: false });
     const [editingId, setEditingId] = useState(null);
     const [showSettings, setShowSettings] = useState(null);
     const [searchTermAdmin, setSearchTermAdmin] = useState("");
@@ -153,14 +155,21 @@ export default function LichHocManagement({ user }) {
         e.preventDefault();
         
         // Validate dữ liệu theo từng trường hợp
+        if (submitRef.current.isSubmitting) return;
+        submitRef.current.isSubmitting = true;
+        const signal = getAbortSignal(`lich-hoc-submit-${editingId || 'new'}`);
+
+        // Validate dữ liệu theo từng trường hợp
         if (!formData.tao_chu_ky) {
             if (formData.gio_bat_dau >= formData.gio_ket_thuc) {
                 setAlertModal({ show: true, message: 'Giờ kết thúc phải lớn hơn Giờ bắt đầu!', type: 'error' });
+                submitRef.current.isSubmitting = false;
                 return;
             }
         } else {
             if (formData.ngay_trong_tuan.length === 0) {
                 setAlertModal({ show: true, message: 'Vui lòng chọn ít nhất 1 ngày trong tuần để xếp lịch định kỳ!', type: 'error' });
+                submitRef.current.isSubmitting = false;
                 return;
             }
             // Check giờ riêng của từng thứ
@@ -168,10 +177,12 @@ export default function LichHocManagement({ user }) {
                 const time = formData.thoi_gian_tung_ngay[day];
                 if (!time || !time.gio_bat_dau || !time.gio_ket_thuc) {
                     setAlertModal({ show: true, message: 'Vui lòng nhập đầy đủ giờ học cho tất cả các Thứ đã chọn!', type: 'error' });
+                    submitRef.current.isSubmitting = false;
                     return;
                 }
                 if (time.gio_bat_dau >= time.gio_ket_thuc) {
                     setAlertModal({ show: true, message: 'Giờ kết thúc phải lớn hơn Giờ bắt đầu ở tất cả các ngày!', type: 'error' });
+                    submitRef.current.isSubmitting = false;
                     return;
                 }
             }
@@ -179,17 +190,22 @@ export default function LichHocManagement({ user }) {
 
         try {
             if (editingId) {
-                await lichHocAPI.update(editingId, formData);
+                await lichHocAPI.update(editingId, formData, { signal });
                 setAlertModal({ show: true, message: 'Cập nhật lịch học thành công!', type: 'success' });
             } else {
-                await lichHocAPI.create(formData);
+                await lichHocAPI.create(formData, { signal });
                 setAlertModal({ show: true, message: formData.tao_chu_ky ? 'Hệ thống đã tự động tạo lịch chu kỳ thành công!' : 'Tạo lịch học mới thành công!', type: 'success' });
             }
             setShowModal(false);
             resetForm();
             fetchLichHocs();
         } catch (error) {
+            if (error.name === 'AbortError') {
+                return;
+            }
             setAlertModal({ show: true, message: error.message || 'Có lỗi xảy ra!', type: 'error' });
+        } finally {
+            submitRef.current.isSubmitting = false;
         }
     };
 
@@ -273,6 +289,10 @@ export default function LichHocManagement({ user }) {
     };
 
     const handleSaveDiemDanh = async () => {
+        if (submitRef.current.isSubmitting) return;
+        submitRef.current.isSubmitting = true;
+        const signal = getAbortSignal(`lich-hoc-diem-danh-${selectedLichHocId}`);
+
         try {
             const payload = {
                 lich_hoc_id: selectedLichHocId,
@@ -283,11 +303,16 @@ export default function LichHocManagement({ user }) {
                 }))
             };
             
-            await diemDanhAPI.saveDanhSach(payload);
+            await diemDanhAPI.saveDanhSach(payload, { signal });
             setAlertModal({ show: true, message: 'Đã lưu Điểm danh thành công!', type: 'success' });
             setShowDiemDanhModal(false);
         } catch (error) {
+            if (error.name === 'AbortError') {
+                return;
+            }
             setAlertModal({ show: true, message: 'Có lỗi khi lưu Điểm danh!', type: 'error' });
+        } finally {
+            submitRef.current.isSubmitting = false;
         }
     };
 

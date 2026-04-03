@@ -28,6 +28,7 @@ async function request(endpoint, options = {}) {
         const response = await fetch(`${API_URL}${endpoint}`, {
             ...options,
             headers,
+            signal: options.signal || undefined, // Support AbortSignal
         });
         
         const data = await response.json();
@@ -38,6 +39,9 @@ async function request(endpoint, options = {}) {
         
         return data;
     } catch (error) {
+        if (error.name === 'AbortError') {
+            throw error; // Rethrow AbortError as-is
+        }
         if (error.status) throw error;
         throw { status: 0, message: 'Không thể kết nối đến server' };
     }
@@ -83,10 +87,11 @@ export const lopHocAPI = {
      * @param {number} data.hoc_phi - Học phí (optional)
      * @param {string} data.trang_thai - Trạng thái (optional)
      */
-    create: (data) => 
+    create: (data, options = {}) => 
         request('/lophoc/create', {
             method: 'POST',
             body: JSON.stringify(data),
+                    ...options,
         }),
 
     /**
@@ -94,9 +99,10 @@ export const lopHocAPI = {
      * @param {number} id - ID lớp học
      * @param {Object} data - Dữ liệu cần cập nhật
      */
-    update: (id, data) => 
+    update: (id, data, options = {}) => 
         request(`/lophoc/update/${id}`, {
             method: 'PUT',
+                        ...options,
             body: JSON.stringify(data),
         }),
 

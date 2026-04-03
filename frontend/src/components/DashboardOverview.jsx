@@ -38,6 +38,14 @@ const formatCurrencyCompact = (value) => {
   }).format(num);
 };
 
+const formatMoney = (value) => new Intl.NumberFormat('vi-VN').format(Number(value || 0));
+
+const formatChartName = (name) => {
+  const text = String(name || '');
+  if (text.length <= 20) return text;
+  return `${text.slice(0, 20)}...`;
+};
+
 export default function DashboardOverview() {
   const now = new Date();
   const [filterType, setFilterType] = useState('nam');
@@ -103,6 +111,7 @@ export default function DashboardOverview() {
       const trend = (overview.monthlyTrend || []).map((item) => ({
         month: item.month,
         revenue: Number(item.revenue || 0),
+        expense: Number(item.expense || 0),
         profit: Number(item.profit || 0),
         students: Number(item.students || 0),
       }));
@@ -118,8 +127,9 @@ export default function DashboardOverview() {
 
       const classesRevenue = (overview.topClasses || []).map((item) => ({
         grade: item.ten_lop || `Lớp ${item.lop_hoc_id}`,
-        total: Number(item.tong_thu || 0),
-        active: Number(item.loi_nhuan || 0),
+        revenue: Number(item.tong_thu || 0),
+        expense: Number(item.tong_chi || 0),
+        profit: Number(item.loi_nhuan || 0),
       }));
       setClassRevenueData(classesRevenue);
     } catch (error) {
@@ -325,12 +335,14 @@ export default function DashboardOverview() {
                 <LineChart data={revenueTrendData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
+                  <YAxis yAxisId="money" stroke="#9CA3AF" tickFormatter={(v) => formatCurrencyCompact(v)} />
+                  <YAxis yAxisId="students" orientation="right" stroke="#10B981" allowDecimals={false} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px' }}
                     formatter={(value, name) => {
-                      if (name === 'Doanh thu') return [new Intl.NumberFormat('vi-VN').format(value), name];
-                      if (name === 'Lợi nhuận') return [new Intl.NumberFormat('vi-VN').format(value), name];
+                      if (name === 'Doanh thu') return [formatMoney(value), name];
+                      if (name === 'Chi phí gia sư') return [formatMoney(value), name];
+                      if (name === 'Lợi nhuận') return [formatMoney(value), name];
                       return [value, name];
                     }}
                   />
@@ -338,6 +350,7 @@ export default function DashboardOverview() {
                   <Line 
                     type="monotone" 
                     dataKey="revenue" 
+                    yAxisId="money"
                     stroke="#3B82F6" 
                     strokeWidth={2}
                     dot={{ fill: '#3B82F6', strokeWidth: 2 }}
@@ -345,7 +358,17 @@ export default function DashboardOverview() {
                   />
                   <Line 
                     type="monotone" 
+                    dataKey="expense" 
+                    yAxisId="money"
+                    stroke="#EF4444" 
+                    strokeWidth={2}
+                    dot={{ fill: '#EF4444', strokeWidth: 2 }}
+                    name="Chi phí gia sư"
+                  />
+                  <Line 
+                    type="monotone" 
                     dataKey="profit" 
+                    yAxisId="money"
                     stroke="#F59E0B" 
                     strokeWidth={2}
                     dot={{ fill: '#F59E0B', strokeWidth: 2 }}
@@ -354,6 +377,7 @@ export default function DashboardOverview() {
                   <Line 
                     type="monotone" 
                     dataKey="students" 
+                    yAxisId="students"
                     stroke="#10B981" 
                     strokeWidth={2}
                     dot={{ fill: '#10B981', strokeWidth: 2 }}
@@ -378,9 +402,8 @@ export default function DashboardOverview() {
                     data={subjectRevenueData}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${formatCurrencyCompact(value)}`}
-                    outerRadius={80}
+                    innerRadius={45}
+                    outerRadius={88}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -388,7 +411,12 @@ export default function DashboardOverview() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => new Intl.NumberFormat('vi-VN').format(value)} />
+                  <Tooltip formatter={(value) => formatMoney(value)} />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={48}
+                    formatter={(value) => formatChartName(value)}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -403,18 +431,27 @@ export default function DashboardOverview() {
               </h3>
               <p className="text-gray-500 text-sm">Top lớp theo doanh thu/lợi nhuận ({filterLabel})</p>
             </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={classRevenueData}>
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={classRevenueData.slice(0, 6)} margin={{ top: 10, right: 20, left: 10, bottom: 50 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="grade" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
+                <XAxis
+                  dataKey="grade"
+                  stroke="#9CA3AF"
+                  angle={-18}
+                  textAnchor="end"
+                  height={60}
+                  tickFormatter={formatChartName}
+                />
+                <YAxis stroke="#9CA3AF" tickFormatter={(v) => formatCurrencyCompact(v)} />
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                  formatter={(value, name) => [new Intl.NumberFormat('vi-VN').format(value), name]}
+                  formatter={(value, name) => [formatMoney(value), name]}
+                  labelFormatter={(label) => `Lớp: ${label}`}
                 />
                 <Legend />
-                <Bar dataKey="total" fill="#3B82F6" name="Doanh thu lớp" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="active" fill="#10B981" name="Lợi nhuận lớp" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="revenue" fill="#3B82F6" name="Doanh thu lớp" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="expense" fill="#EF4444" name="Chi phí gia sư" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="profit" fill="#10B981" name="Lợi nhuận lớp" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

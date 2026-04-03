@@ -24,20 +24,22 @@ export const hocPhiAPI = {
     return response.json();
   },
 
-  create: async (data) => {
+  create: async (data, options = {}) => {
     const response = await fetch(`${API_BASE}/hocphi/create`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      signal: options.signal || undefined,
     });
     return response.json();
   },
 
-  updateStatus: async (id, data) => {
+  updateStatus: async (id, data, options = {}) => {
     const response = await fetch(`${API_BASE}/hocphi/update/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      signal: options.signal || undefined,
     });
     return response.json();
   },

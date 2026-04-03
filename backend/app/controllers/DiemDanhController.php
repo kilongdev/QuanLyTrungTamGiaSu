@@ -518,11 +518,16 @@ class DiemDanhController {
     }
 
     private function syncRevenueForClassMonth($lopHocId, $ngayHoc) {
-        $thang = (int)date('n', strtotime($ngayHoc));
-        $nam = (int)date('Y', strtotime($ngayHoc));
+        try {
+            $thang = (int)date('n', strtotime($ngayHoc));
+            $nam = (int)date('Y', strtotime($ngayHoc));
 
-        $doanhThuModel = new DoanhThuModel();
-        $doanhThuModel->syncClassRevenueFromAttendance((int)$lopHocId, $thang, $nam, true);
+            $doanhThuModel = new DoanhThuModel();
+            $doanhThuModel->syncClassRevenueFromAttendance((int)$lopHocId, $thang, $nam, true);
+        } catch (Throwable $e) {
+            // Khong de loi dong bo doanh thu lam fail thao tac diem danh.
+            error_log('syncRevenueForClassMonth error: ' . $e->getMessage());
+        }
     }
 
     private function buildAttendanceDatetime($schedule) {
