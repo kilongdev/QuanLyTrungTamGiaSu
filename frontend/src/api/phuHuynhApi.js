@@ -74,4 +74,29 @@ export const phuHuynhAPI = {
         request(`/phuhuynh/${id}`, {
             method: 'DELETE',
         }),
+    getDashboard: (id) =>
+        request(`/phuhuynh/${id}/dashboard`, {
+            method: 'GET',
+        }),
+    getChildren: (id) =>
+        request(`/phuhuynh/${id}/children`, {
+            method: 'GET',
+        }),
+    getTutors: (id) =>
+        request(`/phuhuynh/${id}/tutors`, {
+            method: 'GET',
+        }),
+    getPayments: (id) =>
+        request(`/phuhuynh/${id}/payments`, {
+            method: 'GET',
+        }),
+    getProfile: (id) =>
+        request(`/phuhuynh/${id}/profile`, {
+            method: 'GET',
+        }),
+    updateProfile: (id, data) =>
+        request(`/phuhuynh/${id}/profile`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
 };
