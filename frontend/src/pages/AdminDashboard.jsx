@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useMatch, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, Briefcase, FileText, ClipboardList, BookCheck, DollarSign, HandCoins } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, Briefcase, FileText, ClipboardList, BookCheck, DollarSign, HandCoins, ShieldUser } from 'lucide-react';
 
 import DashboardLayout from '../Layouts/DashboardLayout';
 import DashboardOverview from '../components/DashboardOverview';
@@ -12,6 +12,7 @@ import YeuCauManagement from '../components/YeuCauManagement';
 import DangKyLopManagement from '../components/DangKyLopManagement'; // Module đăng ký lớp tụi mình vừa làm
 import LuongGiaSuManagement from '../components/LuongGiaSuManagement';
 import HocPhiManagement from '../components/HocPhiManagement';
+import AdminAccountManagement from '../components/AdminAccountManagement';
 import LopHocEditPage from './LopHocEditPage';
 import LopHocAttendancePage from './LopHocAttendancePage';
 
@@ -51,6 +52,7 @@ export default function AdminDashboard({ user, onLogout }) {
     { id: 'hocsinh', label: 'Quản lý Học sinh', icon: GraduationCap },
     { id: 'phuhuynh', label: 'Quản lý Phụ huynh', icon: Users },
     { id: 'giasu', label: 'Quản lý Gia sư', icon: Briefcase },
+    { id: 'admin_accounts', label: 'Tài khoản admin', icon: ShieldUser },
     { id: 'luonggiasu', label: 'Lương gia sư', icon: HandCoins },
     { id: 'hocphi', label: 'Học phí', icon: DollarSign },
   ];
@@ -87,6 +89,8 @@ export default function AdminDashboard({ user, onLogout }) {
         return <PhuHuynhManagement />;
       case 'giasu':
         return <GiaSuManagement />;
+      case 'admin_accounts':
+        return <AdminAccountManagement currentUser={user} />;
       case 'luonggiasu':
         return <LuongGiaSuManagement user={user} />;
       case 'hocphi':
