@@ -4,6 +4,21 @@ require_once __DIR__ . '/../models/ThongBaoModel.php';
 
 class GiaSuController
 {
+    private static function splitBankInfo(?string $combined): array
+    {
+        $value = trim((string)$combined);
+        if ($value === '') {
+            return ['', ''];
+        }
+
+        $parts = explode(' - ', $value, 2);
+        if (count($parts) < 2) {
+            return [$value, ''];
+        }
+
+        return [trim($parts[0]), trim($parts[1])];
+    }
+
     private static function buildMediaUrl(string $type, string $fileName): string
     {
         return '/giasu/media/' . $type . '/' . rawurlencode($fileName);
@@ -30,6 +45,10 @@ class GiaSuController
                 return $item;
             }, $giaSu['chung_chi']);
         }
+
+        [$accountNumber, $bankName] = self::splitBankInfo($giaSu['so_tai_khoan_ngan_hang'] ?? '');
+        $giaSu['so_tai_khoan_ngan_hang'] = $accountNumber;
+        $giaSu['ten_ngan_hang'] = $bankName;
 
         return $giaSu;
     }

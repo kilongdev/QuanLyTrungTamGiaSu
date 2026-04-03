@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { lopHocAPI } from '../api/lophocApi'
 import { monHocAPI } from '../api/monhocApi'
 import { giaSuAPI } from '../api/giaSuApi'
+import { giaSuMonHocAPI } from '../api/giasumonhocApi'
 import { hocSinhAPI } from '../api/hocSinhApi'
 import { diemDanhAPI } from '../api/diemdanhApi'
 import { lichHocAPI } from '../api/lichhocApi'
-import { Plus, Settings, X, Search, Trash2, Edit2, BookOpen, Layers3, Users, Clock } from 'lucide-react'
+import { Plus, Settings, X, Search, Lock, Unlock, Edit2, BookOpen, Layers3, Users, Clock } from 'lucide-react'
 import { validateClassForm } from '@/lib/validators'
 import { normalizeNumberInputValue } from '@/lib/numberUtils'
 import { toast } from 'sonner'
@@ -17,6 +18,7 @@ export default function LopHocManagement() {
   const [lopHocs, setLopHocs] = useState([])
   const [monHocs, setMonHocs] = useState([])
   const [giaSus, setGiaSus] = useState([])
+  const [tutorSubjectMap, setTutorSubjectMap] = useState({})
   const [allHocSinh, setAllHocSinh] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -32,6 +34,12 @@ export default function LopHocManagement() {
   const [attendanceForToday, setAttendanceForToday] = useState({})
   const [showAttendanceHistory, setShowAttendanceHistory] = useState(false)
   const [savingAttendance, setSavingAttendance] = useState(false)
+  const [lockConfirmModal, setLockConfirmModal] = useState({
+    open: false,
+    classId: null,
+    className: '',
+    action: 'lock'
+  })
   const submitRef = useRef({ isSubmitting: false })
   
   const [createWithSchedule, setCreateWithSchedule] = useState(true)
@@ -51,6 +59,8 @@ export default function LopHocManagement() {
     { value: 7, label: 'Thứ 7' },
     { value: 8, label: 'Chủ nhật' }
   ]
+
+  const GRADE_OPTIONS = ['1','2','3','4','5','6','7','8','9','10','11','12']
   const [formData, setFormData] = useState({
     mon_hoc_id: '',
     ten_lop: '',
@@ -69,6 +79,7 @@ export default function LopHocManagement() {
     fetchLopHocs()
     fetchMonHocs()
     fetchGiaSus()
+    fetchGiaSuMonHocLinks()
     fetchAllHocSinh()
   }, [])
 
@@ -100,6 +111,29 @@ export default function LopHocManagement() {
       setGiaSus(response.data || [])
     } catch (error) {
       console.error('Lỗi khi tải danh sách gia sư:', error)
+    }
+  }
+
+  const fetchGiaSuMonHocLinks = async () => {
+    try {
+      const response = await giaSuMonHocAPI.getAll({ limit: 5000 })
+      const rows = response?.data || []
+      const nextMap = {}
+
+      rows.forEach((row) => {
+        const tutorId = String(row.gia_su_id || '')
+        const subjectId = String(row.mon_hoc_id || '')
+        if (!tutorId || !subjectId) return
+        if (!nextMap[tutorId]) {
+          nextMap[tutorId] = new Set()
+        }
+        nextMap[tutorId].add(subjectId)
+      })
+
+      setTutorSubjectMap(nextMap)
+    } catch (error) {
+      console.error('Lỗi khi tải liên kết gia sư - môn học:', error)
+      setTutorSubjectMap({})
     }
   }
 
@@ -410,18 +444,39 @@ export default function LopHocManagement() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa lớp học này?')) {
-      return
-    }
-
     try {
       await lopHocAPI.delete(id)
-      toast.success('Xóa lớp học thành công!')
+      toast.success('Khóa lớp học thành công!')
       fetchLopHocs()
     } catch (error) {
       console.error('Lỗi khi xóa lớp học:', error)
-      toast.error(error.message || 'Không thể xóa lớp học này')
+      toast.error(error.message || 'Không thể khóa lớp học này')
     }
+  }
+
+  const handleUnlock = async (id) => {
+    try {
+      await lopHocAPI.updateStatus(id, 'sap_mo')
+      toast.success('Mở khóa lớp học thành công!')
+      fetchLopHocs()
+    } catch (error) {
+      console.error('Lỗi khi mở khóa lớp học:', error)
+      toast.error(error.message || 'Không thể mở khóa lớp học này')
+    }
+  }
+
+  const openLockConfirmModal = (lopHoc) => {
+    const isLocked = lopHoc?.trang_thai === 'dong'
+    setLockConfirmModal({
+      open: true,
+      classId: lopHoc?.lop_hoc_id || null,
+      className: lopHoc?.ten_lop || `Lớp ${lopHoc?.lop_hoc_id || ''}`,
+      action: isLocked ? 'unlock' : 'lock'
+    })
+  }
+
+  const closeLockConfirmModal = () => {
+    setLockConfirmModal({ open: false, classId: null, className: '', action: 'lock' })
   }
 
   const toAlphabetSuffix = (index) => {
@@ -489,6 +544,31 @@ export default function LopHocManagement() {
   const subjectSections = Object.entries(groupedBySubject).sort(([subjectA], [subjectB]) =>
     subjectA.localeCompare(subjectB, 'vi')
   )
+
+  const sortedGiaSuOptions = (() => {
+    const selectedMonHocId = String(formData.mon_hoc_id || '').trim()
+    const selectedKhoiLop = String(formData.khoi_lop || '').trim()
+
+    const scored = giaSus.map((gs) => {
+      const tutorId = String(gs.gia_su_id)
+      const subjectSet = tutorSubjectMap[tutorId] || new Set()
+      const matchSubject = selectedMonHocId ? subjectSet.has(selectedMonHocId) : false
+
+      const matchGrade = selectedKhoiLop
+        ? lopHocs.some((lop) => String(lop.gia_su_id) === tutorId && String(lop.khoi_lop || '') === selectedKhoiLop)
+        : false
+
+      const score = (matchSubject ? 2 : 0) + (matchGrade ? 1 : 0)
+      return { ...gs, score, matchSubject, matchGrade }
+    })
+
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return String(a.ho_ten || '').localeCompare(String(b.ho_ten || ''), 'vi')
+    })
+
+    return scored
+  })()
 
   if (loading) {
     return (
@@ -596,13 +676,13 @@ export default function LopHocManagement() {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    handleDelete(lopHoc.lop_hoc_id)
+                                    openLockConfirmModal(lopHoc)
                                     setShowSettings(null)
                                   }}
-                                  className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 ${lopHoc.trang_thai === 'dong' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-red-600 hover:bg-red-50'}`}
                                 >
-                                  <Trash2 size={12} />
-                                  Xóa
+                                  {lopHoc.trang_thai === 'dong' ? <Unlock size={12} /> : <Lock size={12} />}
+                                  {lopHoc.trang_thai === 'dong' ? 'Mở khóa' : 'Khóa'}
                                 </button>
                               </div>
                             )}
@@ -733,11 +813,17 @@ export default function LopHocManagement() {
                       </label>
                       <input
                         type="text"
+                        list="grade-options-create"
                         value={formData.khoi_lop}
                         onChange={(e) => setFormData({ ...formData, khoi_lop: e.target.value })}
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Ví dụ: 6, 7, 8..."
+                        placeholder="Chọn khối lớp (1-12)"
                       />
+                      <datalist id="grade-options-create">
+                        {GRADE_OPTIONS.map((grade) => (
+                          <option key={grade} value={grade}>{`Lớp ${grade}`}</option>
+                        ))}
+                      </datalist>
                     </div>
                   </div>
 
@@ -751,12 +837,14 @@ export default function LopHocManagement() {
                       className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">-- Chọn giáo viên --</option>
-                      {giaSus.map((gs) => (
+                      {sortedGiaSuOptions.map((gs) => (
                         <option key={gs.gia_su_id} value={gs.gia_su_id}>
-                          {gs.ho_ten}
+                          {gs.score > 0 ? 'De cu: ' : ''}{gs.ho_ten}
+                          {gs.matchSubject && gs.matchGrade ? ' (phu hop mon + khoi)' : gs.matchSubject ? ' (phu hop mon)' : gs.matchGrade ? ' (da day khoi nay)' : ''}
                         </option>
                       ))}
                     </select>
+                    <p className="text-xs text-gray-500 mt-1">Danh sách ưu tiên gia sư phù hợp ở phía trên, nhưng bạn vẫn có thể chọn bất kỳ gia sư nào.</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -840,10 +928,13 @@ export default function LopHocManagement() {
                           onChange={(e) => setFormData({ ...formData, gia_tri_chi_tra: e.target.value })}
                           className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder={formData.loai_chi_tra === 'phan_tram' ? '70' : '1500000'}
-                          min="0"
+                          min={formData.loai_chi_tra === 'phan_tram' ? '51' : '0'}
                           step={formData.loai_chi_tra === 'phan_tram' ? '1' : '1000'}
-                          max={formData.loai_chi_tra === 'phan_tram' ? '100' : undefined}
+                          max={formData.loai_chi_tra === 'phan_tram' ? '99' : undefined}
                         />
+                        {formData.loai_chi_tra === 'phan_tram' && (
+                          <p className="text-xs text-gray-500 mt-1">Phần trăm phải lớn hơn 50 và nhỏ hơn 100.</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -977,6 +1068,49 @@ export default function LopHocManagement() {
                   </div>
                 </form>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {lockConfirmModal.open && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md border border-gray-200 overflow-hidden">
+            <div className="p-5 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900">{lockConfirmModal.action === 'unlock' ? 'Xác nhận mở khóa lớp' : 'Xác nhận khóa lớp'}</h3>
+              <p className="text-sm text-gray-600 mt-2">
+                {lockConfirmModal.action === 'unlock' ? (
+                  <>
+                    Bạn có chắc chắn muốn mở khóa lớp <span className="font-semibold text-gray-900">{lockConfirmModal.className}</span>? Lớp sẽ được phép đăng ký lại.
+                  </>
+                ) : (
+                  <>
+                    Bạn có chắc chắn muốn khóa lớp <span className="font-semibold text-gray-900">{lockConfirmModal.className}</span>? Lớp bị khóa sẽ không thể đăng ký ở phía phụ huynh và trang công khai.
+                  </>
+                )}
+              </p>
+            </div>
+            <div className="p-5 flex gap-3">
+              <button
+                onClick={closeLockConfirmModal}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={async () => {
+                  if (!lockConfirmModal.classId) return
+                  if (lockConfirmModal.action === 'unlock') {
+                    await handleUnlock(lockConfirmModal.classId)
+                  } else {
+                    await handleDelete(lockConfirmModal.classId)
+                  }
+                  closeLockConfirmModal()
+                }}
+                className={`flex-1 px-4 py-2.5 text-white rounded-lg transition ${lockConfirmModal.action === 'unlock' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
+              >
+                {lockConfirmModal.action === 'unlock' ? 'Mở khóa lớp' : 'Khóa lớp'}
+              </button>
             </div>
           </div>
         </div>

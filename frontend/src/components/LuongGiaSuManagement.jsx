@@ -625,7 +625,7 @@ export default function LuongGiaSuManagement({ user }) {
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">STT</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Gia sư</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Số lớp</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tổng lương</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Lương chưa thanh toán</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tháng/Năm</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Trạng thái</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Thao tác</th>
@@ -733,7 +733,7 @@ export default function LuongGiaSuManagement({ user }) {
 
                 {/* Tổng lương */}
                 <div className="bg-red-50 rounded-xl p-4 mb-6">
-                  <h4 className="font-bold text-gray-900 mb-3">Tổng lương</h4>
+                  <h4 className="font-bold text-gray-900 mb-3">Lương chưa thanh toán</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <p className="text-xs text-gray-500">Tháng/Năm</p>
@@ -744,8 +744,12 @@ export default function LuongGiaSuManagement({ user }) {
                       <p className="font-medium">{detailModal.data.so_lop || 0} lớp</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Tổng lương</p>
+                      <p className="text-xs text-gray-500">Chưa thanh toán</p>
                       <p className="font-bold text-red-700 text-lg">{parseInt(detailModal.data.tong_luong || 0).toLocaleString('vi-VN')} đ</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Đã thanh toán</p>
+                      <p className="font-medium text-blue-700">{parseInt(detailModal.data.tong_luong_da_thanh_toan || 0).toLocaleString('vi-VN')} đ</p>
                     </div>
                   </div>
                 </div>
@@ -817,7 +821,7 @@ export default function LuongGiaSuManagement({ user }) {
                       <p className="text-sm text-gray-500">Tháng {String(editGroupModal.data.thang || 1).padStart(2, '0')}/{editGroupModal.data.nam}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-gray-500">Tổng lương</p>
+                      <p className="text-xs text-gray-500">Chưa thanh toán</p>
                       <p className="font-bold text-red-700 text-lg">{parseInt(editGroupModal.data.tong_luong || 0).toLocaleString('vi-VN')} đ</p>
                     </div>
                   </div>
@@ -1100,7 +1104,7 @@ export default function LuongGiaSuManagement({ user }) {
                       <p className="text-sm text-gray-500">Tháng {String(deleteModal.data.thang || 1).padStart(2, '0')}/{deleteModal.data.nam}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-gray-500">Tổng lương</p>
+                      <p className="text-xs text-gray-500">Chưa thanh toán</p>
                       <p className="font-bold text-red-700">{parseInt(deleteModal.data.tong_luong || 0).toLocaleString('vi-VN')} đ</p>
                     </div>
                   </div>

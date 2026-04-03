@@ -21,7 +21,11 @@ export function validateParentForm(data, { requirePassword = false } = {}) {
   if (!REGEX.phoneVN.test(String(data.so_dien_thoai || '').trim())) {
     return 'Số điện thoại không hợp lệ (0xxxxxxxxx hoặc +84xxxxxxxxx).'
   }
-  if (requirePassword && !REGEX.passwordStrong.test(String(data.mat_khau || ''))) {
+  const password = String(data.mat_khau || '')
+  if (requirePassword && !REGEX.passwordStrong.test(password)) {
+    return 'Mật khẩu tối thiểu 6 ký tự và phải có cả chữ lẫn số.'
+  }
+  if (!requirePassword && password && !REGEX.passwordStrong.test(password)) {
     return 'Mật khẩu tối thiểu 6 ký tự và phải có cả chữ lẫn số.'
   }
   if (String(data.dia_chi || '').trim().length < 5) {
@@ -40,7 +44,11 @@ export function validateTutorForm(data, { requirePassword = false } = {}) {
   if (!REGEX.phoneVN.test(String(data.so_dien_thoai || '').trim())) {
     return 'Số điện thoại không hợp lệ (0xxxxxxxxx hoặc +84xxxxxxxxx).'
   }
-  if (requirePassword && !REGEX.passwordStrong.test(String(data.mat_khau || ''))) {
+  const password = String(data.mat_khau || '')
+  if (requirePassword && !REGEX.passwordStrong.test(password)) {
+    return 'Mật khẩu tối thiểu 6 ký tự và phải có cả chữ lẫn số.'
+  }
+  if (!requirePassword && password && !REGEX.passwordStrong.test(password)) {
     return 'Mật khẩu tối thiểu 6 ký tự và phải có cả chữ lẫn số.'
   }
   return ''
@@ -79,6 +87,13 @@ export function validateClassForm(data) {
     const val = String(data[field] ?? '').trim()
     if (val && !REGEX.positiveNumber.test(val)) {
       return `Giá trị ${field} không hợp lệ.`
+    }
+  }
+
+  if (String(data.loai_chi_tra || '').trim() === 'phan_tram') {
+    const percent = Number(String(data.gia_tri_chi_tra || '').trim())
+    if (!Number.isFinite(percent) || percent <= 50 || percent >= 100) {
+      return 'Phần trăm chia phí phải lớn hơn 50% và nhỏ hơn 100%.'
     }
   }
 

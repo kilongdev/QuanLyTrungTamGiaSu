@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Edit2, Eye, Search, Plus, X, Lock, Unlock, AlertTriangle, Trash2, Calendar, User, Hash } from 'lucide-react'
+import { Edit2, Eye, EyeOff, Search, Plus, X, Lock, Unlock, AlertTriangle, Trash2, Calendar, User, Hash } from 'lucide-react'
 import { phuHuynhAPI } from '@/api/phuHuynhApi'
 import { hocSinhAPI } from '@/api/hocSinhApi'
 import { validateParentForm } from '@/lib/validators'
@@ -17,7 +17,8 @@ export default function PhuHuynhManagement() {
   const [detailModal, setDetailModal] = useState({ open: false, data: null, students: [], loading: false })
   // State cho modal chỉnh sửa
   const [editModal, setEditModal] = useState({ open: false, data: null })
-  const [editFormData, setEditFormData] = useState({ ho_ten: '', email: '', so_dien_thoai: '', dia_chi: '', trang_thai: 'da_duyet' })
+  const [editFormData, setEditFormData] = useState({ ho_ten: '', email: '', so_dien_thoai: '', dia_chi: '', mat_khau: '', trang_thai: 'da_duyet' })
+  const [showEditPassword, setShowEditPassword] = useState(false)
   const [modalLoading, setModalLoading] = useState(false)
   // State cho modal thêm mới
   const [addModal, setAddModal] = useState(false)
@@ -182,8 +183,10 @@ export default function PhuHuynhManagement() {
       email: parent.email,
       so_dien_thoai: parent.so_dien_thoai || '',
       dia_chi: parent.dia_chi || '',
+      mat_khau: '',
       trang_thai: parent.trang_thai || 'da_duyet'
     })
+    setShowEditPassword(false)
     setEditModal({ open: true, data: parent })
   }
 
@@ -240,7 +243,12 @@ export default function PhuHuynhManagement() {
 
     setModalLoading(true)
     try {
-      const result = await phuHuynhAPI.update(editModal.data.phu_huynh_id, editFormData)
+      const payload = { ...editFormData }
+      if (!String(payload.mat_khau || '').trim()) {
+        delete payload.mat_khau
+      }
+
+      const result = await phuHuynhAPI.update(editModal.data.phu_huynh_id, payload)
       if (result.status === 'success') {
         toast.success('Cập nhật thành công!')
         setEditModal({ open: false, data: null })
@@ -780,6 +788,26 @@ export default function PhuHuynhManagement() {
                     onChange={(e) => setEditFormData({ ...editFormData, so_dien_thoai: e.target.value })}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu mới (tùy chọn)</label>
+                  <div className="relative">
+                    <input
+                      type={showEditPassword ? 'text' : 'password'}
+                      value={editFormData.mat_khau}
+                      onChange={(e) => setEditFormData({ ...editFormData, mat_khau: e.target.value })}
+                      className="w-full px-3 py-2.5 pr-10 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Để trống nếu không đổi mật khẩu"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      aria-label={showEditPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    >
+                      {showEditPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>

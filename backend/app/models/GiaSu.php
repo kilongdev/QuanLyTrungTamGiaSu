@@ -1,6 +1,33 @@
 <?php
 class GiaSu
 {
+    private static function splitBankInfo(?string $combined): array
+    {
+        $value = trim((string)$combined);
+        if ($value === '') {
+            return ['', ''];
+        }
+
+        $parts = explode(' - ', $value, 2);
+        if (count($parts) < 2) {
+            return [$value, ''];
+        }
+
+        return [trim($parts[0]), trim($parts[1])];
+    }
+
+    private static function buildBankInfo(string $accountNumber, string $bankName): string
+    {
+        $account = trim($accountNumber);
+        $bank = trim($bankName);
+
+        if ($account !== '' && $bank !== '') {
+            return $account . ' - ' . $bank;
+        }
+
+        return $account !== '' ? $account : $bank;
+    }
+
     public static function getAll(string $search = '', string $trangThai = '', int $limit = 10, int $offset = 0): array
     {
         $where = "WHERE 1=1";
@@ -101,6 +128,10 @@ class GiaSu
     public static function create(array $data): int
     {
         $hashedPassword = password_hash($data['mat_khau'], PASSWORD_DEFAULT);
+        $bankInfo = self::buildBankInfo(
+            (string)($data['so_tai_khoan_ngan_hang'] ?? ''),
+            (string)($data['ten_ngan_hang'] ?? '')
+        );
 
         Database::execute(
             "INSERT INTO gia_su (
@@ -121,7 +152,7 @@ class GiaSu
                 $data['chung_chi'] ?? null,
                 $data['gioi_thieu'] ?? null,
                 $data['kinh_nghiem'] ?? '',
-                $data['so_tai_khoan_ngan_hang'] ?? null,
+                $bankInfo !== '' ? $bankInfo : null,
                 $data['anh_dai_dien'] ?? null,
             ]
         );
@@ -142,6 +173,35 @@ class GiaSu
             if (isset($data[$field])) {
                 $fields[] = "$field = ?";
                 $params[] = $data[$field];
+            }
+        }
+
+        $hasAccount = array_key_exists('so_tai_khoan_ngan_hang', $data);
+        $hasBank = array_key_exists('ten_ngan_hang', $data);
+        if ($hasAccount || $hasBank) {
+            $existingCombined = '';
+            if (!($hasAccount && $hasBank)) {
+                $existing = Database::queryOne(
+                    "SELECT so_tai_khoan_ngan_hang FROM gia_su WHERE gia_su_id = ?",
+                    [$id]
+                );
+                $existingCombined = (string)($existing['so_tai_khoan_ngan_hang'] ?? '');
+            }
+
+            [$existingAccount, $existingBank] = self::splitBankInfo($existingCombined);
+            $account = $hasAccount ? trim((string)$data['so_tai_khoan_ngan_hang']) : $existingAccount;
+            $bank = $hasBank ? trim((string)$data['ten_ngan_hang']) : $existingBank;
+            $combined = self::buildBankInfo($account, $bank);
+
+            $fields[] = "so_tai_khoan_ngan_hang = ?";
+            $params[] = $combined !== '' ? $combined : null;
+        }
+
+        if (isset($data['mat_khau'])) {
+            $newPassword = trim((string)$data['mat_khau']);
+            if ($newPassword !== '') {
+                $fields[] = "mat_khau = ?";
+                $params[] = password_hash($newPassword, PASSWORD_DEFAULT);
             }
         }
 
@@ -189,6 +249,10 @@ class GiaSu
         } else {
             $tutor['chung_chi'] = [];
         }
+
+        [$accountNumber, $bankName] = self::splitBankInfo($tutor['so_tai_khoan_ngan_hang'] ?? '');
+        $tutor['so_tai_khoan_ngan_hang'] = $accountNumber;
+        $tutor['ten_ngan_hang'] = $bankName;
 
         return $tutor;
     }

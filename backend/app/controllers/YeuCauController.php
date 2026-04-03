@@ -51,6 +51,28 @@ class YeuCauController {
             ]);
             return;
         }
+
+        $lopHoc = Database::queryOne(
+            "SELECT lop_hoc_id, trang_thai FROM lop_hoc WHERE lop_hoc_id = :id LIMIT 1",
+            [':id' => $data['lop_hoc_id']]
+        );
+        if (!$lopHoc) {
+            http_response_code(404);
+            echo json_encode([
+                "status" => "error",
+                "message" => "Không tìm thấy lớp học"
+            ]);
+            return;
+        }
+        if (($lopHoc['trang_thai'] ?? '') === 'dong') {
+            http_response_code(400);
+            echo json_encode([
+                "status" => "error",
+                "message" => "Lớp học này đã bị khóa, không thể đăng ký"
+            ]);
+            return;
+        }
+
         $ghiChu = $data['ghi_chu'] ?? '';
         $email = $data['email'] ?? '';
 

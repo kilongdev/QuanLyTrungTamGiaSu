@@ -12,12 +12,10 @@ import {
   Filter,
   PlusSquare,
   Search,
-  SendIcon,
   User2Icon,
   UserPen,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
 const AvailableClassPage = () => {
   const [loading, setLoading] = useState(true);
@@ -37,9 +35,10 @@ const AvailableClassPage = () => {
   const getClasses = async (
     overrideFilters = null,
     overrideSearchCode = null,
+    page = currentPage,
   ) => {
     try {
-      const classRes = await lopHocAPI.getAll();
+      const classRes = await lopHocAPI.getAll({ excludeDong: true });
 
       let data = classRes.data || classRes || [];
 
@@ -93,7 +92,7 @@ const AvailableClassPage = () => {
         return true;
       });
 
-      const start = (currentPage - 1) * itemPerPage;
+      const start = (page - 1) * itemPerPage;
       const end = start + itemPerPage;
 
       setClasses(data.slice(start, end));
@@ -107,6 +106,11 @@ const AvailableClassPage = () => {
 
   useEffect(() => {
     getClasses();
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }, [currentPage]);
 
   useEffect(() => {
@@ -115,20 +119,18 @@ const AvailableClassPage = () => {
 
   const handleSearch = () => {
     setCurrentPage(1);
-    getClasses();
+    getClasses(null, null, 1);
   };
 
   const handleFilter = () => {
     setCurrentPage(1);
-    getClasses();
+    getClasses(null, null, 1);
   };
 
   const getPagination = (currentPage, totalPages) => {
     const delta = 1;
     const range = [];
     const rangeWithDots = [];
-
-    let l;
 
     for (
       let i = Math.max(2, currentPage - delta);
@@ -161,14 +163,14 @@ const AvailableClassPage = () => {
 
   return (
     <>
-      {/* <div className=" w-full">
+      <div className=" w-full mb-6">
         <img
           src="https://giasuongmattroi.com/wp-content/uploads/2017/07/lop-hien-co-tim-lop-day-kem.jpg"
-          alt=""
+          alt="Lớp hiện có"
           className=" w-full h-[240px] md:h-[360px] lg:h-[420px] object-cover"
         />
-      </div> */}
-      {/* <section className=" bg-[#f4f4f4] pt-11 pb-8 mb-5 ">
+      </div>
+      <section className=" bg-[#f4f4f4] pt-11 pb-8 mb-8 ">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
           <div className="flex flex-col items-center text-center m-2 p-2">
             <div>
@@ -265,7 +267,7 @@ const AvailableClassPage = () => {
             </div>
           </div>
         </div>
-      </section> */}
+      </section>
 
       <div className="flex flex-col items-center mb-6 text-center">
         <h2 className="font-corinthia text-red-500 text-5xl">Lớp hiện</h2>
@@ -325,7 +327,7 @@ const AvailableClassPage = () => {
               setFilters({});
               setSearchCode("");
               setCurrentPage(1);
-              getClasses({}, "");
+              getClasses({}, "", 1);
             }}
             className="flex w-full h-10 px-3 py-1 bg-white text-black text-3xl text-base rounded-2xl items-center justify-center ring-2 ring-red-600 hover:bg-white"
           >

@@ -25,11 +25,14 @@ class DangKyLop {
             ':lop_id' => $data['lop_hoc_id']
         ]);
         
-        $sqlCheckCap = "SELECT so_luong_hien_tai, so_luong_toi_da FROM lop_hoc WHERE lop_hoc_id = :lop_hoc_id";
+        $sqlCheckCap = "SELECT so_luong_hien_tai, so_luong_toi_da, trang_thai FROM lop_hoc WHERE lop_hoc_id = :lop_hoc_id";
         $lop = Database::query($sqlCheckCap, [':lop_hoc_id' => $data['lop_hoc_id']]);
 
         if (!$lop) {
             throw new Exception("Không tìm thấy lớp học này!");
+        }
+        if (($lop[0]['trang_thai'] ?? '') === 'dong') {
+            throw new Exception("Lớp học này đã bị khóa, không thể đăng ký.");
         }
         if ($lop[0]['so_luong_hien_tai'] >= $lop[0]['so_luong_toi_da']) {
             throw new Exception("Từ chối: Lớp học này đã đủ số lượng tối đa!");
@@ -68,8 +71,12 @@ class DangKyLop {
         if ($trang_thai_cu === $trang_thai_moi) return true; 
         
         if ($trang_thai_cu !== 'da_duyet' && $trang_thai_moi === 'da_duyet') {
-            $sqlCheckCap = "SELECT so_luong_hien_tai, so_luong_toi_da FROM lop_hoc WHERE lop_hoc_id = :lop_hoc_id";
+            $sqlCheckCap = "SELECT so_luong_hien_tai, so_luong_toi_da, trang_thai FROM lop_hoc WHERE lop_hoc_id = :lop_hoc_id";
             $lop = Database::query($sqlCheckCap, [':lop_hoc_id' => $lop_hoc_id]);
+
+            if (($lop[0]['trang_thai'] ?? '') === 'dong') {
+                throw new Exception("Không thể duyệt đơn! Lớp học này đã bị khóa.");
+            }
             
             if ($lop[0]['so_luong_hien_tai'] >= $lop[0]['so_luong_toi_da']) {
                 throw new Exception("Không thể duyệt đơn! Lớp học này đã đạt sĩ số tối đa.");
@@ -164,6 +171,7 @@ class DangKyLop {
                 LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id
                 LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id
                 WHERE hs.phu_huynh_id = :phu_huynh_id 
+                                    AND lh.trang_thai <> 'dong'
                 ORDER BY 
                     CASE dkl.trang_thai 
                         WHEN 'cho_duyet' THEN 1 

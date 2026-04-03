@@ -11,6 +11,8 @@ import {
   BookOpen,
   Loader2,
   Save,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import YeuCauManagement from "../components/YeuCauManagement";
@@ -74,6 +76,7 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
     email: "",
     so_dien_thoai: "",
     dia_chi: "",
+    mat_khau: "",
   });
 
   const [loading, setLoading] = useState({
@@ -164,6 +167,7 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
           email: profile.email || user?.email || "",
           so_dien_thoai: profile.so_dien_thoai || "",
           dia_chi: profile.dia_chi || "",
+          mat_khau: "",
         });
         setLoaded((prev) => ({ ...prev, profile: true }));
       } catch (error) {
@@ -193,9 +197,20 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
       return;
     }
 
+    const password = String(profileData.mat_khau || '').trim();
+    if (password && !/^(?=.*[A-Za-z])(?=.*\d).{6,100}$/.test(password)) {
+      toast.error("Mật khẩu tối thiểu 6 ký tự và phải có cả chữ lẫn số");
+      return;
+    }
+
     try {
       setLoading((prev) => ({ ...prev, saveProfile: true }));
-      const response = await phuHuynhAPI.updateProfile(parentId, profileData);
+      const payload = { ...profileData };
+      if (!String(payload.mat_khau || "").trim()) {
+        delete payload.mat_khau;
+      }
+
+      const response = await phuHuynhAPI.updateProfile(parentId, payload);
       const updatedProfile = response?.data || profileData;
 
       setProfileData({
@@ -203,6 +218,7 @@ export default function PhuHuynhDashboard({ user, onLogout }) {
         email: updatedProfile.email || "",
         so_dien_thoai: updatedProfile.so_dien_thoai || "",
         dia_chi: updatedProfile.dia_chi || "",
+        mat_khau: "",
       });
 
       const storedUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -623,6 +639,8 @@ function PaymentsContent({ loading, paymentsData, paymentSummary }) {
 // ĐÃ XÓA GIỚI HẠN CHIỀU RỘNG ĐỂ FULL MÀN HÌNH NHƯ GIA SƯ
 // ==========================================
 function ProfileContent({ loading, saving, profileData, onChange, onSubmit }) {
+  const [showPassword, setShowPassword] = useState(false);
+
   if (loading) {
     return (
       <div className="p-10 text-center flex justify-center h-full items-center">
@@ -689,6 +707,20 @@ function ProfileContent({ loading, saving, profileData, onChange, onSubmit }) {
               <div>
                 <label className={labelClass}>Số điện thoại</label>
                 <input type="tel" name="so_dien_thoai" value={profileData.so_dien_thoai} onChange={onChange} placeholder="09xx xxx xxx" className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Mật khẩu mới (tùy chọn)</label>
+                <div className="relative">
+                  <input type={showPassword ? "text" : "password"} name="mat_khau" value={profileData.mat_khau || ''} onChange={onChange} placeholder="Để trống nếu không đổi mật khẩu" className={`${inputClass} pr-10`} />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div className="md:col-span-2">
                 <label className={labelClass}>Địa chỉ hiện tại</label>

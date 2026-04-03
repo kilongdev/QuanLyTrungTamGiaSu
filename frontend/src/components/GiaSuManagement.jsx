@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Edit2, Eye, Search, Plus, X, Lock, Unlock, AlertTriangle, ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import { giaSuAPI } from '@/api/giaSuApi'
 import { lichHocAPI } from '@/api/lichhocApi'
@@ -6,9 +7,8 @@ import { validateTutorForm } from '@/lib/validators'
 import DataPagination from '@/components/ui/DataPagination'
 import { toast } from 'sonner'
 
-const API_URL = (import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api').replace(/\/$/, '')
-
 export default function GiaSuManagement() {
+  const navigate = useNavigate()
   const [tutors, setTutors] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -18,13 +18,19 @@ export default function GiaSuManagement() {
   const [detailModal, setDetailModal] = useState({ open: false, data: null, loading: false })
   const [tutorDetailWeekDate, setTutorDetailWeekDate] = useState(new Date())
   // State cho modal chỉnh sửa
-  const [editModal, setEditModal] = useState({ open: false, data: null })
+  const [editModal, setEditModal] = useState({ open: false, data: null, loading: false })
   const [editFormData, setEditFormData] = useState({ 
     ho_ten: '', 
     email: '', 
     so_dien_thoai: '', 
+    ngay_sinh: '',
+    gioi_tinh: '',
+    dia_chi: '',
     bang_cap: '', 
     kinh_nghiem: '', 
+    gioi_thieu: '',
+    so_tai_khoan_ngan_hang: '',
+    ten_ngan_hang: '',
     trang_thai: 'cho_duyet' 
   })
   const [modalLoading, setModalLoading] = useState(false)
@@ -35,8 +41,14 @@ export default function GiaSuManagement() {
     email: '', 
     mat_khau: '', 
     so_dien_thoai: '', 
+    ngay_sinh: '',
+    gioi_tinh: '',
+    dia_chi: '',
     bang_cap: '', 
-    kinh_nghiem: '' 
+    kinh_nghiem: '',
+    gioi_thieu: '',
+    so_tai_khoan_ngan_hang: '',
+    ten_ngan_hang: '' 
   })
   const [confirmModal, setConfirmModal] = useState({
     show: false,
@@ -115,8 +127,14 @@ export default function GiaSuManagement() {
           email: '', 
           mat_khau: '', 
           so_dien_thoai: '', 
+          ngay_sinh: '',
+          gioi_tinh: '',
+          dia_chi: '',
           bang_cap: '', 
-          kinh_nghiem: '' 
+          kinh_nghiem: '',
+          gioi_thieu: '',
+          so_tai_khoan_ngan_hang: '',
+          ten_ngan_hang: '' 
         })
         fetchTutors(1, search)
       } else { throw new Error(result.message || 'Thêm thất bại') }
@@ -124,16 +142,8 @@ export default function GiaSuManagement() {
   }
 
   // Xử lý click nút sửa
-  const handleEdit = (tutor) => {
-    setEditFormData({
-      ho_ten: tutor.ho_ten,
-      email: tutor.email,
-      so_dien_thoai: tutor.so_dien_thoai || '',
-      bang_cap: tutor.bang_cap || '',
-      kinh_nghiem: tutor.kinh_nghiem || '',
-      trang_thai: tutor.trang_thai || 'cho_duyet'
-    })
-    setEditModal({ open: true, data: tutor })
+  const handleEdit = async (tutor) => {
+    navigate(`/dashboard/giasu/${tutor.gia_su_id}/edit`)
   }
 
   // Xử lý submit form cập nhật
@@ -152,7 +162,7 @@ export default function GiaSuManagement() {
       const result = await giaSuAPI.update(editModal.data.gia_su_id, editFormData)
       if (result.status === 'success') {
         toast.success('Cập nhật thành công!')
-        setEditModal({ open: false, data: null })
+        setEditModal({ open: false, data: null, loading: false })
         fetchTutors(pagination.page, search)
       } else { throw new Error(result.message || 'Cập nhật thất bại') }
     } catch (err) { toast.error('Lỗi khi cập nhật: ' + err.message) } finally { setModalLoading(false) }
@@ -257,12 +267,6 @@ export default function GiaSuManagement() {
     }
     const s = statusMap[status] || { label: status, class: 'bg-gray-100 text-gray-800' }
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.class}`}>{s.label}</span>
-  }
-
-  const toAbsoluteMediaUrl = (path) => {
-    if (!path || typeof path !== 'string') return ''
-    if (path.startsWith('http://') || path.startsWith('https://')) return path
-    return `${API_URL}${path.startsWith('/') ? path : `/${path}`}`
   }
 
   const formatThuDate = (dateString) => {
@@ -450,17 +454,6 @@ export default function GiaSuManagement() {
 
                 {/* Modal Content */}
                 <div className="p-5 space-y-4">
-                  {detailModal.data.anh_dai_dien_url && (
-                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                      <p className="text-gray-600 text-sm mb-2">Ảnh đại diện</p>
-                      <img
-                        src={toAbsoluteMediaUrl(detailModal.data.anh_dai_dien_url)}
-                        alt="Ảnh đại diện gia sư"
-                        className="w-32 h-32 object-cover rounded-xl border border-gray-200"
-                      />
-                    </div>
-                  )}
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
                       <p className="text-gray-600 text-sm">Email</p>
@@ -495,16 +488,16 @@ export default function GiaSuManagement() {
                       <p className="font-semibold text-gray-900 whitespace-pre-wrap">{detailModal.data.gioi_thieu || 'Chưa cập nhật'}</p>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 sm:col-span-2">
-                      <p className="text-gray-600 text-sm">Số tài khoản ngân hàng</p>
+                      <p className="text-gray-600 text-sm">Số tài khoản</p>
                       <p className="font-semibold text-gray-900">{detailModal.data.so_tai_khoan_ngan_hang || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 sm:col-span-2">
+                      <p className="text-gray-600 text-sm">Ngân hàng</p>
+                      <p className="font-semibold text-gray-900">{detailModal.data.ten_ngan_hang || 'Chưa cập nhật'}</p>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
                       <p className="text-gray-600 text-sm">Ngày đăng ký</p>
                       <p className="font-semibold text-gray-900">{detailModal.data.ngay_dang_ky || 'Chưa cập nhật'}</p>
-                    </div>
-                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-200">
-                      <p className="text-blue-700 text-sm">Đánh giá trung bình</p>
-                      <p className="font-bold text-blue-900 text-xl">{detailModal.data.diem_danh_gia_trung_binh || '0.00'}</p>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
                       <p className="text-gray-600 text-sm">Trạng thái</p>
@@ -513,22 +506,12 @@ export default function GiaSuManagement() {
                   </div>
 
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                    <p className="text-gray-700 text-sm font-semibold mb-3">Chứng chỉ</p>
-                    {Array.isArray(detailModal.data.chung_chi) && detailModal.data.chung_chi.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {detailModal.data.chung_chi.map((item, idx) => {
-                          const imageUrl = toAbsoluteMediaUrl(item?.url || '')
-                          return (
-                            <a key={`${item?.file_name || 'cert'}-${idx}`} href={imageUrl} target="_blank" rel="noreferrer" className="group block">
-                              <img src={imageUrl} alt={item?.original_name || `Chứng chỉ ${idx + 1}`} className="w-full h-24 object-cover rounded-lg border border-gray-200 group-hover:border-red-300" />
-                              <p className="text-xs text-gray-600 mt-1 truncate">{item?.original_name || `Chứng chỉ ${idx + 1}`}</p>
-                            </a>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">Chưa có chứng chỉ</p>
-                    )}
+                    <p className="text-gray-700 text-sm font-semibold mb-1">Chứng chỉ</p>
+                    <p className="text-sm text-gray-600">
+                      {Array.isArray(detailModal.data.chung_chi) && detailModal.data.chung_chi.length > 0
+                        ? `Đã tải ${detailModal.data.chung_chi.length} chứng chỉ`
+                        : 'Chưa có chứng chỉ'}
+                    </p>
                   </div>
 
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
@@ -694,6 +677,38 @@ export default function GiaSuManagement() {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sinh</label>
+                  <input
+                    type="date"
+                    value={addFormData.ngay_sinh}
+                    onChange={(e) => setAddFormData({ ...addFormData, ngay_sinh: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Giới tính</label>
+                  <select
+                    value={addFormData.gioi_tinh}
+                    onChange={(e) => setAddFormData({ ...addFormData, gioi_tinh: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Chọn giới tính</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                    <option value="Khác">Khác</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
+                  <input
+                    type="text"
+                    value={addFormData.dia_chi}
+                    onChange={(e) => setAddFormData({ ...addFormData, dia_chi: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="VD: 123 Nguyễn Trãi, Q1"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Bằng cấp</label>
                   <input
                     type="text"
@@ -711,6 +726,36 @@ export default function GiaSuManagement() {
                     onChange={(e) => setAddFormData({ ...addFormData, kinh_nghiem: e.target.value })}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: 3 năm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Số tài khoản</label>
+                  <input
+                    type="text"
+                    value={addFormData.so_tai_khoan_ngan_hang}
+                    onChange={(e) => setAddFormData({ ...addFormData, so_tai_khoan_ngan_hang: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="VD: 1903..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngân hàng</label>
+                  <input
+                    type="text"
+                    value={addFormData.ten_ngan_hang || ''}
+                    onChange={(e) => setAddFormData({ ...addFormData, ten_ngan_hang: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="VD: Techcombank"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Giới thiệu</label>
+                  <textarea
+                    value={addFormData.gioi_thieu}
+                    onChange={(e) => setAddFormData({ ...addFormData, gioi_thieu: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                    placeholder="Giới thiệu ngắn về gia sư"
                   />
                 </div>
               </div>
@@ -744,10 +789,15 @@ export default function GiaSuManagement() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-gray-200 overflow-hidden">
             <div className="p-5 flex justify-between items-center border-b bg-white">
               <h3 className="text-2xl font-bold text-gray-900">Chỉnh sửa thông tin gia sư</h3>
-              <button onClick={() => setEditModal({ open: false, data: null })} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition">
+              <button onClick={() => setEditModal({ open: false, data: null, loading: false })} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition">
                 <X size={24} />
               </button>
             </div>
+            {editModal.loading ? (
+              <div className="p-10 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-700"></div>
+              </div>
+            ) : (
             <form onSubmit={handleUpdateSubmit}>
               <div className="p-6 space-y-4">
                 <div>
@@ -780,6 +830,37 @@ export default function GiaSuManagement() {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sinh</label>
+                  <input
+                    type="date"
+                    value={editFormData.ngay_sinh}
+                    onChange={(e) => setEditFormData({ ...editFormData, ngay_sinh: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Giới tính</label>
+                  <select
+                    value={editFormData.gioi_tinh}
+                    onChange={(e) => setEditFormData({ ...editFormData, gioi_tinh: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Chọn giới tính</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                    <option value="Khác">Khác</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
+                  <input
+                    type="text"
+                    value={editFormData.dia_chi}
+                    onChange={(e) => setEditFormData({ ...editFormData, dia_chi: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Bằng cấp</label>
                   <input
                     type="text"
@@ -795,6 +876,33 @@ export default function GiaSuManagement() {
                     value={editFormData.kinh_nghiem}
                     onChange={(e) => setEditFormData({ ...editFormData, kinh_nghiem: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Số tài khoản</label>
+                  <input
+                    type="text"
+                    value={editFormData.so_tai_khoan_ngan_hang}
+                    onChange={(e) => setEditFormData({ ...editFormData, so_tai_khoan_ngan_hang: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngân hàng</label>
+                  <input
+                    type="text"
+                    value={editFormData.ten_ngan_hang || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, ten_ngan_hang: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Giới thiệu</label>
+                  <textarea
+                    value={editFormData.gioi_thieu}
+                    onChange={(e) => setEditFormData({ ...editFormData, gioi_thieu: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
                   />
                 </div>
                 <div>
@@ -814,7 +922,7 @@ export default function GiaSuManagement() {
               <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
                 <button
                   type="button"
-                  onClick={() => setEditModal({ open: false, data: null })}
+                  onClick={() => setEditModal({ open: false, data: null, loading: false })}
                   className="px-4 py-2 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-100 transition"
                 >
                   Hủy
@@ -831,6 +939,7 @@ export default function GiaSuManagement() {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

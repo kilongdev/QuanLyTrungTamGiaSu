@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const GiaSuTieuBieu = ({ tutor }) => {
+const GiaSuTieuBieu = ({ tutor = [] }) => {
   const [startIndex, setStartIndex] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(3);
+  const tutorList = Array.isArray(tutor) ? tutor : [];
+  const canNavigate = tutorList.length > itemsPerPage;
 
   const getAvatarInitials = (name) => {
     if (!name || typeof name !== "string") return "";
@@ -31,19 +33,32 @@ const GiaSuTieuBieu = ({ tutor }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  useEffect(() => {
+    if (!tutorList.length) {
+      setStartIndex(0);
+      return;
+    }
+    if (startIndex >= tutorList.length) {
+      setStartIndex(0);
+    }
+  }, [tutorList.length, startIndex]);
+
   const handleNext = () => {
-    setStartIndex((prev) => (prev + 1) % tutor.length);
+    if (!canNavigate) return;
+    setStartIndex((prev) => (prev + 1) % tutorList.length);
   };
 
   const handlePrev = () => {
-    setStartIndex((prev) => (prev === 0 ? tutor.length - 1 : prev - 1));
+    if (!canNavigate) return;
+    setStartIndex((prev) => (prev === 0 ? tutorList.length - 1 : prev - 1));
   };
 
   // tutors hiển thị
   const visibleTutors = [];
 
-  for (let i = 0; i < itemsPerPage; i++) {
-    visibleTutors.push(tutor[(startIndex + i) % tutor.length]);
+  const displayedCount = Math.min(itemsPerPage, tutorList.length);
+  for (let i = 0; i < displayedCount; i++) {
+    visibleTutors.push(tutorList[(startIndex + i) % tutorList.length]);
   }
 
   return (
@@ -55,7 +70,8 @@ const GiaSuTieuBieu = ({ tutor }) => {
       <div className="flex items-center gap-4 w-full">
         <button
           onClick={handlePrev}
-          className="p-2 bg-gray-200 rounded-full hover:bg-gray-300"
+          disabled={!canNavigate}
+          className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronLeft />
         </button>
@@ -70,9 +86,10 @@ const GiaSuTieuBieu = ({ tutor }) => {
                 : "grid-cols-3"
           }`}
         >
-          {visibleTutors.map((t) => (
+          {visibleTutors.length ? (
+            visibleTutors.map((t, index) => (
             <div
-              key={t?.gia_su_id}
+              key={t?.gia_su_id || `tutor-${index}`}
               className="bg-white rounded-2xl shadow-md hover:shadow-xl transition p-6 flex flex-col items-center"
             >
               {/* <img
@@ -89,7 +106,7 @@ const GiaSuTieuBieu = ({ tutor }) => {
               <p className="text-sm text-gray-500">{t?.bang_cap}</p>
 
               <p className="text-sm text-gray-500">
-                kinh nghiệm: {t?.kinh_nghiem}
+                Kinh nghiệm: {t?.kinh_nghiem ?? "Chưa cập nhật"}
               </p>
 
               {/* rating
@@ -105,12 +122,18 @@ const GiaSuTieuBieu = ({ tutor }) => {
                 Xem hồ sơ
               </button> */}
             </div>
-          ))}
+            ))
+          ) : (
+            <div className="col-span-full bg-white rounded-2xl shadow-md p-6 text-center text-gray-500">
+              Hiện chưa có gia sư tiêu biểu.
+            </div>
+          )}
         </div>
 
         <button
           onClick={handleNext}
-          className="p-2 bg-gray-200 rounded-full hover:bg-gray-300"
+          disabled={!canNavigate}
+          className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronRight />
         </button>

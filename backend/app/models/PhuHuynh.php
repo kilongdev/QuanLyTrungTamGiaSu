@@ -102,6 +102,14 @@ class PhuHuynh
             }
         }
 
+        if (isset($data['mat_khau'])) {
+            $newPassword = trim((string)$data['mat_khau']);
+            if ($newPassword !== '') {
+                $fields[] = "mat_khau = ?";
+                $params[] = password_hash($newPassword, PASSWORD_DEFAULT);
+            }
+        }
+
         if (empty($fields)) {
             return false;
         }
@@ -147,8 +155,10 @@ class PhuHuynh
             "SELECT COUNT(DISTINCT dkl.lop_hoc_id) AS total
              FROM dang_ky_lop dkl
              INNER JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                         INNER JOIN lop_hoc l ON dkl.lop_hoc_id = l.lop_hoc_id
              WHERE hs.phu_huynh_id = ?
-               AND dkl.trang_thai IN ('da_duyet', 'da_duyet_truc_tiep')",
+                             AND dkl.trang_thai IN ('da_duyet', 'da_duyet_truc_tiep')
+                             AND l.trang_thai <> 'dong'",
             [$parentId]
         )['total'] ?? 0;
 
@@ -159,6 +169,7 @@ class PhuHuynh
              INNER JOIN lop_hoc lh ON dkl.lop_hoc_id = lh.lop_hoc_id
              WHERE hs.phu_huynh_id = ?
                AND dkl.trang_thai IN ('da_duyet', 'da_duyet_truc_tiep')
+                             AND lh.trang_thai <> 'dong'
                AND lh.gia_su_id IS NOT NULL",
             [$parentId]
         )['total'] ?? 0;
@@ -187,6 +198,7 @@ class PhuHuynh
              LEFT JOIN mon_hoc mh ON l.mon_hoc_id = mh.mon_hoc_id
              WHERE hs.phu_huynh_id = ?
                AND dkl.trang_thai IN ('da_duyet', 'da_duyet_truc_tiep')
+                             AND l.trang_thai <> 'dong'
                AND lh.ngay_hoc >= CURDATE()
                AND lh.trang_thai != 'da_huy'
              ORDER BY lh.ngay_hoc ASC, lh.gio_bat_dau ASC
@@ -219,6 +231,7 @@ class PhuHuynh
              LEFT JOIN lich_hoc lh ON lh.lop_hoc_id = l.lop_hoc_id
              LEFT JOIN mon_hoc mh ON l.mon_hoc_id = mh.mon_hoc_id
              WHERE hs.phu_huynh_id = ?
+                             AND (l.lop_hoc_id IS NULL OR l.trang_thai <> 'dong')
              GROUP BY hs.hoc_sinh_id, hs.ho_ten, hs.ngay_sinh, hs.khoi_lop
              ORDER BY hs.ngay_tao DESC",
             [$parentId]
@@ -245,6 +258,7 @@ class PhuHuynh
              LEFT JOIN mon_hoc mh ON l.mon_hoc_id = mh.mon_hoc_id
              WHERE hs.phu_huynh_id = ?
                AND dkl.trang_thai IN ('da_duyet', 'da_duyet_truc_tiep')
+                             AND l.trang_thai <> 'dong'
              GROUP BY gs.gia_su_id, gs.ho_ten, gs.so_dien_thoai, gs.email, gs.bang_cap, gs.kinh_nghiem, gs.diem_danh_gia_trung_binh
              ORDER BY gs.ho_ten ASC",
             [$parentId]
@@ -270,6 +284,7 @@ class PhuHuynh
              INNER JOIN lop_hoc l ON dkl.lop_hoc_id = l.lop_hoc_id
              LEFT JOIN mon_hoc mh ON l.mon_hoc_id = mh.mon_hoc_id
              WHERE hs.phu_huynh_id = ?
+                             AND l.trang_thai <> 'dong'
              ORDER BY hp.ngay_tao DESC",
             [$parentId]
         ) ?: [];

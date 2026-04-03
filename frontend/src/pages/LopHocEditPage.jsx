@@ -7,6 +7,7 @@ import { lichHocAPI } from '../api/lichhocApi'
 import { diemDanhAPI } from '../api/diemdanhApi'
 import { monHocAPI } from '../api/monhocApi'
 import { giaSuAPI } from '../api/giaSuApi'
+import { giaSuMonHocAPI } from '../api/giasumonhocApi'
 import { hocSinhAPI } from '../api/hocSinhApi'
 import { validateClassForm } from '@/lib/validators'
 import { normalizeNumberInputValue } from '@/lib/numberUtils'
@@ -21,6 +22,8 @@ const WEEKDAY_OPTIONS = [
   { value: 7, label: 'Thứ 7' },
   { value: 8, label: 'Chủ nhật' }
 ]
+
+const GRADE_OPTIONS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
 
 const CLASS_STATUS_OPTIONS = [
   { value: 'sap_mo', label: 'Sắp mở' },
@@ -50,6 +53,8 @@ export default function LopHocEditPage({ classId }) {
   const [monHocs, setMonHocs] = useState([])
   const [giaSus, setGiaSus] = useState([])
   const [allHocSinh, setAllHocSinh] = useState([])
+  const [allClasses, setAllClasses] = useState([])
+  const [tutorSubjectMap, setTutorSubjectMap] = useState({})
   const [classStudents, setClassStudents] = useState([])
   const [existingSchedules, setExistingSchedules] = useState([])
   const [existingRecurringSchedules, setExistingRecurringSchedules] = useState([])
@@ -86,10 +91,22 @@ export default function LopHocEditPage({ classId }) {
     const loadData = async () => {
       try {
         setLoading(true)
-        const [lopHocRes, monHocRes, giaSuRes, hocSinhRes, classStudentsRes, classScheduleRes, classOverviewRes] = await Promise.all([
+        const [
+          lopHocRes,
+          monHocRes,
+          giaSuRes,
+          allClassesRes,
+          tutorSubjectRes,
+          hocSinhRes,
+          classStudentsRes,
+          classScheduleRes,
+          classOverviewRes,
+        ] = await Promise.all([
           lopHocAPI.getById(id),
           monHocAPI.getAll(),
           giaSuAPI.getAll(),
+          lopHocAPI.getAll(),
+          giaSuMonHocAPI.getAll({ limit: 5000 }),
           hocSinhAPI.getAll({ page: 1, limit: 1000 }),
           lopHocAPI.getStudentsByClass(id),
           lichHocAPI.getByLopHoc(id),
@@ -119,6 +136,17 @@ export default function LopHocEditPage({ classId }) {
 
         setMonHocs(monHocRes?.data || [])
         setGiaSus(giaSuRes?.data || [])
+        setAllClasses(allClassesRes?.data || [])
+
+        const relationMap = {}
+        ;(tutorSubjectRes?.data || []).forEach((row) => {
+          const tutorId = String(row.gia_su_id || '')
+          const subjectId = String(row.mon_hoc_id || '')
+          if (!tutorId || !subjectId) return
+          if (!relationMap[tutorId]) relationMap[tutorId] = new Set()
+          relationMap[tutorId].add(subjectId)
+        })
+        setTutorSubjectMap(relationMap)
 
         const allStudents = (hocSinhRes?.data || [])
           .filter((hs) => hs && hs.hoc_sinh_id)
@@ -214,8 +242,64 @@ export default function LopHocEditPage({ classId }) {
     const monHoc = monHocs.find((m) => String(m.mon_hoc_id) === String(formData.mon_hoc_id))
     const tenMon = monHoc?.ten_mon_hoc || 'Môn'
     const khoi = formData.khoi_lop?.trim() || '...'
-    setFormData((prev) => ({ ...prev, ten_lop: `${tenMon} - Lớp ${khoi}` }))
+    const baseName = `${tenMon} - Lớp ${khoi}`
+    const escapedBase = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const pattern = new RegExp(`^${escapedBase} \\(([A-Z]+)\\)$`)
+
+    const usedSuffixes = new Set()
+    ;(allClasses || []).forEach((lop) => {
+      if (String(lop.lop_hoc_id) === String(id)) return
+      const tenLop = String(lop.ten_lop || '')
+      const match = tenLop.match(pattern)
+      if (match?.[1]) usedSuffixes.add(match[1])
+    })
+
+    let index = 0
+    const toAlphabetSuffix = (n) => {
+      let value = Number(n)
+      let result = ''
+      do {
+        result = String.fromCharCode(65 + (value % 26)) + result
+        value = Math.floor(value / 26) - 1
+      } while (value >= 0)
+      return result
+    }
+
+    let nextName = `${baseName} (A)`
+    while (true) {
+      const suffix = toAlphabetSuffix(index)
+      if (!usedSuffixes.has(suffix)) {
+        nextName = `${baseName} (${suffix})`
+        break
+      }
+      index += 1
+    }
+
+    setFormData((prev) => ({ ...prev, ten_lop: nextName }))
   }
+
+  const sortedGiaSuOptions = useMemo(() => {
+    const selectedMonHocId = String(formData.mon_hoc_id || '').trim()
+    const selectedKhoiLop = String(formData.khoi_lop || '').trim()
+
+    const scored = giaSus.map((gs) => {
+      const tutorId = String(gs.gia_su_id)
+      const subjectSet = tutorSubjectMap[tutorId] || new Set()
+      const matchSubject = selectedMonHocId ? subjectSet.has(selectedMonHocId) : false
+      const matchGrade = selectedKhoiLop
+        ? (allClasses || []).some((lop) => String(lop.gia_su_id) === tutorId && String(lop.khoi_lop || '') === selectedKhoiLop)
+        : false
+      const score = (matchSubject ? 2 : 0) + (matchGrade ? 1 : 0)
+      return { ...gs, score, matchSubject, matchGrade }
+    })
+
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return String(a.ho_ten || '').localeCompare(String(b.ho_ten || ''), 'vi')
+    })
+
+    return scored
+  }, [giaSus, tutorSubjectMap, formData.mon_hoc_id, formData.khoi_lop, allClasses])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -233,8 +317,44 @@ export default function LopHocEditPage({ classId }) {
 
     const payload = { ...formData }
     if (!payload.ten_lop?.trim()) {
-      handleAutoFillTenLopIfEmpty()
-      payload.ten_lop = formData.ten_lop
+      const monHoc = monHocs.find((m) => String(m.mon_hoc_id) === String(formData.mon_hoc_id))
+      const tenMon = monHoc?.ten_mon_hoc || 'Môn'
+      const khoi = formData.khoi_lop?.trim() || '...'
+      const baseName = `${tenMon} - Lớp ${khoi}`
+      const escapedBase = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const pattern = new RegExp(`^${escapedBase} \\(([A-Z]+)\\)$`)
+      const usedSuffixes = new Set()
+
+      ;(allClasses || []).forEach((lop) => {
+        if (String(lop.lop_hoc_id) === String(id)) return
+        const tenLop = String(lop.ten_lop || '')
+        const match = tenLop.match(pattern)
+        if (match?.[1]) usedSuffixes.add(match[1])
+      })
+
+      const toAlphabetSuffix = (n) => {
+        let value = Number(n)
+        let result = ''
+        do {
+          result = String.fromCharCode(65 + (value % 26)) + result
+          value = Math.floor(value / 26) - 1
+        } while (value >= 0)
+        return result
+      }
+
+      let idx = 0
+      let autoName = `${baseName} (A)`
+      while (true) {
+        const suffix = toAlphabetSuffix(idx)
+        if (!usedSuffixes.has(suffix)) {
+          autoName = `${baseName} (${suffix})`
+          break
+        }
+        idx += 1
+      }
+
+      payload.ten_lop = autoName
+      setFormData((prev) => ({ ...prev, ten_lop: autoName }))
     }
 
     const shouldSaveRecurringSchedule = scheduleForm.enabled
@@ -409,11 +529,17 @@ export default function LopHocEditPage({ classId }) {
               <label className="block text-sm font-medium text-gray-700 mb-1">Khối lớp</label>
               <input
                 type="text"
+                list="grade-options-edit"
                 value={formData.khoi_lop}
                 onChange={(e) => setFormData((prev) => ({ ...prev, khoi_lop: e.target.value }))}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                placeholder="Ví dụ: 6, 7, 8"
+                placeholder="Chọn khối lớp (1-12)"
               />
+              <datalist id="grade-options-edit">
+                {GRADE_OPTIONS.map((grade) => (
+                  <option key={grade} value={grade}>{`Lớp ${grade}`}</option>
+                ))}
+              </datalist>
             </div>
           </div>
 
@@ -437,10 +563,14 @@ export default function LopHocEditPage({ classId }) {
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
             >
               <option value="">-- Chọn giáo viên --</option>
-              {giaSus.map((gs) => (
-                <option key={gs.gia_su_id} value={gs.gia_su_id}>{gs.ho_ten}</option>
+              {sortedGiaSuOptions.map((gs) => (
+                <option key={gs.gia_su_id} value={gs.gia_su_id}>
+                  {gs.score > 0 ? 'Đề cử: ' : ''}{gs.ho_ten}
+                  {gs.matchSubject && gs.matchGrade ? ' (phù hợp môn + khối)' : gs.matchSubject ? ' (phù hợp môn)' : gs.matchGrade ? ' (đã dạy khối này)' : ''}
+                </option>
               ))}
             </select>
+            <p className="text-xs text-gray-500 mt-1">Danh sách ưu tiên gia sư phù hợp ở phía trên, nhưng vẫn có thể chọn mọi gia sư.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -515,11 +645,15 @@ export default function LopHocEditPage({ classId }) {
               <label className="block text-sm font-medium text-gray-700 mb-1">Giá trị chi trả</label>
               <input
                 type="number"
-                min="0"
+                min={formData.loai_chi_tra === 'phan_tram' ? '51' : '0'}
+                max={formData.loai_chi_tra === 'phan_tram' ? '99' : undefined}
                 value={formData.gia_tri_chi_tra}
                 onChange={(e) => setFormData((prev) => ({ ...prev, gia_tri_chi_tra: e.target.value }))}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
               />
+              {formData.loai_chi_tra === 'phan_tram' && (
+                <p className="text-xs text-gray-500 mt-1">Phần trăm phải lớn hơn 50 và nhỏ hơn 100.</p>
+              )}
             </div>
           </div>
 
