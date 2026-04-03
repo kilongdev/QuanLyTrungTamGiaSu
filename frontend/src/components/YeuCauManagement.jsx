@@ -6,6 +6,7 @@ import {
   Search,
   Trash2,
   Edit2,
+  Eye,
   MessageSquare,
   AlertTriangle,
 } from "lucide-react";
@@ -26,6 +27,11 @@ export default function YeuCauManagement({ user }) {
     show: false,
     message: "",
     onConfirm: null,
+  });
+
+  const [detailModal, setDetailModal] = useState({
+    show: false,
+    data: null,
   });
 
   const currentUserId =
@@ -162,6 +168,13 @@ export default function YeuCauManagement({ user }) {
     });
   };
 
+  const handleViewDetail = (yeuCau) => {
+    setDetailModal({
+      show: true,
+      data: yeuCau,
+    });
+  };
+
   const resetForm = () => {
     const userId =
       user?.id ||
@@ -185,6 +198,7 @@ export default function YeuCauManagement({ user }) {
   // --- CÁC HÀM TIỆN ÍCH (LABEL & COLOR) ---
   const getPhanLoaiLabel = (phanLoai) => {
     const labels = {
+      dang_ky_lop: "Đăng ký lớp",
       mo_lop: "Mở lớp mới",
       huy_lop: "Hủy lớp",
       nghi_day: "Xin nghỉ dạy",
@@ -301,6 +315,7 @@ export default function YeuCauManagement({ user }) {
               className="md:w-56 px-4 py-2.5 bg-transparent focus:outline-none"
             >
               <option value="all">Tất cả phân loại</option>
+              <option value="dang_ky_lop">Đăng ký lớp</option>
               <option value="mo_lop">Mở lớp mới</option>
               <option value="huy_lop">Hủy lớp</option>
               <option value="nghi_day">Xin nghỉ dạy</option>
@@ -410,6 +425,14 @@ export default function YeuCauManagement({ user }) {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => handleViewDetail(yc)}
+                          className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Xem chi tiết"
+                        >
+                          <Eye size={18} />
+                        </button>
+
                         {(user?.role === "admin" ||
                           (user?.role !== "admin" &&
                             yc.trang_thai === "cho_duyet")) && (
@@ -476,6 +499,111 @@ export default function YeuCauManagement({ user }) {
               >
                 Đồng ý
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {detailModal.show && detailModal.data && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-800">
+                Chi tiết yêu cầu #{detailModal.data.yeu_cau_id}
+              </h3>
+              <button
+                onClick={() => setDetailModal({ show: false, data: null })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500">Người gửi</p>
+                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                    {getCreatorLabel(detailModal.data.loai_nguoi_tao)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Phân loại</p>
+                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                    {getPhanLoaiLabel(detailModal.data.phan_loai)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Ngày gửi</p>
+                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                    {detailModal.data.ngay_tao
+                      ? new Date(detailModal.data.ngay_tao).toLocaleString(
+                          "vi-VN",
+                        )
+                      : "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Trạng thái</p>
+                  <span
+                    className={`inline-block mt-1 px-3 py-1 text-xs font-medium rounded-full ${getTrangThaiColor(detailModal.data.trang_thai)}`}
+                  >
+                    {getTrangThaiLabel(detailModal.data.trang_thai)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-gray-200">
+                <p className="text-xs text-gray-500">Tiêu đề</p>
+                <p className="text-sm font-semibold text-gray-900 mt-1">
+                  {detailModal.data.tieu_de || "Không có tiêu đề"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500">Nội dung chi tiết</p>
+                <div className="mt-1 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-3 whitespace-pre-wrap leading-relaxed">
+                  {detailModal.data.noi_dung || "Không có nội dung"}
+                </div>
+              </div>
+
+              {(detailModal.data.ghi_chu_xu_ly ||
+                detailModal.data.nguoi_xu_ly_id) && (
+                <div className="pt-2 border-t border-gray-200 space-y-2">
+                  <div>
+                    <p className="text-xs text-gray-500">Người xử lý</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-1">
+                      {detailModal.data.nguoi_xu_ly_id
+                        ? `ID: ${detailModal.data.nguoi_xu_ly_id}`
+                        : "Chưa có"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-500">Ghi chú xử lý</p>
+                    <div className="mt-1 text-sm text-gray-800 bg-blue-50 border border-blue-100 rounded-lg p-3 whitespace-pre-wrap leading-relaxed">
+                      {detailModal.data.ghi_chu_xu_ly || "Không có ghi chú"}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(detailModal.data.lop_hoc_id || detailModal.data.gia_su_id) && (
+                <div className="pt-2 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500">Lớp học liên quan</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-1">
+                      {detailModal.data.lop_hoc_id || "Không có"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Gia sư liên quan</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-1">
+                      {detailModal.data.gia_su_id || "Không có"}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

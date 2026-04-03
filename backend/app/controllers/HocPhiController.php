@@ -134,7 +134,11 @@ class HocPhiController {
         );
 
         if ($updatedHocPhi && (isset($data['trang_thai_thanh_toan']) || isset($data['so_tien']))) {
-            $this->syncDoanhThuForHocPhiChanges($hocPhi, $updatedHocPhi);
+            try {
+                $this->syncDoanhThuForHocPhiChanges($hocPhi, $updatedHocPhi);
+            } catch (Throwable $syncError) {
+                error_log('HocPhi sync doanh thu failed: ' . $syncError->getMessage());
+            }
         }
         
         // Gửi thông báo khi thanh toán thành công
@@ -176,7 +180,7 @@ class HocPhiController {
         $doanhThuModel = new DoanhThuModel();
         foreach ($targets as $target) {
             [$month, $year] = $target;
-            $doanhThuModel->processMonthlyRevenue($month, $year);
+            $doanhThuModel->processMonthlyRevenue($month, $year, false);
         }
     }
 
