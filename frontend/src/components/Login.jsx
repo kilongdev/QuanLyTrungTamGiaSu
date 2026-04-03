@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react'
 import { authAPI } from '../api/authApi'
 
-export default function Login({ onSwitchToRegister, onLoginSuccess, onClose }) {
+export default function Login({
+  onSwitchToRegister,
+  onLoginSuccess,
+  onClose,
+  mode = 'user',
+}) {
   const [formData, setFormData] = useState(() => {
     const saved = sessionStorage.getItem('loginForm')
     return saved ? JSON.parse(saved) : { identifier: '', password: '' }
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const isAdminMode = mode === 'admin'
 
   useEffect(() => {
     sessionStorage.setItem('loginForm', JSON.stringify(formData))
@@ -46,6 +52,11 @@ export default function Login({ onSwitchToRegister, onLoginSuccess, onClose }) {
     try {
       const data = await authAPI.login(loginData)
       if (data.status === 'success') {
+        if (isAdminMode && data.data?.user?.role !== 'admin') {
+          setError('Tài khoản này không có quyền truy cập trang quản trị')
+          return
+        }
+
         clearFormData()
         localStorage.setItem('token', data.data.token)
         localStorage.setItem('user', JSON.stringify(data.data.user))
@@ -75,18 +86,24 @@ export default function Login({ onSwitchToRegister, onLoginSuccess, onClose }) {
           </button>
         )}
 
-        <h2 className="text-xl font-bold text-gray-900 mb-1">Đăng nhập</h2>
-        <p className="text-gray-500 text-sm mb-5">Chào mừng bạn trở lại</p>
+        <h2 className="text-xl font-bold text-gray-900 mb-1">
+          {isAdminMode ? 'Đăng nhập Admin' : 'Đăng nhập'}
+        </h2>
+        <p className="text-gray-500 text-sm mb-5">
+          {isAdminMode ? 'Cổng quản trị hệ thống' : 'Chào mừng bạn trở lại'}
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">Email hoặc Số điện thoại</label>
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              {isAdminMode ? 'Email admin' : 'Email hoặc Số điện thoại'}
+            </label>
             <input
               type="text"
               name="identifier"
               value={formData.identifier}
               onChange={handleChange}
-              placeholder="email@example.com"
+              placeholder={isAdminMode ? 'admin@example.com' : 'email@example.com'}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-sm text-gray-900 bg-white"
               required
             />
@@ -120,12 +137,14 @@ export default function Login({ onSwitchToRegister, onLoginSuccess, onClose }) {
           </button>
         </form>
 
-        <p className="text-center text-gray-500 text-sm mt-5">
-          Chưa có tài khoản?{' '}
-          <button onClick={onSwitchToRegister} className="text-red-600 font-medium hover:underline">
-            Đăng ký
-          </button>
-        </p>
+        {!isAdminMode && onSwitchToRegister && (
+          <p className="text-center text-gray-500 text-sm mt-5">
+            Chưa có tài khoản?{' '}
+            <button onClick={onSwitchToRegister} className="text-red-600 font-medium hover:underline">
+              Đăng ký
+            </button>
+          </p>
+        )}
       </div>
     </div>
   )

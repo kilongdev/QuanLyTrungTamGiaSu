@@ -56,6 +56,46 @@ async function request(endpoint, options = {}) {
  */
 export const adminAPI = {
     /**
+     * Lấy danh sách admin
+     * Backend trả về: { success, message, data: { data, pagination } }
+     */
+    getAllAdmins: ({ page = 1, limit = 10 } = {}) => {
+        const query = new URLSearchParams({ page, limit }).toString();
+        return request(`/admin?${query}`, {
+            method: 'GET'
+        });
+    },
+
+    /**
+     * Tạo tài khoản admin mới
+     * @param {Object} data - { ho_ten, email, mat_khau, so_dien_thoai }
+     */
+    createAdmin: (data) =>
+        request('/admin/create', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        }),
+
+    /**
+     * Cập nhật tài khoản admin
+     * @param {number} id
+     * @param {Object} data - { ho_ten, email, mat_khau?, so_dien_thoai }
+     */
+    updateAdmin: (id, data) =>
+        request(`/admin/update/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        }),
+
+    /**
+     * Xóa tài khoản admin
+     */
+    deleteAdmin: (id) =>
+        request(`/admin/delete/${id}`, {
+            method: 'DELETE'
+        }),
+
+    /**
      * Lấy thông tin profile của admin hiện tại
      */
     getProfile: () => 

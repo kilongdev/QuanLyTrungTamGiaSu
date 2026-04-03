@@ -15,6 +15,7 @@ import ContactPage from "./pages/ContactPage";
 import AvailableClassPage from "./pages/AvailableClassPage";
 import RegisterforATrialClass from "./pages/RegisterforATrialClass";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminLoginPage from "./pages/AdminLoginPage";
 import GiaSuDashboard from "./pages/GiaSuDashboard";
 import PhuHuynhDashboard from "./pages/PhuHuynhDashboard";
 import AuthModal from "./components/AuthModal";
@@ -145,6 +146,11 @@ function AppContent() {
           <Route path="/lop-hien-co" element={<AvailableClassPage />} />
           <Route path="/dang-ky-hoc-thu" element={<RegisterforATrialClass />} />
         </Route>
+
+        <Route
+          path="/admin/login"
+          element={<AdminLoginPage user={user} onAuthSuccess={handleAuthSuccess} />}
+        />
 
         {/* Dashboard route - không dùng Layout */}
         <Route path="/dashboard/*" element={<DashboardRoute />} />
