@@ -618,78 +618,95 @@ function PaymentsContent({ loading, paymentsData, paymentSummary }) {
   );
 }
 
+// ==========================================
+// ĐÂY LÀ GIAO DIỆN HỒ SƠ PHỤ HUYNH MỚI
+// ĐÃ XÓA GIỚI HẠN CHIỀU RỘNG ĐỂ FULL MÀN HÌNH NHƯ GIA SƯ
+// ==========================================
 function ProfileContent({ loading, saving, profileData, onChange, onSubmit }) {
   if (loading) {
     return (
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 text-center text-gray-500 flex items-center justify-center gap-2">
-        <Loader2 className="w-5 h-5 animate-spin" />
-        Đang tải hồ sơ...
+      <div className="p-10 text-center flex justify-center h-full items-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
+  const getInitials = (name) => {
+    if (!name) return 'PH';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
+
+  const inputClass = "w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium transition-all outline-none shadow-sm hover:border-gray-400";
+  const labelClass = "block text-sm font-bold text-gray-800 mb-2";
+
   return (
-    <div className="space-y-4 max-w-3xl">
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên</label>
-            <input
-              type="text"
-              name="ho_ten"
-              value={profileData.ho_ten}
-              onChange={onChange}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
-          </div>
+    // Đã đổi từ "w-full pb-12 max-w-5xl mx-auto" thành "w-full pb-12"
+    <div className="w-full pb-12">
+      <form onSubmit={onSubmit} className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden relative">
+        
+        {/* Banner Gradient Nhẹ Nhàng */}
+        <div className="h-40 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100"></div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={profileData.email}
-              onChange={onChange}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
+        {/* Profile Header */}
+        <div className="px-8 sm:px-12 relative -mt-16 flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
+          <div className="flex items-end gap-6">
+            {/* Avatar lồi */}
+            <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-4xl font-bold shrink-0">
+              {getInitials(profileData.ho_ten)}
+            </div>
+            <div className="mb-2">
+              <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">{profileData.ho_ten || 'Tên Phụ Huynh'}</h2>
+              <p className="text-gray-600 font-medium mt-1">{profileData.email}</p>
+            </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-            <input
-              type="text"
-              name="so_dien_thoai"
-              value={profileData.so_dien_thoai}
-              onChange={onChange}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
-            <input
-              type="text"
-              name="dia_chi"
-              value={profileData.dia_chi}
-              onChange={onChange}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          
+          <button 
+            type="submit" 
+            disabled={saving} 
+            className="mb-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all disabled:opacity-70 shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap min-w-[160px]"
+          >
+            {saving ? (
+              <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang lưu...</>
+            ) : 'Lưu Hồ Sơ'}
+          </button>
         </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition disabled:opacity-60"
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? "Đang lưu..." : "Lưu hồ sơ"}
-        </button>
+        {/* Form Fields */}
+        <div className="px-8 sm:px-12 pb-12 space-y-10">
+          
+          {/* Section 1 */}
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 mb-6 border-b border-gray-200 pb-3">Thông tin liên hệ</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+              <div>
+                <label className={labelClass}>Họ và tên <span className="text-red-500">*</span></label>
+                <input type="text" name="ho_ten" value={profileData.ho_ten} onChange={onChange} className={inputClass} required />
+              </div>
+              <div>
+                <label className={labelClass}>Email (Cố định)</label>
+                <input type="email" value={profileData.email} readOnly className={`${inputClass} bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200`} />
+              </div>
+              <div>
+                <label className={labelClass}>Số điện thoại</label>
+                <input type="tel" name="so_dien_thoai" value={profileData.so_dien_thoai} onChange={onChange} placeholder="09xx xxx xxx" className={inputClass} />
+              </div>
+              <div className="md:col-span-2">
+                <label className={labelClass}>Địa chỉ hiện tại</label>
+                <input type="text" name="dia_chi" value={profileData.dia_chi} onChange={onChange} placeholder="Số nhà, tên đường, phường/xã..." className={inputClass} />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Chú ý */}
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+            <h4 className="font-bold text-blue-900 mb-2">Lưu ý từ Trung tâm</h4>
+            <p className="text-sm text-blue-800 leading-relaxed">
+              Vui lòng đảm bảo thông tin số điện thoại và địa chỉ luôn được cập nhật chính xác. Trung tâm và Gia sư sẽ liên hệ với bạn qua các kênh này để trao đổi về tình hình học tập của con em.
+            </p>
+          </div>
+
+        </div>
       </form>
-      </div>
     </div>
   );
 }
