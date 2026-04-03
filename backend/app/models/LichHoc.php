@@ -145,6 +145,37 @@ class LichHoc {
         return Database::query($sql, [':gia_su_id' => $gia_su_id]);
     }
 
+    public static function getByPhuHuynhId($phu_huynh_id) {
+        $sql = "SELECT lh.*, lh.trang_thai as trang_thai_buoi_hoc,
+                       lh_c.ten_lop, lh_c.mon_hoc_id,
+                       hs.ho_ten as ten_hoc_sinh,
+                       gs.ho_ten as ten_gia_su,
+                       ldk_min.ngay_khai_giang,
+                       CASE
+                            WHEN ldk_min.ngay_khai_giang IS NOT NULL AND lh.ngay_hoc >= ldk_min.ngay_khai_giang
+                            THEN CEIL((DATEDIFF(lh.ngay_hoc, ldk_min.ngay_khai_giang) + 1) / 7)
+                            ELSE NULL
+                       END as tuan_hoc_thu
+                FROM lich_hoc lh
+                JOIN lop_hoc lh_c ON lh.lop_hoc_id = lh_c.lop_hoc_id
+                JOIN dang_ky_lop dkl ON dkl.lop_hoc_id = lh_c.lop_hoc_id
+                JOIN hoc_sinh hs ON dkl.hoc_sinh_id = hs.hoc_sinh_id
+                LEFT JOIN gia_su gs ON lh_c.gia_su_id = gs.gia_su_id
+                LEFT JOIN (
+                    SELECT lop_hoc_id, MIN(ngay_bat_dau) as ngay_khai_giang
+                    FROM lich_dinh_ky
+                    WHERE trang_thai = 'hoat_dong'
+                    GROUP BY lop_hoc_id
+                ) ldk_min ON lh.lop_hoc_id = ldk_min.lop_hoc_id
+                WHERE hs.phu_huynh_id = :phu_huynh_id
+                  AND dkl.trang_thai IN ('da_duyet', 'da_duyet_truc_tiep')
+                  AND lh_c.trang_thai != 'dong'
+                  AND lh.trang_thai != 'da_huy'
+                ORDER BY lh.ngay_hoc ASC, lh.gio_bat_dau ASC";
+
+        return Database::query($sql, [':phu_huynh_id' => $phu_huynh_id]);
+    }
+
     public static function updateStatus($id, $trang_thai) {
         $sql = "UPDATE lich_hoc SET trang_thai = :trang_thai WHERE lich_hoc_id = :id";
         return Database::execute($sql, [

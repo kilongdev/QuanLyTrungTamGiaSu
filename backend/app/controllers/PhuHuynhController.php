@@ -149,4 +149,137 @@ class PhuHuynhController
             ], JSON_UNESCAPED_UNICODE);
         }
     }
+
+    public static function dashboard(string $id): void
+    {
+        try {
+            $stats = PhuHuynh::getDashboardStats((int)$id);
+            echo json_encode([
+                'status' => 'success',
+                'data' => $stats
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public static function children(string $id): void
+    {
+        try {
+            $children = PhuHuynh::getChildrenLearningData((int)$id);
+            echo json_encode([
+                'status' => 'success',
+                'data' => $children
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public static function tutors(string $id): void
+    {
+        try {
+            $tutors = PhuHuynh::getTutorsByParent((int)$id);
+            echo json_encode([
+                'status' => 'success',
+                'data' => $tutors
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public static function payments(string $id): void
+    {
+        try {
+            $payments = PhuHuynh::getPaymentsByParent((int)$id);
+            echo json_encode([
+                'status' => 'success',
+                'data' => $payments
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public static function profile(string $id): void
+    {
+        $phuHuynh = PhuHuynh::findById($id);
+        if (!$phuHuynh) {
+            http_response_code(404);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Không tìm thấy phụ huynh'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => $phuHuynh
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    public static function updateProfile(string $id): void
+    {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $payload = [
+            'ho_ten' => trim((string)($input['ho_ten'] ?? '')),
+            'email' => trim((string)($input['email'] ?? '')),
+            'so_dien_thoai' => trim((string)($input['so_dien_thoai'] ?? '')),
+            'dia_chi' => trim((string)($input['dia_chi'] ?? '')),
+        ];
+
+        if ($payload['ho_ten'] === '' || $payload['email'] === '') {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Họ tên và email là bắt buộc'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $existing = PhuHuynh::findByEmail($payload['email']);
+        if ($existing && (int)$existing['phu_huynh_id'] !== (int)$id) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Email đã được sử dụng bởi tài khoản khác'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        try {
+            PhuHuynh::update($id, $payload);
+            $updated = PhuHuynh::findById($id);
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Cập nhật hồ sơ thành công',
+                'data' => $updated
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
 }
