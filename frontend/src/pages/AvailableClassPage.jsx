@@ -3,12 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { lopHocAPI } from "@/api/lophocApi";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  Search,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, Search } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 const AvailableClassPage = () => {
@@ -127,24 +122,26 @@ const AvailableClassPage = () => {
     const rangeWithDots = [];
 
     for (
-      let i = Math.max(2, currentPage - delta);
-      i <= Math.min(totalPages - 1, currentPage + delta);
+      let i = Math.max(1, currentPage - delta);
+      i <= Math.min(totalPages, currentPage + delta);
       i++
     ) {
       range.push(i);
     }
 
-    if (currentPage - delta > 2) {
-      rangeWithDots.push(1, "...");
-    } else {
+    if (range[0] > 1) {
       rangeWithDots.push(1);
+      if (range[0] > 2) {
+        rangeWithDots.push("...");
+      }
     }
 
     rangeWithDots.push(...range);
 
-    if (currentPage + delta < totalPages - 1) {
-      rangeWithDots.push("...", totalPages);
-    } else if (totalPages > 1) {
+    if (range[range.length - 1] < totalPages) {
+      if (range[range.length - 1] < totalPages - 1) {
+        rangeWithDots.push("...");
+      }
       rangeWithDots.push(totalPages);
     }
 
@@ -259,7 +256,7 @@ const AvailableClassPage = () => {
                 </span>
               ) : (
                 <button
-                  key={page}
+                  key={`${page}-${index}`}
                   onClick={() => setCurrentPage(page)}
                   className={cn(
                     "w-8 h-8 rounded-full",

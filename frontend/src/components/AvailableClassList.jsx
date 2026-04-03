@@ -1,9 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { SendIcon } from "lucide-react";
 
 const AvailableClastList = ({ classList }) => {
+  const getGiaMoiBuoi = (item) => {
+    const giaMoiBuoi = Number(item?.gia_moi_buoi) || 0;
+    if (giaMoiBuoi > 0) return giaMoiBuoi;
+
+    const giaToanKhoa = Number(item?.gia_toan_khoa) || 0;
+    const soBuoiHoc = Number(item?.so_buoi_hoc) || 0;
+
+    if (giaToanKhoa > 0 && soBuoiHoc > 0) {
+      return Math.round(giaToanKhoa / soBuoiHoc);
+    }
+
+    return 0;
+  };
+
   return (
     <>
       <div className="flex flex-col items-center justify-center mb-8 mx-auto max-w-5xl px-4">
@@ -23,7 +37,10 @@ const AvailableClastList = ({ classList }) => {
                   : "md:grid-cols-2 lg:grid-cols-3"
               }`}
             >
-              {classList.map((item) => (
+              {classList.map((item) => {
+                const giaMoiBuoi = getGiaMoiBuoi(item);
+
+                return (
                 <div
                   key={item.lop_hoc_id}
                   className="relative w-full max-w-[400px]"
@@ -38,7 +55,7 @@ const AvailableClastList = ({ classList }) => {
                         <span className="text-red-600">{item.lop_hoc_id}</span>
                       </h2>
                       <span className="text-sm px-3 py-1 rounded-full bg-red-100 text-red-600">
-                        {Number(item.gia_moi_buoi).toLocaleString("vi-VN")}đ /
+                        {giaMoiBuoi.toLocaleString("vi-VN")}đ /
                         buổi
                       </span>
                     </div>
@@ -93,7 +110,8 @@ const AvailableClastList = ({ classList }) => {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
