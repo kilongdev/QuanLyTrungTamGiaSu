@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { GraduationCap, Users, Briefcase, BookOpen, TrendingUp, Award } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { hocSinhAPI } from '@/api/hocSinhApi';
 import { phuHuynhAPI } from '@/api/phuHuynhApi';
 import { giaSuAPI } from '@/api/giaSuApi';
@@ -68,6 +68,18 @@ export default function DashboardOverview() {
   const [revenueTrendData, setRevenueTrendData] = useState([]);
   const [subjectRevenueData, setSubjectRevenueData] = useState([]);
   const [classRevenueData, setClassRevenueData] = useState([]);
+  const [classSortField, setClassSortField] = useState('revenue');
+  const [classSortOrder, setClassSortOrder] = useState('desc');
+
+  const sortedClassRevenueData = useMemo(() => {
+    const rows = [...classRevenueData];
+    rows.sort((a, b) => {
+      const first = Number(a?.[classSortField] || 0);
+      const second = Number(b?.[classSortField] || 0);
+      return classSortOrder === 'asc' ? first - second : second - first;
+    });
+    return rows;
+  }, [classRevenueData, classSortField, classSortOrder]);
 
   const fetchStats = async () => {
     try {
@@ -422,38 +434,67 @@ export default function DashboardOverview() {
             </div>
           </div>
 
-          {/* Classes by Grade Chart - Full Width */}
+          {/* Classes Revenue Table - Full Width */}
           <div className="pt-6 border-t border-gray-200">
-            <div className="mb-4">
+            <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+              <div>
               <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
                 <GraduationCap size={20} className="text-orange-600" />
                 Chi tiết doanh thu theo lớp
               </h3>
-              <p className="text-gray-500 text-sm">Top lớp theo doanh thu/lợi nhuận ({filterLabel})</p>
+                <p className="text-gray-500 text-sm">Danh sách lớp theo doanh thu/lợi nhuận ({filterLabel})</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  value={classSortField}
+                  onChange={(e) => setClassSortField(e.target.value)}
+                  className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm"
+                >
+                  <option value="revenue">Sắp theo doanh thu</option>
+                  <option value="profit">Sắp theo lợi nhuận</option>
+                </select>
+                <select
+                  value={classSortOrder}
+                  onChange={(e) => setClassSortOrder(e.target.value)}
+                  className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm"
+                >
+                  <option value="desc">Giảm dần</option>
+                  <option value="asc">Tăng dần</option>
+                </select>
+              </div>
             </div>
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={classRevenueData.slice(0, 6)} margin={{ top: 10, right: 20, left: 10, bottom: 50 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="grade"
-                  stroke="#9CA3AF"
-                  angle={-18}
-                  textAnchor="end"
-                  height={60}
-                  tickFormatter={formatChartName}
-                />
-                <YAxis stroke="#9CA3AF" tickFormatter={(v) => formatCurrencyCompact(v)} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                  formatter={(value, name) => [formatMoney(value), name]}
-                  labelFormatter={(label) => `Lớp: ${label}`}
-                />
-                <Legend />
-                <Bar dataKey="revenue" fill="#3B82F6" name="Doanh thu lớp" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="expense" fill="#EF4444" name="Chi phí gia sư" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="profit" fill="#10B981" name="Lợi nhuận lớp" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {sortedClassRevenueData.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
+                Chưa có dữ liệu doanh thu theo lớp cho bộ lọc hiện tại.
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-gray-200">
+                <table className="w-full min-w-[720px]">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">#</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Lớp</th>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase">Doanh thu</th>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase">Chi phí</th>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase">Lợi nhuận</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {sortedClassRevenueData.map((row, index) => (
+                      <tr key={`${row.grade}-${index}`} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm text-gray-600">{index + 1}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{row.grade}</td>
+                        <td className="px-4 py-3 text-sm text-right text-blue-700 font-semibold">{formatMoney(row.revenue)}</td>
+                        <td className="px-4 py-3 text-sm text-right text-red-600">{formatMoney(row.expense)}</td>
+                        <td className={`px-4 py-3 text-sm text-right font-semibold ${Number(row.profit || 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                          {formatMoney(row.profit)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>

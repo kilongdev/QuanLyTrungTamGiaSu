@@ -15,6 +15,7 @@ import HocPhiManagement from '../components/HocPhiManagement';
 import AdminAccountManagement from '../components/AdminAccountManagement';
 import LopHocEditPage from './LopHocEditPage';
 import LopHocAttendancePage from './LopHocAttendancePage';
+import GiaSuEditPage from './GiaSuEditPage';
 
 export default function AdminDashboard({ user, onLogout }) {
   const [activeItem, setActiveItem] = useState(() => localStorage.getItem('admin_active_item') || 'dashboard');
@@ -24,8 +25,10 @@ export default function AdminDashboard({ user, onLogout }) {
 
   const classEditMatch = useMatch('/dashboard/lophoc/:id/edit');
   const classAttendanceMatch = useMatch('/dashboard/lophoc/:id/attendance');
+  const tutorEditMatch = useMatch('/dashboard/giasu/:id/edit');
   const classEditId = classEditMatch?.params?.id || null;
   const classAttendanceId = classAttendanceMatch?.params?.id || null;
+  const tutorEditId = tutorEditMatch?.params?.id || null;
 
   const updateActiveItem = (nextItem) => {
     setActiveItem(nextItem);
@@ -39,8 +42,8 @@ export default function AdminDashboard({ user, onLogout }) {
   }, [user, navigate]);
 
   useEffect(() => {
-    if (location.pathname.startsWith('/dashboard/lophoc')) {
-      updateActiveItem('lophoc');
+    if (location.pathname.startsWith('/dashboard/lophoc') || location.pathname.startsWith('/dashboard/giasu')) {
+      updateActiveItem(location.pathname.startsWith('/dashboard/giasu') ? 'giasu' : 'lophoc');
     }
   }, [location.pathname]);
 
@@ -60,6 +63,7 @@ export default function AdminDashboard({ user, onLogout }) {
   const getPageTitle = () => {
     if (classEditMatch) return 'Chỉnh sửa lớp học';
     if (classAttendanceMatch) return 'Điểm danh theo buổi';
+    if (tutorEditMatch) return 'Chỉnh sửa gia sư';
 
     const item = menuItems.find(m => m.id === activeItem);
     return item ? item.label : 'Trang quản trị';
@@ -72,6 +76,10 @@ export default function AdminDashboard({ user, onLogout }) {
 
     if (classAttendanceMatch) {
       return <LopHocAttendancePage classId={classAttendanceId} />;
+    }
+
+    if (tutorEditMatch) {
+      return <GiaSuEditPage tutorId={tutorEditId} />;
     }
 
     switch (activeItem) {

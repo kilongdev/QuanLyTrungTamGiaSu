@@ -60,7 +60,7 @@ const Homepage = () => {
       try {
         setLoading(true);
 
-        const res = await lopHocAPI.getAll();
+        const res = await lopHocAPI.getAll({ excludeDong: true });
         setClasses(res.data);
       } catch (error) {
         console.error("Lấy danh sách lớp học thất bại!", error);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { authAPI, otpAPI } from '../api/authApi'
+import { monHocAPI } from '../api/monhocApi'
 
 const defaultFormData = {
   name: '',
@@ -17,6 +18,7 @@ const defaultFormData = {
   gender: '',
   address: '',
   degree: '',
+  subjectIds: [],
   introduction: '',
   experience: '',
   bankAccount: '',
@@ -30,7 +32,13 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
   })
   const [formData, setFormData] = useState(() => {
     const saved = sessionStorage.getItem('registerForm')
-    return saved ? JSON.parse(saved) : defaultFormData
+    if (!saved) return defaultFormData
+    const parsed = JSON.parse(saved)
+    return {
+      ...defaultFormData,
+      ...parsed,
+      subjectIds: Array.isArray(parsed?.subjectIds) ? parsed.subjectIds : []
+    }
   })
   const [otp, setOtp] = useState('')
   const [otpToken, setOtpToken] = useState(() => sessionStorage.getItem('otpToken') || '')
@@ -39,10 +47,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [countdown, setCountdown] = useState(0)
-  const [avatarFile, setAvatarFile] = useState(null)
-  const [avatarPreview, setAvatarPreview] = useState('')
-  const [certificateFiles, setCertificateFiles] = useState([])
-  const [certificatePreviews, setCertificatePreviews] = useState([])
+  const [subjects, setSubjects] = useState([])
 
   useEffect(() => {
     sessionStorage.setItem('registerForm', JSON.stringify(formData))
@@ -55,6 +60,19 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
   useEffect(() => {
     if (otpToken) sessionStorage.setItem('otpToken', otpToken)
   }, [otpToken])
+
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const res = await monHocAPI.getAll()
+        setSubjects(res?.data || [])
+      } catch {
+        setSubjects([])
+      }
+    }
+
+    fetchSubjects()
+  }, [])
 
   const clearFormData = () => {
     sessionStorage.removeItem('registerForm')
@@ -148,27 +166,24 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
 
       let payload
       if (formData.role === 'gia_su') {
-        payload = new FormData()
-        payload.append('name', formData.name)
-        payload.append('email', formData.email)
-        payload.append('phone', formData.phone)
-        payload.append('password', formData.password)
-        payload.append('role', formData.role)
-        payload.append('tutor', JSON.stringify({
-          birthday: formData.birthday,
-          gender: formData.gender,
-          address: formData.address,
-          degree: formData.degree,
-          introduction: formData.introduction,
-          experience: formData.experience,
-          bankAccount: formData.bankAccount,
-          bankName: formData.bankName,
-        }))
-
-        if (avatarFile) {
-          payload.append('avatar', avatarFile)
+        payload = {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          role: formData.role,
+          tutor: {
+            birthday: formData.birthday,
+            gender: formData.gender,
+            address: formData.address,
+            degree: formData.degree,
+            subjectIds: formData.subjectIds || [],
+            introduction: formData.introduction,
+            experience: formData.experience,
+            bankAccount: formData.bankAccount,
+            bankName: formData.bankName,
+          },
         }
-        certificateFiles.forEach((file) => payload.append('certificates[]', file))
       } else {
         payload = {
           name: formData.name,
@@ -203,10 +218,6 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
           setOtpToken('')
           setStep(1)
           setFormData(defaultFormData)
-          setAvatarFile(null)
-          setAvatarPreview('')
-          setCertificateFiles([])
-          setCertificatePreviews([])
           setSuccess('Đăng ký thành công. Hồ sơ gia sư của bạn đang chờ Admin duyệt. Vui lòng đăng nhập lại sau khi được duyệt.')
           onSwitchToLogin?.()
         } else {
@@ -514,51 +525,6 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
                     />
                   </div>
 
-                  {/* Avatar File */}
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-1">Ảnh đại diện</label>
-                    <div className="flex items-center gap-3">
-                      {avatarPreview ? (
-                        <div className="relative">
-                          <img src={avatarPreview} alt="Preview" className="w-20 h-20 rounded-full object-cover border-2 border-red-200" />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAvatarFile(null)
-                              setAvatarPreview('')
-                            }}
-                            className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-md"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="w-20 h-20 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                        </div>
-                      )}
-                      <label className="flex-1 cursor-pointer">
-                        <div className="px-4 py-2 bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-300 rounded-lg text-red-700 font-medium text-sm transition-all text-center">
-                          {avatarFile ? avatarFile.name : 'Chọn ảnh'}
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files[0]
-                            if (file) {
-                              setAvatarFile(file)
-                              setAvatarPreview(URL.createObjectURL(file))
-                            }
-                          }}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  </div>
-
                   {/* Degree */}
                   <div>
                     <label className="block text-gray-700 text-sm font-medium mb-1">Bằng cấp</label>
@@ -573,52 +539,38 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess, onClose }
                     />
                   </div>
 
-                  {/* Certificates */}
                   <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-1">Chứng chỉ (tùy chọn)</label>
-                    <div className="space-y-2">
-                      <label className="cursor-pointer block">
-                        <div className="px-4 py-2 bg-red-50 hover:bg-red-100 border-2 border-red-200 hover:border-red-300 rounded-lg text-red-700 font-medium text-sm transition-all text-center">
-                          + Thêm chứng chỉ
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={(e) => {
-                            const files = Array.from(e.target.files)
-                            if (files.length > 0) {
-                              setCertificateFiles(prev => [...prev, ...files])
-                              files.forEach(file => {
-                                setCertificatePreviews(prev => [...prev, URL.createObjectURL(file)])
-                              })
-                            }
-                          }}
-                          className="hidden"
-                        />
-                      </label>
-                      {certificatePreviews.length > 0 && (
-                        <div className="grid grid-cols-2 gap-2">
-                          {certificatePreviews.map((preview, index) => (
-                            <div key={index} className="relative group">
-                              <img 
-                                src={preview} 
-                                alt={`Chứng chỉ ${index + 1}`} 
-                                className="w-full h-24 object-cover rounded-lg border-2 border-gray-200 group-hover:border-red-200"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCertificateFiles(prev => prev.filter((_, i) => i !== index))
-                                  setCertificatePreviews(prev => prev.filter((_, i) => i !== index))
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Môn có thể dạy (chọn nhiều)</label>
+                    <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-white space-y-1">
+                      {subjects.length === 0 ? (
+                        <p className="text-sm text-gray-500 px-2 py-1">Chưa tải được danh sách môn học</p>
+                      ) : (
+                        subjects.map((subject) => {
+                          const checked = formData.subjectIds.includes(String(subject.mon_hoc_id))
+                          return (
+                            <label key={subject.mon_hoc_id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => {
+                                  const id = String(subject.mon_hoc_id)
+                                  if (e.target.checked) {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      subjectIds: [...prev.subjectIds, id],
+                                    }))
+                                  } else {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      subjectIds: prev.subjectIds.filter((item) => item !== id),
+                                    }))
+                                  }
                                 }}
-                                className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-md opacity-0 group-hover:opacity-100"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                              />
+                              <span className="text-sm text-gray-800">{subject.ten_mon_hoc}</span>
+                            </label>
+                          )
+                        })
                       )}
                     </div>
                   </div>

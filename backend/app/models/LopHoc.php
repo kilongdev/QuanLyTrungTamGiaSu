@@ -94,7 +94,7 @@ class LopHoc {
         return Database::execute($sql, $params);
     }
 
-    public static function getAll() {
+    public static function getAll($excludeDong = false) {
         $sql = "SELECT lh.*, gs.ho_ten as ten_gia_su, gs.bang_cap, mh.ten_mon_hoc,
                        (SELECT GROUP_CONCAT(CONCAT(
                             CASE ldk.thu_trong_tuan
@@ -107,7 +107,11 @@ class LopHoc {
                        (SELECT MIN(ngay_bat_dau) FROM lich_dinh_ky ldk WHERE ldk.lop_hoc_id = lh.lop_hoc_id AND ldk.trang_thai = 'hoat_dong') AS ngay_bat_dau
                 FROM lop_hoc lh 
                 LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id 
-                LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id 
+                LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id ";
+        if ($excludeDong) {
+            $sql .= "WHERE lh.trang_thai <> 'dong' ";
+        }
+        $sql .= "
                 ORDER BY lh.ngay_tao DESC";
         return Database::query($sql);
     }

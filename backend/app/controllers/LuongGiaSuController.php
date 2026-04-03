@@ -62,7 +62,21 @@ class LuongGiaSuController {
                 exit;
             }
             
-            $tongLuong = array_sum(array_column($luongList, 'tien_tra_gia_su'));
+            $tongLuongTatCa = 0;
+            $tongLuongDaThanhToan = 0;
+            $tongLuongChuaThanhToan = 0;
+
+            foreach ($luongList as $row) {
+                $tien = (float)($row['tien_tra_gia_su'] ?? 0);
+                $trangThai = (string)($row['trang_thai_thanh_toan'] ?? 'chua_thanh_toan');
+
+                $tongLuongTatCa += $tien;
+                if ($trangThai === 'da_thanh_toan') {
+                    $tongLuongDaThanhToan += $tien;
+                } else {
+                    $tongLuongChuaThanhToan += $tien;
+                }
+            }
             
             echo json_encode([
                 'success' => true,
@@ -74,7 +88,10 @@ class LuongGiaSuController {
                     'ten_giasu' => $luongList[0]['ten_giasu'] ?? '',
                     'so_dien_thoai' => $luongList[0]['so_dien_thoai'] ?? '',
                     'email' => $luongList[0]['email'] ?? '',
-                    'tong_luong' => $tongLuong,
+                    'tong_luong' => $tongLuongChuaThanhToan,
+                    'tong_luong_chua_thanh_toan' => $tongLuongChuaThanhToan,
+                    'tong_luong_da_thanh_toan' => $tongLuongDaThanhToan,
+                    'tong_luong_tat_ca' => $tongLuongTatCa,
                     'so_lop' => count($luongList),
                     'danh_sach_lop' => $luongList
                 ]

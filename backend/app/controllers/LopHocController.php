@@ -5,6 +5,23 @@ require_once __DIR__ . '/../core/Database.php';
 
 class LopHocController {
 
+    private function validatePayoutPercent($data): ?string {
+        if (($data['loai_chi_tra'] ?? '') !== 'phan_tram') {
+            return null;
+        }
+
+        if (!isset($data['gia_tri_chi_tra']) || $data['gia_tri_chi_tra'] === '') {
+            return 'Vui lòng nhập phần trăm chia phí cho gia sư.';
+        }
+
+        $percent = (float)$data['gia_tri_chi_tra'];
+        if (!($percent > 50 && $percent < 100)) {
+            return 'Phần trăm chia phí phải lớn hơn 50% và nhỏ hơn 100%.';
+        }
+
+        return null;
+    }
+
     private function checkTutorConflict($giaSuId, $lopHocId, $thuTrongTuanArr, $gioBatDau, $gioKetThuc, $ngayBatDau, $ngayKetThuc) {
         if (empty($giaSuId) || empty($thuTrongTuanArr)) return false;
 
@@ -55,10 +72,11 @@ class LopHocController {
 
     public function index() {
         $giaSuId = $_GET['gia_su_id'] ?? null;
+        $excludeDong = isset($_GET['exclude_dong']) && $_GET['exclude_dong'] === '1';
         if ($giaSuId) {
             $lopHocs = LopHoc::getByGiaSuId($giaSuId);
         } else {
-            $lopHocs = LopHoc::getAll();
+            $lopHocs = LopHoc::getAll($excludeDong);
             foreach ($lopHocs as &$lop) {
                 if (empty($lop['gia_su_id'])) {
                     $yeuCau = Database::queryOne(
@@ -84,6 +102,13 @@ class LopHocController {
         $data = json_decode(file_get_contents("php://input"), true);
         if (empty($data['mon_hoc_id'])) {
             http_response_code(400); echo json_encode(["status" => "error", "message" => "Vui lòng chọn môn học!"]); return;
+        }
+
+        $percentError = $this->validatePayoutPercent($data);
+        if ($percentError !== null) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => $percentError]);
+            return;
         }
 
         $giaSuDuKien = $data['gia_su_id'] ?? null;
@@ -149,6 +174,13 @@ class LopHocController {
     public function update($id) {
         if (empty($id)) { http_response_code(400); echo json_encode(["status" => "error", "message" => "Thiếu ID lớp học"]); return; }
         $data = json_decode(file_get_contents("php://input"), true);
+
+        $percentError = $this->validatePayoutPercent($data);
+        if ($percentError !== null) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => $percentError]);
+            return;
+        }
 
         try {
             $lopHocCu = LopHoc::getById($id);
@@ -252,7 +284,7 @@ class LopHocController {
         try {
             $affected = LopHoc::delete($id);
             if ($affected === 0) { http_response_code(404); echo json_encode(["status" => "error", "message" => "Không tìm thấy"]); return; }
-            echo json_encode(["status" => "success", "message" => "Đã xóa lớp học thành công"]);
+            echo json_encode(["status" => "success", "message" => "Đã khóa lớp học thành công"]);
         } catch (Exception $e) { http_response_code(500); echo json_encode(["status" => "error", "message" => "Lỗi xóa lớp"]); }
     }
 
@@ -299,15 +331,16 @@ class LopHocController {
             $exist = Database::query($checkSql, [':hs_id' => $data['hoc_sinh_id'], ':lop_id' => $id]);
             if ($exist && $exist[0]['trang_thai'] === 'da_duyet') { http_response_code(400); echo json_encode(["status" => "error", "message" => "Học sinh đã có trong lớp"]); return; }
 
-            $checkCapacity = "SELECT so_luong_hien_tai, so_luong_toi_da FROM lop_hoc WHERE lop_hoc_id = :lop_hoc_id";
+            $checkCapacity = "SELECT so_luong_hien_tai, so_luong_toi_da, trang_thai FROM lop_hoc WHERE lop_hoc_id = :lop_hoc_id";
             $lop = Database::query($checkCapacity, [':lop_hoc_id' => $id]);
             if (!$lop) { http_response_code(404); echo json_encode(["status" => "error", "message" => "Lớp không tồn tại"]); return; }
+            if (($lop[0]['trang_thai'] ?? '') === 'dong') { http_response_code(400); echo json_encode(["status" => "error", "message" => "Lớp đã bị khóa, không thể thêm học sinh"]); return; }
             if ($lop[0]['so_luong_hien_tai'] >= $lop[0]['so_luong_toi_da']) { http_response_code(400); echo json_encode(["status" => "error", "message" => "Lớp đã đầy"]); return; }
 
             if ($exist) {
-                Database::execute("UPDATE dang_ky_lop SET trang_thai = 'da_duyet_truc_tiep', ngay_duyet = CURRENT_TIMESTAMP WHERE dang_ky_id = :id", [':id' => $exist[0]['dang_ky_id']]);
+                Database::execute("UPDATE dang_ky_lop SET trang_thai = 'da_duyet', ngay_duyet = CURRENT_TIMESTAMP WHERE dang_ky_id = :id", [':id' => $exist[0]['dang_ky_id']]);
             } else {
-                Database::execute("INSERT INTO dang_ky_lop (hoc_sinh_id, lop_hoc_id, trang_thai, ngay_duyet) VALUES (:hoc_sinh_id, :lop_hoc_id, 'da_duyet_truc_tiep', CURRENT_TIMESTAMP)", [':hoc_sinh_id' => $data['hoc_sinh_id'], ':lop_hoc_id' => $id]);
+                Database::execute("INSERT INTO dang_ky_lop (hoc_sinh_id, lop_hoc_id, trang_thai, ngay_duyet) VALUES (:hoc_sinh_id, :lop_hoc_id, 'da_duyet', CURRENT_TIMESTAMP)", [':hoc_sinh_id' => $data['hoc_sinh_id'], ':lop_hoc_id' => $id]);
             }
             Database::execute("UPDATE lop_hoc SET so_luong_hien_tai = so_luong_hien_tai + 1 WHERE lop_hoc_id = :lop_id", [':lop_id' => $id]);
             http_response_code(201); echo json_encode(["status" => "success", "message" => "Thêm học sinh thành công"]);

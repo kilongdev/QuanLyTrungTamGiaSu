@@ -1,6 +1,4 @@
-import ContactForm from "@/components/ContactForm";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { ArrowRight } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -38,14 +36,20 @@ const RegisterforATrialClass = () => {
       const fetchClassData = async () => {
         try {
           const res = await lopHocAPI.getById(classId);
-          setClassData(res.data || res);
+          const fetchedClass = res.data || res;
+          if (fetchedClass?.trang_thai === "dong") {
+            toast.error("Lớp học này đã bị khóa và không thể đăng ký.");
+            navigate("/lop-hien-co");
+            return;
+          }
+          setClassData(fetchedClass);
         } catch (error) {
           console.error("Lỗi khi lấy thông tin lớp học:", error);
         }
       };
       fetchClassData();
     }
-  }, [searchParams]);
+  }, [searchParams, navigate]);
 
   // lấy dữ liệu môn học + lớp học, dropdown khối lớp phù thuộc
   useEffect(() => {
@@ -53,12 +57,10 @@ const RegisterforATrialClass = () => {
       try {
         const [subRes, classRes] = await Promise.all([
           monHocAPI.getAll(),
-          lopHocAPI.getAll(),
+          lopHocAPI.getAll({ excludeDong: true }),
         ]);
         const subs = subRes.data || [];
         const classes = classRes.data || classRes || [];
-        console.log("subRes: ", subRes);
-        console.log("classRes: ", classRes);
         setSubjects(subs);
         const map = {};
         classes.forEach((c) => {
@@ -92,6 +94,12 @@ const RegisterforATrialClass = () => {
     setSelectedGrade("");
   }, [selectedSubject, gradesBySubject]);
 
+  const parseExpectedFee = (value) => {
+    if (!value) return null;
+    const parsed = parseFloat(String(value).replace(/[^-\d]/g, ""));
+    return Number.isNaN(parsed) ? null : parsed;
+  };
+
   const onSubmit = async (data) => {
     try {
       const submitData = {
@@ -111,11 +119,15 @@ const RegisterforATrialClass = () => {
         // submitData.so_buoi_tuan = classData.so_buoi_hoc;
         // submitData.ngay_du_kien = data.startDate || null;
       } else {
-        submitData.mon_hoc_id = selectedSubject;
-        submitData.khoi_lop = selectedGrade;
-        submitData.hoc_phi_du_kien = data.expectedFee
-          ? parseFloat(data.expectedFee.replace(/[^\d]/g, ""))
-          : null;
+        const expectedFee = parseExpectedFee(data.expectedFee);
+        if (expectedFee !== null && expectedFee < 0) {
+          toast.error("Học phí không được âm");
+          return;
+        }
+
+        submitData.mon_hoc_id = data.subject || selectedSubject;
+        submitData.khoi_lop = data.grade || selectedGrade;
+        submitData.hoc_phi_du_kien = expectedFee;
         submitData.so_hoc_vien = data.number ? parseInt(data.number) : null;
         submitData.so_buoi_tuan = data.sessionsPerWeek
           ? parseInt(data.sessionsPerWeek)
@@ -324,13 +336,18 @@ const RegisterforATrialClass = () => {
                   Môn học *
                 </label>
                 <select
+                  {...register("subject", {
+                    required: "Vui lòng chọn môn học",
+                    onChange: (e) => {
+                      setSelectedSubject(e.target.value);
+                    },
+                  })}
                   id="subject"
                   name="subject"
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
                   className="rounded-full bg-white shadow-inner text-black px-4 py-2
                focus-visible:outline-none focus-visible:ring-2
                focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                  defaultValue=""
                 >
                   <option value="" disabled>
                     -- chọn môn học --
@@ -341,6 +358,11 @@ const RegisterforATrialClass = () => {
                     </option>
                   ))}
                 </select>
+                {errors.subject && (
+                  <div className="text-red-600 mt-2">
+                    <p>{errors.subject.message}</p>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-2">
@@ -348,14 +370,19 @@ const RegisterforATrialClass = () => {
                   Khối lớp *
                 </label>
                 <select
+                  {...register("grade", {
+                    required: "Vui lòng chọn khối lớp",
+                    onChange: (e) => {
+                      setSelectedGrade(e.target.value);
+                    },
+                  })}
                   id="grade"
                   name="grade"
-                  value={selectedGrade}
-                  onChange={(e) => setSelectedGrade(e.target.value)}
                   disabled={!selectedSubject || gradeOptions.length === 0}
                   className="rounded-full bg-white shadow-inner text-black px-4 py-2
                focus-visible:outline-none focus-visible:ring-2
                focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                  defaultValue=""
                 >
                   <option value="" disabled>
                     {selectedSubject
@@ -370,16 +397,35 @@ const RegisterforATrialClass = () => {
                     </option>
                   ))}
                 </select>
+                {errors.grade && (
+                  <div className="text-red-600 mt-2">
+                    <p>{errors.grade.message}</p>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 <label htmlFor="" className="font-semibold">
                   Học phí dự kiến (VNĐ/buổi)
                 </label>
                 <Input
-                  {...register("expectedFee")}
+                  {...register("expectedFee", {
+                    validate: (value) => {
+                      if (!value) return true;
+                      const fee = parseExpectedFee(value);
+                      if (fee !== null && fee < 0) {
+                        return "Học phí không được âm";
+                      }
+                      return true;
+                    },
+                  })}
                   placeholder="Vd: 200.000"
                   className="rounded-full bg-white shadow-inner text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
                 />
+                {errors.expectedFee && (
+                  <div className="text-red-600 mt-2">
+                    <p>{errors.expectedFee.message}</p>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-2">

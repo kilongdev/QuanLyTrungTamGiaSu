@@ -54,10 +54,16 @@ export const lopHocAPI = {
     /**
      * Lấy danh sách tất cả lớp học
      */
-    getAll: () => 
-        request('/lophoc', {
+    getAll: (params = {}) => {
+        const query = new URLSearchParams()
+        if (params.excludeDong) {
+            query.set('exclude_dong', '1')
+        }
+        const suffix = query.toString() ? `?${query.toString()}` : ''
+        return request(`/lophoc${suffix}`, {
             method: 'GET',
-        }),
+        })
+    },
 
     /**
    * Lấy danh sách lớp học theo ID gia sư

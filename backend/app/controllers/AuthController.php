@@ -3,6 +3,7 @@ require_once __DIR__ . '/../core/JWT.php';
 require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../models/Admin.php';
 require_once __DIR__ . '/../models/GiaSu.php';
+require_once __DIR__ . '/../models/GiaSuMonHoc.php';
 require_once __DIR__ . '/../models/PhuHuynh.php';
 require_once __DIR__ . '/../models/HocSinh.php';
 require_once __DIR__ . '/../models/ThongBaoModel.php';
@@ -315,6 +316,23 @@ class AuthController
                     'anh_dai_dien' => $avatarPayload['file_name'] ?? null,
                     'chung_chi' => $certificates ? json_encode($certificates, JSON_UNESCAPED_UNICODE) : null
                 ]);
+
+                $subjectIds = [];
+                if (is_array($tutor) && isset($tutor['subjectIds']) && is_array($tutor['subjectIds'])) {
+                    foreach ($tutor['subjectIds'] as $subjectId) {
+                        if (is_numeric($subjectId) && (int)$subjectId > 0) {
+                            $subjectIds[] = (int)$subjectId;
+                        }
+                    }
+                }
+                $subjectIds = array_values(array_unique($subjectIds));
+
+                foreach ($subjectIds as $subjectId) {
+                    GiaSuMonHoc::create([
+                        'gia_su_id' => $giaSuId,
+                        'mon_hoc_id' => $subjectId,
+                    ]);
+                }
 
                 $newUser = [
                     'id' => $giaSuId,

@@ -245,6 +245,10 @@ class PhuHuynhController
             'so_dien_thoai' => trim((string)($input['so_dien_thoai'] ?? '')),
             'dia_chi' => trim((string)($input['dia_chi'] ?? '')),
         ];
+        $newPassword = trim((string)($input['mat_khau'] ?? ''));
+        if ($newPassword !== '') {
+            $payload['mat_khau'] = $newPassword;
+        }
 
         if ($payload['ho_ten'] === '' || $payload['email'] === '') {
             http_response_code(400);
