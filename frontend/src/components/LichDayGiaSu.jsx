@@ -243,9 +243,11 @@ export default function LichDayGiaSu({ user }) {
                         key={i}
                         onClick={() => setSelectedSession(lh)}
                         className={`text-left text-xs px-2 py-1.5 rounded-md border shadow-sm transition-all truncate font-semibold w-full ${pillStyle}`}
-                        title={`${lh.gio_bat_dau.substring(0, 5)} - ${lh.ten_lop || `Lớp #${lh.lop_hoc_id}`}`}
+                        title={`${lh.gio_bat_dau.substring(0, 5)} - ${lh.ten_lop || `Lớp #${lh.lop_hoc_id}`}${lh.tuan_hoc_thu ? ` (Tuần ${lh.tuan_hoc_thu})` : ""}`}
                       >
-                        {lh.gio_bat_dau.substring(0, 5)} - {lh.ten_lop?.split(' - ')[0] || `Lớp #${lh.lop_hoc_id}`}
+                        {lh.gio_bat_dau.substring(0, 5)} - {lh.ten_lop?.split(' - ')[0] || `Lớp #${lh.lop_hoc_id}`} 
+                        {/* HIỂN THỊ TUẦN HỌC TRÊN PILL */}
+                        {lh.tuan_hoc_thu && <span className="ml-1 opacity-90">• Tuần {lh.tuan_hoc_thu}</span>}
                       </button>
                     );
                   })}
@@ -276,10 +278,19 @@ export default function LichDayGiaSu({ user }) {
               </div>
               
               <div className="p-6 space-y-4">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Lớp phụ trách</p>
-                  <p className="font-bold text-gray-900 text-lg">{selectedSession.ten_lop || `Lớp #${selectedSession.lop_hoc_id}`}</p>
+                <div className="flex justify-between items-start gap-3">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Lớp phụ trách</p>
+                    <p className="font-bold text-gray-900 text-lg">{selectedSession.ten_lop || `Lớp #${selectedSession.lop_hoc_id}`}</p>
+                  </div>
+                  {/* HIỂN THỊ BADGE TUẦN HỌC TRONG MODAL */}
+                  {selectedSession.tuan_hoc_thu && (
+                    <div className="bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-indigo-100 flex-shrink-0 mt-1">
+                      Tuần {selectedSession.tuan_hoc_thu}
+                    </div>
+                  )}
                 </div>
+                
                 <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
                   <Clock size={20} className="text-gray-400" />
                   <div>
@@ -332,7 +343,7 @@ export default function LichDayGiaSu({ user }) {
         </div>
       )}
 
-      {/* Modal Điểm Danh (Giữ nguyên giao diện đẹp hôm qua) */}
+      {/* Modal Điểm Danh */}
       {showDiemDanhModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[55] px-4">
           <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
