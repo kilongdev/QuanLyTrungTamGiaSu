@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Plus, Edit2, Trash2, Search, Eye, X, AlertTriangle } from 'lucide-react'
 import DataPagination from '@/components/ui/DataPagination'
 import { toast } from 'sonner'
 import { luongGiaSuAPI } from '@/api/luongGiaSuApi'
 import { doanhThuAPI } from '@/api/doanhThuApi'
+import { getAbortSignal } from '@/lib/requestUtils'
 
 const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api'}`
 
@@ -26,6 +27,7 @@ function StatusBadge({ status, edited }) {
 export default function LuongGiaSuManagement({ user }) {
   const [luongData, setLuongData] = useState([])
   const [loading, setLoading] = useState(false)
+  const submitRef = useRef({ isSubmitting: false })
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedMonth, setSelectedMonth] = useState('all')
   const [selectedTutor, setSelectedTutor] = useState('all')
@@ -343,17 +345,21 @@ export default function LuongGiaSuManagement({ user }) {
   // Submit form
   const handleFormSubmit = async (e) => {
     e.preventDefault()
+    if (submitRef.current.isSubmitting) return
+    submitRef.current.isSubmitting = true
+    const signal = getAbortSignal(`luong-gia-su-submit-${modalMode}-${formData.luong_id || 'new'}`)
     
     // Validate thang/nam
     if (!formData.thang || !formData.nam) {
       toast.error('Vui lòng nhập tháng và năm')
+      submitRef.current.isSubmitting = false
       return
     }
     
     setModalLoading(true)
     try {
       if (modalMode === 'add') {
-        const response = await luongGiaSuAPI.create(formData)
+        const response = await luongGiaSuAPI.create(formData, { signal })
         if (response.success) {
           toast.success('Thêm lương thành công!')
           setIsModalOpen(false)
@@ -362,7 +368,7 @@ export default function LuongGiaSuManagement({ user }) {
           toast.error(response.message || 'Lỗi thêm lương')
         }
       } else {
-        const response = await luongGiaSuAPI.update(formData.luong_id, formData)
+        const response = await luongGiaSuAPI.update(formData.luong_id, formData, { signal })
         if (response.success) {
           toast.success('Cập nhật lương thành công!')
           setIsModalOpen(false)
@@ -372,9 +378,14 @@ export default function LuongGiaSuManagement({ user }) {
         }
       }
     } catch (error) {
+      if (error.name === 'AbortError') {
+        submitRef.current.isSubmitting = false
+        return
+      }
       toast.error(error.message || 'Lỗi thao tác')
     } finally {
       setModalLoading(false)
+      submitRef.current.isSubmitting = false
     }
   }
 

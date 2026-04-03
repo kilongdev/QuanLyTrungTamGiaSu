@@ -1,16 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Plus, Edit2, Trash2, Search, X, AlertTriangle, DollarSign, User, Calendar, Bell, Eye } from 'lucide-react'
 import DataPagination from '@/components/ui/DataPagination'
 import { hocPhiAPI } from '@/api/hocPhiApi'
 import { dangKyAPI } from "@/api/dangkyApi";
 import { toast } from 'sonner'
 import { normalizeNumberInputValue } from '@/lib/numberUtils'
+import { getAbortSignal } from '@/lib/requestUtils'
 
 const API_BASE = `${import.meta.env.VITE_API_URL || 'https://quanlytrungtamgiasu.onrender.com/api'}`
 
 export default function HocPhiManagement({ user }) {
   const [hocPhiData, setHocPhiData] = useState([])
   const [loading, setLoading] = useState(false)
+  const submitRef = useRef({ isSubmitting: false })
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedMonth, setSelectedMonth] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
@@ -245,8 +247,13 @@ export default function HocPhiManagement({ user }) {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault()
+    if (submitRef.current.isSubmitting) return
+    submitRef.current.isSubmitting = true
+    const signal = getAbortSignal(`hoc-phi-submit-${modalMode}-${currentHocPhi?.hoc_phi_id || 'new'}`)
+
     if (!formData.dang_ky_id || !formData.so_tien) {
       toast.error('Vui lòng điền đầy đủ thông tin')
+      submitRef.current.isSubmitting = false
       return
     }
 
@@ -256,7 +263,7 @@ export default function HocPhiManagement({ user }) {
         const res = await hocPhiAPI.updateStatus(currentHocPhi.hoc_phi_id, {
           trang_thai_thanh_toan: formData.trang_thai_thanh_toan,
           ngay_den_han: formData.ngay_den_han
-        })
+        }, { signal })
         if (res.success) {
           toast.success('Cập nhật học phí thành công!')
           setIsModalOpen(false)
@@ -265,7 +272,7 @@ export default function HocPhiManagement({ user }) {
           toast.error(res.message || 'Lỗi cập nhật')
         }
       } else {
-        const res = await hocPhiAPI.create(formData)
+        const res = await hocPhiAPI.create(formData, { signal })
         if (res.success) {
           toast.success('Thêm học phí thành công!')
           setIsModalOpen(false)
@@ -275,9 +282,14 @@ export default function HocPhiManagement({ user }) {
         }
       }
     } catch (error) {
+      if (error.name === 'AbortError') {
+        submitRef.current.isSubmitting = false
+        return
+      }
       toast.error(error.message || 'Lỗi thao tác')
     } finally {
       setModalLoading(false)
+      submitRef.current.isSubmitting = false
     }
   }
 

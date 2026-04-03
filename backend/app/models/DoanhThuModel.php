@@ -392,27 +392,33 @@ class DoanhThuModel extends BaseModel {
         $tongLuongCanThanhToan = $soLuotCoMatChuaThanhToan * $donGiaLuongMoiLuot;
 
         // Doanh thu/chi phi bao cao theo dong tien da thanh toan trong thang.
-        $thuStmt = $this->conn->prepare(
-            "SELECT COALESCE(SUM(hp.so_tien), 0) AS tong_thu_da_thanh_toan
-             FROM hoc_phi hp
-             JOIN dang_ky_lop dkl ON dkl.dang_ky_id = hp.dang_ky_id
-             WHERE dkl.lop_hoc_id = ?
-               AND hp.thang = ?
-               AND hp.nam = ?
-               AND hp.trang_thai_thanh_toan = 'da_thanh_toan'"
-        );
-        $thuStmt->execute([$lopHocId, $thang, $nam]);
+         $thuStmt = $this->conn->prepare(
+             "SELECT COALESCE(SUM(hp.so_tien), 0) AS tong_thu_da_thanh_toan
+              FROM hoc_phi hp
+              JOIN dang_ky_lop dkl ON dkl.dang_ky_id = hp.dang_ky_id
+              WHERE dkl.lop_hoc_id = ?
+             AND hp.trang_thai_thanh_toan = 'da_thanh_toan'
+             AND (
+                  (hp.ngay_thanh_toan IS NOT NULL AND MONTH(hp.ngay_thanh_toan) = ? AND YEAR(hp.ngay_thanh_toan) = ?)
+                  OR
+                  (hp.ngay_thanh_toan IS NULL AND hp.thang = ? AND hp.nam = ?)
+             )"
+         );
+         $thuStmt->execute([$lopHocId, $thang, $nam, $thang, $nam]);
         $tongThu = (float)(($thuStmt->fetch(PDO::FETCH_ASSOC) ?: [])['tong_thu_da_thanh_toan'] ?? 0);
 
-        $chiStmt = $this->conn->prepare(
-            "SELECT COALESCE(SUM(tien_tra_gia_su), 0) AS tong_chi_da_thanh_toan
-             FROM luong_gia_su
-             WHERE lop_hoc_id = ?
-               AND thang = ?
-               AND nam = ?
-               AND trang_thai_thanh_toan = 'da_thanh_toan'"
-        );
-        $chiStmt->execute([$lopHocId, $thang, $nam]);
+           $chiStmt = $this->conn->prepare(
+              "SELECT COALESCE(SUM(tien_tra_gia_su), 0) AS tong_chi_da_thanh_toan
+               FROM luong_gia_su
+               WHERE lop_hoc_id = ?
+                AND trang_thai_thanh_toan = 'da_thanh_toan'
+                AND (
+                    (ngay_thanh_toan IS NOT NULL AND MONTH(ngay_thanh_toan) = ? AND YEAR(ngay_thanh_toan) = ?)
+                    OR
+                    (ngay_thanh_toan IS NULL AND thang = ? AND nam = ?)
+                )"
+           );
+         $chiStmt->execute([$lopHocId, $thang, $nam, $thang, $nam]);
         $tongChi = (float)(($chiStmt->fetch(PDO::FETCH_ASSOC) ?: [])['tong_chi_da_thanh_toan'] ?? 0);
 
         $loiNhuan = $tongThu - $tongChi;

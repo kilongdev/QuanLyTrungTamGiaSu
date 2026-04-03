@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react';
-import { Trash2, Edit2, Eye, Search, Plus, GraduationCap, Users, Calendar, X, User, Hash, BookUser, AlertTriangle, Mail, Phone } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Trash2, Edit2, Eye, Search, Plus, GraduationCap, Users, Calendar, X, User, Hash, BookUser, AlertTriangle, Mail, Phone, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { hocSinhAPI } from '@/api/hocSinhApi'; // Import API mới
 import { phuHuynhAPI } from '@/api/phuHuynhApi'; // Import API phụ huynh
+import { lichHocAPI } from '@/api/lichhocApi';
 import { toast } from 'sonner';
 import { validateStudentForm } from '@/lib/validators';
 import DataPagination from '@/components/ui/DataPagination';
+import { getAbortSignal } from '@/lib/requestUtils';
 
 export default function HocSinhManagement() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const submitRef = useRef({ isSubmitting: false });
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
@@ -25,6 +28,8 @@ export default function HocSinhManagement() {
   const [modalLoading, setModalLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, student: null, loading: false });
   const [detailModal, setDetailModal] = useState({ isOpen: false, data: null, loading: false });
+  const [selectedDetailClassId, setSelectedDetailClassId] = useState(null);
+  const [studentDetailWeekDate, setStudentDetailWeekDate] = useState(new Date());
 
   // Gọi API lấy danh sách học sinh
   const fetchStudents = async (page = 1, searchTerm = '', limit = pageSize) => {
@@ -101,7 +106,36 @@ export default function HocSinhManagement() {
     try {
       const response = await hocSinhAPI.getById(studentId);
       if (response.status === 'success') {
-        setDetailModal({ isOpen: true, data: response.data, loading: false });
+        const detailData = response.data || {};
+        const lopHocList = Array.isArray(detailData.lop_hoc) ? detailData.lop_hoc : [];
+
+        const lichHocByLop = await Promise.all(
+          lopHocList.map(async (lop) => {
+            try {
+              const lichRes = await lichHocAPI.getByLopHoc(lop.lop_hoc_id);
+              return {
+                ...lop,
+                lich_hoc: Array.isArray(lichRes?.data) ? lichRes.data : [],
+              };
+            } catch (_err) {
+              return {
+                ...lop,
+                lich_hoc: [],
+              };
+            }
+          })
+        );
+
+        setDetailModal({
+          isOpen: true,
+          data: {
+            ...detailData,
+            lop_hoc: lichHocByLop,
+          },
+          loading: false,
+        });
+        setSelectedDetailClassId(lichHocByLop[0]?.lop_hoc_id || null);
+        setStudentDetailWeekDate(new Date());
       } else {
         throw new Error(response.message || 'Không thể tải chi tiết học sinh.');
       }
@@ -135,9 +169,14 @@ export default function HocSinhManagement() {
   // Xử lý submit form (Thêm/Sửa)
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    if (submitRef.current.isSubmitting) return;
+    submitRef.current.isSubmitting = true;
+    const signal = getAbortSignal(`hoc-sinh-submit-${modalMode}-${currentStudent?.hoc_sinh_id || 'new'}`);
+
     const validationMessage = validateStudentForm(formData);
     if (validationMessage) {
       toast.error(validationMessage);
+      submitRef.current.isSubmitting = false;
       return;
     }
 
@@ -146,20 +185,25 @@ export default function HocSinhManagement() {
 
     try {
       if (modalMode === 'edit') {
-        const response = await hocSinhAPI.update(currentStudent.hoc_sinh_id, formData);
+        const response = await hocSinhAPI.update(currentStudent.hoc_sinh_id, formData, { signal });
         toast.success(response.message || 'Cập nhật học sinh thành công!');
       } else {
-        const response = await hocSinhAPI.create(formData);
+        const response = await hocSinhAPI.create(formData, { signal });
         toast.success(response.message || 'Thêm học sinh thành công!');
       }
       setIsModalOpen(false);
       fetchStudents(pagination.page, search, pageSize);
     } catch (err) {
+      if (err.name === 'AbortError') {
+        submitRef.current.isSubmitting = false;
+        return;
+      }
       const errorMessage = err.message || 'Đã có lỗi xảy ra.';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setModalLoading(false);
+      submitRef.current.isSubmitting = false;
     }
   };
 
@@ -193,6 +237,40 @@ export default function HocSinhManagement() {
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN');
   };
+
+  const formatThuDate = (dateString) => {
+    if (!dateString) return 'Chưa có';
+    const date = new Date(dateString);
+    const day = date.getDay();
+    const thu = day === 0 ? 'Chủ Nhật' : `Thứ ${day + 1}`;
+    return `${thu}, ${date.toLocaleDateString('vi-VN')}`;
+  };
+
+  const getMonday = (inputDate) => {
+    const date = new Date(inputDate);
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(date.setDate(diff));
+  };
+
+  const formatDateKey = (date) => {
+    const d = new Date(date);
+    const month = `${d.getMonth() + 1}`.padStart(2, '0');
+    const day = `${d.getDate()}`.padStart(2, '0');
+    return `${d.getFullYear()}-${month}-${day}`;
+  };
+
+  const weekDays = Array.from({ length: 7 }).map((_, index) => {
+    const d = new Date(getMonday(studentDetailWeekDate));
+    d.setDate(d.getDate() + index);
+    return d;
+  });
+
+  const weekDayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+  const selectedClassDetail = detailModal.data?.lop_hoc?.find(
+    (lop) => Number(lop.lop_hoc_id) === Number(selectedDetailClassId)
+  ) || detailModal.data?.lop_hoc?.[0] || null;
 
   if (loading && students.length === 0) {
     return (
@@ -539,13 +617,84 @@ export default function HocSinhManagement() {
                   <div>
                     <h4 className="text-base font-bold text-gray-900 mb-3">Lớp đã đăng ký</h4>
                     {detailModal.data.lop_hoc && detailModal.data.lop_hoc.length > 0 ? (
-                      <div className="space-y-2">
-                        {detailModal.data.lop_hoc.map((lop) => (
-                          <div key={lop.lop_hoc_id} className="border border-gray-200 rounded-xl p-3 bg-white">
-                            <p className="font-semibold text-gray-900 text-sm">{lop.ten_lop || `Lớp ${lop.khoi_lop}`}</p>
-                            <p className="text-xs text-gray-600 mt-1">Gia sư: {lop.gia_su_ten || 'Chưa có'} • Trạng thái: {lop.trang_thai || 'N/A'}</p>
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap gap-2">
+                          {detailModal.data.lop_hoc.map((lop) => (
+                            <button
+                              key={lop.lop_hoc_id}
+                              type="button"
+                              onClick={() => setSelectedDetailClassId(lop.lop_hoc_id)}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition ${Number(selectedClassDetail?.lop_hoc_id) === Number(lop.lop_hoc_id)
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                              }`}
+                            >
+                              {lop.ten_lop || `Lớp ${lop.khoi_lop}`}
+                            </button>
+                          ))}
+                        </div>
+
+                        {selectedClassDetail && (
+                          <div className="border border-gray-200 rounded-xl p-3 bg-white">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
+                              <p className="text-xs text-gray-600">Gia sư: {selectedClassDetail.gia_su_ten || 'Chưa có'} • Trạng thái: {selectedClassDetail.trang_thai || 'N/A'}</p>
+                              <div className="flex items-center gap-2 bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 w-fit">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = new Date(studentDetailWeekDate);
+                                    next.setDate(next.getDate() - 7);
+                                    setStudentDetailWeekDate(next);
+                                  }}
+                                  className="p-1 rounded hover:bg-white"
+                                >
+                                  <ChevronLeft size={16} />
+                                </button>
+                                <span className="text-xs font-semibold text-gray-700">Tuần này</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = new Date(studentDetailWeekDate);
+                                    next.setDate(next.getDate() + 7);
+                                    setStudentDetailWeekDate(next);
+                                  }}
+                                  className="p-1 rounded hover:bg-white"
+                                >
+                                  <ChevronRight size={16} />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                              {weekDays.map((dayDate, idx) => {
+                                const dayKey = formatDateKey(dayDate);
+                                const schedules = (selectedClassDetail.lich_hoc || [])
+                                  .filter((item) => item.ngay_hoc === dayKey)
+                                  .sort((a, b) => (a.gio_bat_dau || '').localeCompare(b.gio_bat_dau || ''));
+
+                                return (
+                                  <div key={dayKey} className="border border-gray-200 rounded-lg p-2 bg-gray-50 min-h-[120px]">
+                                    <p className="text-xs font-bold text-gray-700">{weekDayNames[idx]}</p>
+                                    <p className="text-[11px] text-gray-500 mb-2">{dayDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}</p>
+                                    {schedules.length === 0 ? (
+                                      <p className="text-[11px] text-gray-400">Trống</p>
+                                    ) : (
+                                      <div className="space-y-1">
+                                        {schedules.map((lh) => (
+                                          <div key={lh.lich_hoc_id} className="bg-white border border-blue-100 rounded px-2 py-1">
+                                            <p className="text-[11px] text-gray-700 flex items-center gap-1">
+                                              <Clock size={10} /> {lh.gio_bat_dau?.substring(0,5)} - {lh.gio_ket_thuc?.substring(0,5)}
+                                            </p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        ))}
+                        )}
                       </div>
                     ) : (
                       <div className="border border-gray-200 rounded-xl p-3 text-sm text-gray-500">Chưa có lớp học đăng ký.</div>

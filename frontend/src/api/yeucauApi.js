@@ -27,6 +27,7 @@ async function request(endpoint, options = {}) {
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
+      signal: options.signal || undefined,
     });
 
     const data = await response.json();
@@ -37,6 +38,9 @@ async function request(endpoint, options = {}) {
 
     return data;
   } catch (error) {
+    if (error.name === 'AbortError') {
+      throw error;
+    }
     if (error.status) throw error;
     throw { status: 0, message: "Không thể kết nối đến server" };
   }
@@ -58,10 +62,11 @@ export const yeuCauAPI = {
   /**
    * Admin tạo yêu cầu (nếu cần)
    */
-  create: (data) =>
+  create: (data, options = {}) =>
     request("/yeucau/create", {
       method: "POST",
       body: JSON.stringify(data),
+      ...options,
     }),
 
   /**
@@ -91,19 +96,21 @@ export const yeuCauAPI = {
   /**
    * Admin cập nhật trạng thái yêu cầu
    */
-  updateStatus: (id, data) =>
+  updateStatus: (id, data, options = {}) =>
     request(`/yeucau/status/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
+      ...options,
     }),
 
     /**
    * Cập nhật thông tin yêu cầu
    */
-  update: (id, data) =>
+  update: (id, data, options = {}) =>
     request(`/yeucau/update/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
+      ...options,
     }),
 
   /**

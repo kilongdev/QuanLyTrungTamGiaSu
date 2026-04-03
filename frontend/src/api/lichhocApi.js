@@ -15,6 +15,7 @@ async function request(endpoint, options = {}) {
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
+      signal: options.signal || undefined, // Support AbortSignal
     });
     const data = await response.json();
     if (!response.ok) {
@@ -22,16 +23,20 @@ async function request(endpoint, options = {}) {
     }
     return data;
   } catch (error) {
+    if (error.name === 'AbortError') {
+      throw error; // Rethrow AbortError as-is
+    }
     if (error.status) throw error;
     throw { status: 0, message: "Không thể kết nối đến server" };
   }
 }
 
 export const lichHocAPI = {
-  create: (data) =>
+  create: (data, options = {}) =>
     request("/lichhoc/create", {
       method: "POST",
       body: JSON.stringify(data),
+      ...options,
     }),
 
   getByLopHoc: (lopHocId) =>
@@ -65,8 +70,9 @@ export const lichHocAPI = {
       body: JSON.stringify({ trang_thai }),
     }),
 
-  update: (id, data) =>
+  update: (id, data, options = {}) =>
     request(`/lichhoc/update/${id}`, {
+        ...options,
       method: "PUT",
       body: JSON.stringify(data),
     }),

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { yeuCauAPI } from "../api/yeucauApi";
 import {
   Plus,
@@ -10,6 +10,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getAbortSignal } from "../lib/requestUtils";
 
 export default function YeuCauManagement({ user }) {
   const [yeuCaus, setYeuCaus] = useState([]);
@@ -19,6 +20,7 @@ export default function YeuCauManagement({ user }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+  const submitRef = useRef({ isSubmitting: false });
 
   const [confirmModal, setConfirmModal] = useState({
     show: false,
@@ -75,6 +77,9 @@ export default function YeuCauManagement({ user }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitRef.current.isSubmitting) return;
+    submitRef.current.isSubmitting = true;
+    const signal = getAbortSignal(`yeu-cau-submit-${editingId || 'new'}`);
 
     try {
       if (editingId) {
@@ -83,22 +88,23 @@ export default function YeuCauManagement({ user }) {
             trang_thai: formData.trang_thai,
             nguoi_xu_ly_id: user?.id || "1",
             ghi_chu_xu_ly: formData.ghi_chu_xu_ly,
-          });
+          }, { signal });
           toast.success("Cập nhật trạng thái yêu cầu thành công!");
         } else {
           await yeuCauAPI.update(editingId, {
             phan_loai: formData.phan_loai,
             tieu_de: formData.tieu_de,
             noi_dung: formData.noi_dung,
-          });
+          }, { signal });
           toast.success("Chỉnh sửa nội dung yêu cầu thành công!");
         }
       } else {
         if (!formData.tieu_de || !formData.noi_dung) {
           toast.warning("Vui lòng nhập đủ tiêu đề và nội dung");
+          submitRef.current.isSubmitting = false;
           return;
         }
-        await yeuCauAPI.create(formData);
+        await yeuCauAPI.create(formData, { signal });
         toast.success("Gửi yêu cầu thành công!");
       }
 
@@ -106,8 +112,14 @@ export default function YeuCauManagement({ user }) {
       resetForm();
       fetchYeuCaus();
     } catch (error) {
+      if (error.name === 'AbortError') {
+        submitRef.current.isSubmitting = false;
+        return;
+      }
       console.error("Lỗi khi lưu yêu cầu:", error);
       toast.error(error.message || "Có lỗi xảy ra khi lưu yêu cầu");
+    } finally {
+      submitRef.current.isSubmitting = false;
     }
   };
 

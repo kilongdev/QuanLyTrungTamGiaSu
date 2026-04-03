@@ -48,20 +48,22 @@ export const luongGiaSuAPI = {
     return parseJsonResponse(response);
   },
 
-  create: async (data) => {
+  create: async (data, options = {}) => {
     const response = await fetch(`${API_BASE}/luonggiasu/create`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      signal: options.signal || undefined,
     });
     return parseJsonResponse(response);
   },
 
-  update: async (luongId, data) => {
+  update: async (luongId, data, options = {}) => {
     const response = await fetch(`${API_BASE}/luonggiasu/update/${luongId}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      signal: options.signal || undefined,
     });
     return parseJsonResponse(response);
   },

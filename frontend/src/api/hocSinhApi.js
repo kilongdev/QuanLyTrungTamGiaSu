@@ -24,6 +24,7 @@ async function request(endpoint, options = {}) {
         const response = await fetch(`${API_URL}${endpoint}`, {
             ...options,
             headers,
+            signal: options.signal || undefined,
         });
         
         const data = await response.json();
@@ -34,6 +35,9 @@ async function request(endpoint, options = {}) {
         
         return data;
     } catch (error) {
+        if (error.name === 'AbortError') {
+            throw error;
+        }
         if (error.status) throw error;
         throw { status: 0, message: 'Không thể kết nối đến server' };
     }
@@ -75,10 +79,11 @@ export const hocSinhAPI = {
      * Tạo học sinh mới
      * @param {Object} data - Dữ liệu học sinh
      */
-    create: (data) => 
+    create: (data, options = {}) => 
         request('/hocsinh/create', {
             method: 'POST',
             body: JSON.stringify(data),
+            ...options,
         }),
 
     /**
@@ -86,10 +91,11 @@ export const hocSinhAPI = {
      * @param {number|string} id - ID học sinh
      * @param {Object} data - Dữ liệu cần cập nhật
      */
-    update: (id, data) => 
+    update: (id, data, options = {}) => 
         request(`/hocsinh/update/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data),
+            ...options,
         }),
 
     /**

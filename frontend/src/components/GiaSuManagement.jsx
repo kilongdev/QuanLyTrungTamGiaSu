@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Edit2, Eye, Search, Plus, X, Lock, Unlock, AlertTriangle } from 'lucide-react'
+import { Edit2, Eye, Search, Plus, X, Lock, Unlock, AlertTriangle, ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import { giaSuAPI } from '@/api/giaSuApi'
+import { lichHocAPI } from '@/api/lichhocApi'
 import { validateTutorForm } from '@/lib/validators'
 import DataPagination from '@/components/ui/DataPagination'
 import { toast } from 'sonner'
@@ -15,6 +16,7 @@ export default function GiaSuManagement() {
   const [pageSize, setPageSize] = useState(10)
   const [search, setSearch] = useState('')
   const [detailModal, setDetailModal] = useState({ open: false, data: null, loading: false })
+  const [tutorDetailWeekDate, setTutorDetailWeekDate] = useState(new Date())
   // State cho modal chỉnh sửa
   const [editModal, setEditModal] = useState({ open: false, data: null })
   const [editFormData, setEditFormData] = useState({ 
@@ -72,13 +74,18 @@ export default function GiaSuManagement() {
       setDetailModal(prev => ({ ...prev, loading: true }))
 
       const data = await giaSuAPI.getById(tutorId)
+      const lichHocRes = await lichHocAPI.getByGiaSu(tutorId)
 
       if (data.status === 'success') {
         setDetailModal({
           open: true,
-          data: data.data,
+          data: {
+            ...data.data,
+            lich_day: Array.isArray(lichHocRes?.data) ? lichHocRes.data : [],
+          },
           loading: false
         })
+        setTutorDetailWeekDate(new Date())
       } else {
         setError('Lỗi khi tải chi tiết gia sư')
       }
@@ -257,6 +264,36 @@ export default function GiaSuManagement() {
     if (path.startsWith('http://') || path.startsWith('https://')) return path
     return `${API_URL}${path.startsWith('/') ? path : `/${path}`}`
   }
+
+  const formatThuDate = (dateString) => {
+    if (!dateString) return 'Chưa có'
+    const date = new Date(dateString)
+    const day = date.getDay()
+    const thu = day === 0 ? 'Chủ Nhật' : `Thứ ${day + 1}`
+    return `${thu}, ${date.toLocaleDateString('vi-VN')}`
+  }
+
+  const getMonday = (inputDate) => {
+    const date = new Date(inputDate)
+    const day = date.getDay()
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1)
+    return new Date(date.setDate(diff))
+  }
+
+  const formatDateKey = (date) => {
+    const d = new Date(date)
+    const month = `${d.getMonth() + 1}`.padStart(2, '0')
+    const day = `${d.getDate()}`.padStart(2, '0')
+    return `${d.getFullYear()}-${month}-${day}`
+  }
+
+  const tutorWeekDays = Array.from({ length: 7 }).map((_, index) => {
+    const d = new Date(getMonday(tutorDetailWeekDate))
+    d.setDate(d.getDate() + index)
+    return d
+  })
+
+  const weekDayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
 
   if (loading) {
     return (
@@ -491,6 +528,69 @@ export default function GiaSuManagement() {
                       </div>
                     ) : (
                       <p className="text-sm text-gray-500">Chưa có chứng chỉ</p>
+                    )}
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <p className="text-gray-700 text-sm font-semibold mb-3">Lịch dạy</p>
+                    {Array.isArray(detailModal.data.lich_day) && detailModal.data.lich_day.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 px-2 py-1 w-fit">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = new Date(tutorDetailWeekDate)
+                              next.setDate(next.getDate() - 7)
+                              setTutorDetailWeekDate(next)
+                            }}
+                            className="p-1 rounded hover:bg-gray-100"
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+                          <span className="text-xs font-semibold text-gray-700">Tuần này</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = new Date(tutorDetailWeekDate)
+                              next.setDate(next.getDate() + 7)
+                              setTutorDetailWeekDate(next)
+                            }}
+                            className="p-1 rounded hover:bg-gray-100"
+                          >
+                            <ChevronRight size={16} />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                          {tutorWeekDays.map((dayDate, idx) => {
+                            const dayKey = formatDateKey(dayDate)
+                            const schedules = (detailModal.data.lich_day || [])
+                              .filter((item) => item.ngay_hoc === dayKey)
+                              .sort((a, b) => (a.gio_bat_dau || '').localeCompare(b.gio_bat_dau || ''))
+
+                            return (
+                              <div key={dayKey} className="border border-gray-200 rounded-lg p-2 bg-white min-h-[120px]">
+                                <p className="text-xs font-bold text-gray-700">{weekDayNames[idx]}</p>
+                                <p className="text-[11px] text-gray-500 mb-2">{dayDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}</p>
+                                {schedules.length === 0 ? (
+                                  <p className="text-[11px] text-gray-400">Trống</p>
+                                ) : (
+                                  <div className="space-y-1">
+                                    {schedules.map((lh) => (
+                                      <div key={lh.lich_hoc_id} className="bg-gray-50 border border-gray-200 rounded px-2 py-1">
+                                        <p className="text-[11px] font-medium text-gray-800 truncate">{lh.ten_lop || `Lớp #${lh.lop_hoc_id}`}</p>
+                                        <p className="text-[11px] text-gray-600 flex items-center gap-1"><Clock size={10} />{lh.gio_bat_dau?.substring(0,5)} - {lh.gio_ket_thuc?.substring(0,5)}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">Chưa có lịch dạy.</p>
                     )}
                   </div>
                 </div>

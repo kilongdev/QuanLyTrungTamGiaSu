@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { lopHocAPI } from '../api/lophocApi'
 import { monHocAPI } from '../api/monhocApi'
@@ -10,6 +10,7 @@ import { Plus, Settings, X, Search, Trash2, Edit2, BookOpen, Layers3, Users, Clo
 import { validateClassForm } from '@/lib/validators'
 import { normalizeNumberInputValue } from '@/lib/numberUtils'
 import { toast } from 'sonner'
+import { getAbortSignal } from '@/lib/requestUtils'
 
 export default function LopHocManagement() {
   const navigate = useNavigate()
@@ -31,6 +32,7 @@ export default function LopHocManagement() {
   const [attendanceForToday, setAttendanceForToday] = useState({})
   const [showAttendanceHistory, setShowAttendanceHistory] = useState(false)
   const [savingAttendance, setSavingAttendance] = useState(false)
+  const submitRef = useRef({ isSubmitting: false })
   
   const [createWithSchedule, setCreateWithSchedule] = useState(true)
   const [scheduleForm, setScheduleForm] = useState({
@@ -204,17 +206,26 @@ export default function LopHocManagement() {
     }
 
     try {
-      setSavingAttendance(true)
-      await diemDanhAPI.saveAttendanceForToday(editingId, danh_sach)
+        // Ngăn double-submit
+        if (submitRef.current.isSubmitting) {
+          return
+        }
+        submitRef.current.isSubmitting = true
+        const signal = getAbortSignal(`attendance-${editingId}`)
+        setSavingAttendance(true)
+        await diemDanhAPI.saveAttendanceForToday(editingId, danh_sach, { signal })
       toast.success('Đã lưu điểm danh cho hôm nay!')
       fetchAttendanceByClass(editingId)
       setAttendanceForToday({})
       setShowAttendanceHistory(true)
-    } catch (error) {
+      } catch (error) {
+        if (error.name !== 'AbortError') {
       console.error('Lỗi khi lưu điểm danh:', error)
       toast.error(error.message || 'Không thể lưu điểm danh')
+        }
     } finally {
       setSavingAttendance(false)
+        submitRef.current.isSubmitting = false
     }
   }
 
@@ -239,7 +250,9 @@ export default function LopHocManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
+    if (submitRef.current.isSubmitting) return
+
     if (!formData.mon_hoc_id) {
       toast.warning('Vui lòng chọn môn học')
       return
@@ -251,7 +264,6 @@ export default function LopHocManagement() {
       payload.ten_lop = autoName
       setFormData((prev) => ({ ...prev, ten_lop: autoName }))
     }
-
     if (!editingId && createWithSchedule) {
       if (!scheduleForm.ngay_bat_dau || scheduleForm.ngay_trong_tuan.length === 0) {
         toast.warning('Vui lòng chọn ngày bắt đầu và ít nhất 1 ngày học trong tuần')
@@ -278,11 +290,14 @@ export default function LopHocManagement() {
     }
 
     try {
+      submitRef.current.isSubmitting = true
+      const signal = getAbortSignal(`lop-hoc-${editingId || 'new'}`)
+
       if (editingId) {
-        await lopHocAPI.update(editingId, payload)
+        await lopHocAPI.update(editingId, payload, { signal })
         toast.success('Cập nhật lớp học thành công!')
       } else {
-        const createResult = await lopHocAPI.create(payload)
+        const createResult = await lopHocAPI.create(payload, { signal })
         const createdClassId = createResult?.data?.lop_hoc_id
 
         if (createWithSchedule) {
@@ -302,7 +317,7 @@ export default function LopHocManagement() {
             ngay_bat_dau: scheduleForm.ngay_bat_dau,
             ngay_trong_tuan: scheduleForm.ngay_trong_tuan,
             thoi_gian_tung_ngay: thoiGianTungNgay
-          })
+          }, { signal })
         }
         toast.success('Thêm lớp học thành công!')
       }
@@ -311,8 +326,12 @@ export default function LopHocManagement() {
       resetForm()
       fetchLopHocs()
     } catch (error) {
-      console.error('Lỗi khi lưu lớp học:', error)
-      toast.error(error.message || 'Có lỗi xảy ra khi lưu lớp học')
+      if (error.name !== 'AbortError') {
+        console.error('Lỗi khi lưu lớp học:', error)
+        toast.error(error.message || 'Có lỗi xảy ra khi lưu lớp học')
+      }
+    } finally {
+      submitRef.current.isSubmitting = false
     }
   }
 

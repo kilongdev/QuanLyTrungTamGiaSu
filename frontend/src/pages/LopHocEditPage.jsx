@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Save, Search, Trash2, Users } from 'lucide-react'
 import { toast } from 'sonner'
@@ -10,6 +10,7 @@ import { giaSuAPI } from '../api/giaSuApi'
 import { hocSinhAPI } from '../api/hocSinhApi'
 import { validateClassForm } from '@/lib/validators'
 import { normalizeNumberInputValue } from '@/lib/numberUtils'
+import { getAbortSignal } from '@/lib/requestUtils'
 
 const WEEKDAY_OPTIONS = [
   { value: 2, label: 'Thứ 2' },
@@ -44,6 +45,7 @@ export default function LopHocEditPage({ classId }) {
   const [savingStudent, setSavingStudent] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [addStudentSearchTerm, setAddStudentSearchTerm] = useState('')
+  const submitRef = useRef({ isSubmitting: false, abortController: null })
 
   const [monHocs, setMonHocs] = useState([])
   const [giaSus, setGiaSus] = useState([])
@@ -218,6 +220,12 @@ export default function LopHocEditPage({ classId }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
+    // Ngăn chặn double submit
+    if (submitRef.current.isSubmitting) {
+      console.warn('Submission already in progress')
+      return
+    }
+
     if (!formData.mon_hoc_id) {
       toast.warning('Vui lòng chọn môn học')
       return
@@ -258,10 +266,13 @@ export default function LopHocEditPage({ classId }) {
     }
 
     try {
+      // Đánh dấu đang submit và lấy abort signal
+      submitRef.current.isSubmitting = true
       setSaving(true)
+      const signal = getAbortSignal(`lop-edit-${id}`)
       
       // GỌI API CẬP NHẬT LỚP HỌC (Nếu kẹt lịch, Backend sẽ văng lỗi đỏ ngay lập tức)
-      await lopHocAPI.update(id, payload)
+      await lopHocAPI.update(id, payload, { signal })
 
       if (shouldSaveRecurringSchedule) {
         const thoiGianTungNgay = scheduleForm.ngay_trong_tuan.reduce((acc, thu) => {
@@ -279,7 +290,7 @@ export default function LopHocEditPage({ classId }) {
           ngay_ket_thuc: formData.ngay_ket_thuc || null,
           ngay_trong_tuan: scheduleForm.ngay_trong_tuan,
           thoi_gian_tung_ngay: thoiGianTungNgay
-        })
+        }, { signal })
       }
 
       toast.success(shouldSaveRecurringSchedule ? 'Đã cập nhật lớp học và lịch học mới' : 'Cập nhật lớp học thành công')
@@ -290,9 +301,12 @@ export default function LopHocEditPage({ classId }) {
       }, 1000)
       
     } catch (error) {
-      console.error('Lỗi khi cập nhật lớp học:', error)
-      toast.error(error.message || 'Không thể cập nhật lớp học. Vui lòng kiểm tra lại lịch!')
+      if (error.name !== 'AbortError') {
+        console.error('Lỗi khi cập nhật lớp học:', error)
+        toast.error(error.message || 'Không thể cập nhật lớp học. Vui lòng kiểm tra lại lịch!')
+      }
     } finally {
+      submitRef.current.isSubmitting = false
       setSaving(false)
     }
   }
