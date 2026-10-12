@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import {
   BrowserRouter,
   Route,
@@ -14,14 +14,22 @@ import FeesPage from "./pages/FeesPage";
 import ContactPage from "./pages/ContactPage";
 import AvailableClassPage from "./pages/AvailableClassPage";
 import RegisterforATrialClass from "./pages/RegisterforATrialClass";
-import AdminDashboard from "./pages/AdminDashboard";
 import AdminLoginPage from "./pages/AdminLoginPage";
-import GiaSuDashboard from "./pages/GiaSuDashboard";
-import PhuHuynhDashboard from "./pages/PhuHuynhDashboard";
 import AuthModal from "./components/AuthModal";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import PhuHuynhPage from "./pages/PhuHuynhPage";
 import ScrollToTop from "./components/ScrollToTop";
+
+// Tách 3 dashboard thành các chunk riêng, chỉ tải khi người dùng đăng nhập vào dashboard.
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const GiaSuDashboard = lazy(() => import("./pages/GiaSuDashboard"));
+const PhuHuynhDashboard = lazy(() => import("./pages/PhuHuynhDashboard"));
+
+const PageSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+);
 
 // Component chính được wrap trong BrowserRouter
 function AppContent() {
@@ -59,11 +67,6 @@ function AppContent() {
   }, []);
 
   const handleAuthSuccess = (data) => {
-    console.log("=== LOGIN SUCCESS ===");
-    console.log("Response data:", data);
-    console.log("User:", data.user);
-    console.log("Token:", data.token);
-
     setUser(data.user);
     sessionStorage.setItem(AUTH_SESSION_KEY, "1");
     setShowAuthModal(false);
@@ -84,6 +87,24 @@ function AppContent() {
     setShowAuthModal(false);
     navigate("/");
   };
+
+  // Khi bất kỳ API nào trả 401 (token hết hạn): xóa phiên, về trang chủ và mở form đăng nhập.
+  // Dùng ref để luôn gọi bản handler mới nhất mà không phải đăng ký lại sự kiện.
+  const expiredRef = useRef(null);
+  useEffect(() => {
+    expiredRef.current = () => {
+      if (!localStorage.getItem("token")) return; // đã đăng xuất rồi
+      handleLogout();
+      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại");
+      setAuthTab("login");
+      setShowAuthModal(true);
+    };
+  });
+  useEffect(() => {
+    const onExpired = () => expiredRef.current && expiredRef.current();
+    window.addEventListener("auth:expired", onExpired);
+    return () => window.removeEventListener("auth:expired", onExpired);
+  }, []);
 
   const openLogin = () => {
     setAuthTab("login");
@@ -153,7 +174,14 @@ function AppContent() {
         />
 
         {/* Dashboard route - không dùng Layout */}
-        <Route path="/dashboard/*" element={<DashboardRoute />} />
+        <Route
+          path="/dashboard/*"
+          element={
+            <Suspense fallback={<PageSpinner />}>
+              <DashboardRoute />
+            </Suspense>
+          }
+        />
       </Routes>
 
       {/* Auth Modal */}
