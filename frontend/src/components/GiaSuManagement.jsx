@@ -59,6 +59,13 @@ export default function GiaSuManagement() {
     onConfirm: null
   })
 
+  const normalizePagination = (raw = {}) => ({
+    page: Number(raw.page ?? 1),
+    limit: Number(raw.limit ?? 10),
+    total: Number(raw.total ?? 0),
+    totalPages: Number(raw.totalPages ?? raw.total_pages ?? 1),
+  })
+
   // Gọi API lấy danh sách gia sư
   const fetchTutors = async (page = 1, searchTerm = '', limit = pageSize) => {
     try {
@@ -67,7 +74,7 @@ export default function GiaSuManagement() {
 
       if (data.status === 'success') {
         setTutors(data.data)
-        setPagination(data.pagination)
+        setPagination(normalizePagination(data.pagination))
         setError(null)
       } else {
         setError('Lỗi khi tải dữ liệu')
@@ -143,7 +150,25 @@ export default function GiaSuManagement() {
 
   // Xử lý click nút sửa
   const handleEdit = async (tutor) => {
-    navigate(`/dashboard/giasu/${tutor.gia_su_id}/edit`)
+    let source = tutor
+    try {
+      const detail = await giaSuAPI.getById(tutor.gia_su_id)
+      if (detail.status === 'success' && detail.data) {
+        source = detail.data
+      }
+    } catch {
+      // Keep row data as fallback.
+    }
+
+    setEditFormData({
+      ho_ten: source.ho_ten || '',
+      email: source.email || '',
+      so_dien_thoai: source.so_dien_thoai || '',
+      bang_cap: source.bang_cap || '',
+      kinh_nghiem: source.kinh_nghiem || '',
+      trang_thai: source.trang_thai || 'cho_duyet'
+    })
+    setEditModal({ open: true, data: source })
   }
 
   // Xử lý submit form cập nhật

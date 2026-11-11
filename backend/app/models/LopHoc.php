@@ -106,8 +106,16 @@ class LopHoc {
                        FROM lich_dinh_ky ldk WHERE ldk.lop_hoc_id = lh.lop_hoc_id AND ldk.trang_thai = 'hoat_dong') AS lich_hoc_du_kien,
                        (SELECT MIN(ngay_bat_dau) FROM lich_dinh_ky ldk WHERE ldk.lop_hoc_id = lh.lop_hoc_id AND ldk.trang_thai = 'hoat_dong') AS ngay_bat_dau
                 FROM lop_hoc lh 
-                LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id 
-                LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id ";
+                LEFT JOIN (
+                    SELECT gia_su_id, MAX(ho_ten) AS ho_ten, MAX(bang_cap) AS bang_cap
+                    FROM gia_su
+                    GROUP BY gia_su_id
+                ) gs ON lh.gia_su_id = gs.gia_su_id
+                LEFT JOIN (
+                    SELECT mon_hoc_id, MAX(ten_mon_hoc) AS ten_mon_hoc
+                    FROM mon_hoc
+                    GROUP BY mon_hoc_id
+                ) mh ON lh.mon_hoc_id = mh.mon_hoc_id ";
         if ($excludeDong) {
             $sql .= "WHERE lh.trang_thai <> 'dong' ";
         }
@@ -164,8 +172,16 @@ class LopHoc {
                        ) ORDER BY ldk.thu_trong_tuan ASC SEPARATOR ', ') 
                        FROM lich_dinh_ky ldk WHERE ldk.lop_hoc_id = lh.lop_hoc_id AND ldk.trang_thai = 'hoat_dong') AS lich_hoc_du_kien
                 FROM lop_hoc lh 
-                LEFT JOIN gia_su gs ON lh.gia_su_id = gs.gia_su_id 
-                LEFT JOIN mon_hoc mh ON lh.mon_hoc_id = mh.mon_hoc_id 
+                LEFT JOIN (
+                    SELECT gia_su_id, MAX(ho_ten) AS ho_ten, MAX(bang_cap) AS bang_cap
+                    FROM gia_su
+                    GROUP BY gia_su_id
+                ) gs ON lh.gia_su_id = gs.gia_su_id 
+                LEFT JOIN (
+                    SELECT mon_hoc_id, MAX(ten_mon_hoc) AS ten_mon_hoc
+                    FROM mon_hoc
+                    GROUP BY mon_hoc_id
+                ) mh ON lh.mon_hoc_id = mh.mon_hoc_id 
                 WHERE lh.lop_hoc_id = :id";
         $result = Database::query($sql, [':id' => $id]);
         return $result ? $result[0] : null;

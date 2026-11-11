@@ -163,8 +163,9 @@ class GiaSu
     public static function update(string $id, array $data): bool
     {
         $allowedFields = [
-            'ho_ten', 'so_dien_thoai', 'dia_chi', 'bang_cap', 'kinh_nghiem', 
-            'gioi_thieu', 'trang_thai', 'ngay_sinh', 'gioi_tinh', 'anh_dai_dien', 'so_tai_khoan_ngan_hang', 'chung_chi'
+            'ho_ten', 'email', 'so_dien_thoai', 'dia_chi', 'bang_cap', 'kinh_nghiem',
+            'gioi_thieu', 'trang_thai', 'ngay_sinh', 'gioi_tinh', 'anh_dai_dien',
+            'so_tai_khoan_ngan_hang', 'chung_chi'
         ];
         $fields = [];
         $params = [];

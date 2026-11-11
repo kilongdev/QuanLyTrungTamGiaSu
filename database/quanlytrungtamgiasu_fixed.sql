@@ -483,7 +483,7 @@ CREATE TABLE `lop_hoc` (
   `loai_chi_tra` enum('phan_tram','tien_cu_the') DEFAULT 'phan_tram',
   `gia_tri_chi_tra` decimal(10,2) DEFAULT NULL,
   `chu_ky_thanh_toan` varchar(20) DEFAULT 'theo_thang',
-  `trang_thai` enum('sap_mo','dang_hoc','ket_thuc','dong') DEFAULT 'sap_mo',
+  `trang_thai` enum('sap_mo','cho_gia_su_xac_nhan','gia_su_tu_choi','dang_hoc','ket_thuc','dong') DEFAULT 'sap_mo',
   `ngay_tao` datetime DEFAULT current_timestamp(),
   `ngay_bat_dau` date DEFAULT NULL,
   `ngay_ket_thuc` date DEFAULT NULL

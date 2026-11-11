@@ -31,6 +31,19 @@ export default function HocSinhManagement() {
   const [selectedDetailClassId, setSelectedDetailClassId] = useState(null);
   const [studentDetailWeekDate, setStudentDetailWeekDate] = useState(new Date());
 
+  const normalizePagination = (raw = {}) => ({
+    page: Number(raw.page ?? 1),
+    limit: Number(raw.limit ?? 10),
+    total: Number(raw.total ?? 0),
+    totalPages: Number(raw.totalPages ?? raw.total_pages ?? 1),
+  });
+
+  const toDateInputValue = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value.split('T')[0].split(' ')[0];
+    return '';
+  };
+
   // Gọi API lấy danh sách học sinh
   const fetchStudents = async (page = 1, searchTerm = '', limit = pageSize) => {
     try {
@@ -39,7 +52,7 @@ export default function HocSinhManagement() {
       
       if (response.status === 'success') {
         setStudents(response.data);
-        setPagination(response.pagination);
+        setPagination(normalizePagination(response.pagination));
         setError(null);
       } else {
         setError(response.message || 'Lỗi khi tải dữ liệu học sinh');
@@ -146,14 +159,25 @@ export default function HocSinhManagement() {
   };
 
   // Mở modal để sửa
-  const handleEdit = (student) => {
+  const handleEdit = async (student) => {
     setModalMode('edit');
     setCurrentStudent(student);
+
+    let source = student;
+    try {
+      const response = await hocSinhAPI.getById(student.hoc_sinh_id);
+      if (response.status === 'success' && response.data) {
+        source = response.data;
+      }
+    } catch {
+      // Fallback to row data when detail API fails.
+    }
+
     setFormData({
-      ho_ten: student.ho_ten || '',
-      ngay_sinh: student.ngay_sinh ? student.ngay_sinh.split(' ')[0] : '', // Format YYYY-MM-DD
-      khoi_lop: student.khoi_lop || '',
-      phu_huynh_id: student.phu_huynh_id || ''
+      ho_ten: source.ho_ten || '',
+      ngay_sinh: toDateInputValue(source.ngay_sinh),
+      khoi_lop: source.khoi_lop || '',
+      phu_huynh_id: source.phu_huynh_id || ''
     });
     setIsModalOpen(true);
   };

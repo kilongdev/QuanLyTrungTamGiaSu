@@ -85,7 +85,7 @@ class HocSinh
 
     public static function update(string $id, array $data): bool
     {
-        $allowedFields = ['ho_ten', 'ngay_sinh', 'khoi_lop'];
+        $allowedFields = ['ho_ten', 'ngay_sinh', 'khoi_lop', 'phu_huynh_id'];
         $fields = [];
         $params = [];
 

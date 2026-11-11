@@ -108,9 +108,20 @@ class PhuHuynhController
                 return;
             }
 
+            $savedParent = PhuHuynh::findById($id);
+            if (!$savedParent) {
+                http_response_code(404);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Không tìm thấy phụ huynh sau khi cập nhật'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
             echo json_encode([
                 'status' => 'success',
-                'message' => 'Cập nhật thành công'
+                'message' => 'Cập nhật thành công',
+                'data' => $savedParent
             ], JSON_UNESCAPED_UNICODE);
 
         } catch (Exception $e) {

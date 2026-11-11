@@ -34,6 +34,13 @@ export default function PhuHuynhManagement() {
     onConfirm: null
   })
 
+  const normalizePagination = (raw = {}) => ({
+    page: Number(raw.page ?? 1),
+    limit: Number(raw.limit ?? 10),
+    total: Number(raw.total ?? 0),
+    totalPages: Number(raw.totalPages ?? raw.total_pages ?? 1),
+  })
+
   // Lấy số học sinh thực tế của phụ huynh
   const fetchStudentCount = async (parentId) => {
     try {
@@ -58,7 +65,7 @@ export default function PhuHuynhManagement() {
 
       if (data.status === 'success') {
         setParents(data.data)
-        setPagination(data.pagination)
+        setPagination(normalizePagination(data.pagination))
         setError(null)
 
         // Gọi API để lấy số học sinh thực tế cho mỗi phụ huynh
@@ -177,17 +184,27 @@ export default function PhuHuynhManagement() {
   }
 
   // Xử lý click nút sửa
-  const handleEdit = (parent) => {
+  const handleEdit = async (parent) => {
+    let source = parent
+    try {
+      const detail = await phuHuynhAPI.getById(parent.phu_huynh_id)
+      if (detail.status === 'success' && detail.data) {
+        source = detail.data
+      }
+    } catch {
+      // Keep row data as fallback.
+    }
+
     setEditFormData({
-      ho_ten: parent.ho_ten,
-      email: parent.email,
-      so_dien_thoai: parent.so_dien_thoai || '',
-      dia_chi: parent.dia_chi || '',
+      ho_ten: source.ho_ten || '',
+      email: source.email || '',
+      so_dien_thoai: source.so_dien_thoai || '',
+      dia_chi: source.dia_chi || '',
       mat_khau: '',
-      trang_thai: parent.trang_thai || 'da_duyet'
+      trang_thai: source.trang_thai || 'da_duyet'
     })
     setShowEditPassword(false)
-    setEditModal({ open: true, data: parent })
+    setEditModal({ open: true, data: source })
   }
 
   const handleToggleParentLock = async (parent) => {
@@ -251,6 +268,11 @@ export default function PhuHuynhManagement() {
       const result = await phuHuynhAPI.update(editModal.data.phu_huynh_id, payload)
       if (result.status === 'success') {
         toast.success('Cập nhật thành công!')
+        if (result.data) {
+          setParents((currentParents) => currentParents.map((parent) =>
+            parent.phu_huynh_id === result.data.phu_huynh_id ? { ...parent, ...result.data } : parent
+          ))
+        }
         setEditModal({ open: false, data: null })
         fetchParents(pagination.page, search) // Tải lại danh sách
       } else { throw new Error(result.message || 'Cập nhật thất bại') }
@@ -525,7 +547,10 @@ export default function PhuHuynhManagement() {
                   >
                     Đóng
                   </button>
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">
+                  <button
+                    onClick={() => { closeModal(); handleEdit(detailModal.data) }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                  >
                     Chỉnh sửa
                   </button>
                 </div>
