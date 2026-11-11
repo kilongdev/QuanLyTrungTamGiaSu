@@ -1,8 +1,4 @@
 <?php
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
-use PHPMailer\PHPMailer\Exception;
-
 require_once __DIR__ . '/../core/Env.php';
 
 class EmailService
@@ -10,12 +6,9 @@ class EmailService
     private static function getConfig()
     {
         return [
-            'host' => Env::get('SMTP_HOST', 'smtp.gmail.com'),
-            'port' => Env::get('SMTP_PORT', 587),
-            'username' => Env::get('SMTP_USERNAME', ''),
-            'password' => Env::get('SMTP_PASSWORD', ''),
-            'fromEmail' => Env::get('SMTP_FROM_EMAIL', 'no-reply@example.com'),
-            'fromName' => Env::get('SMTP_FROM_NAME', 'Trung Tâm Gia Sư'),
+            'apiKey' => trim((string)Env::get('BREVO_API_KEY', '')),
+            'fromEmail' => trim((string)Env::get('BREVO_FROM_EMAIL', '')),
+            'fromName' => Env::get('BREVO_FROM_NAME', 'Trung Tâm Gia Sư'),
         ];
     }
 
@@ -29,46 +22,69 @@ class EmailService
 
     public static function send(string $to, string $subject, string $body): bool
     {
-        $autoloadPath = __DIR__ . '/../../vendor/autoload.php';
-        if (!file_exists($autoloadPath)) {
-            error_log("PHPMailer chưa được cài đặt. Chạy: composer require phpmailer/phpmailer");
-            return false;
-        }
-        
-        require_once $autoloadPath;
-
         $config = self::getConfig();
-        $mail = new PHPMailer(true);
-
-        try {
-            $mail->isSMTP();
-            $mail->Host = $config['host'];
-            $mail->SMTPAuth = true;
-            $mail->Username = $config['username'];
-            $mail->Password = $config['password'];
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = $config['port'];
-            $mail->CharSet = 'UTF-8';
-
-            // Enable debug in development mode
-            if (Env::isDevelopment()) {
-                $mail->SMTPDebug = SMTP::DEBUG_OFF; // Change to DEBUG_SERVER for verbose logs
-            }
-
-            $mail->setFrom($config['fromEmail'], $config['fromName']);
-            $mail->addAddress($to);
-
-            $mail->isHTML(true);
-            $mail->Subject = $subject;
-            $mail->Body = $body;
-
-            $mail->send();
-            return true;
-
-        } catch (Exception $e) {
-            error_log("Lỗi gửi email: " . $mail->ErrorInfo);
+        if ($config['apiKey'] === '' || $config['fromEmail'] === '') {
+            error_log('Brevo email configuration is missing BREVO_API_KEY or BREVO_FROM_EMAIL');
             return false;
         }
+
+        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            error_log('Brevo rejected invalid recipient email address');
+            return false;
+        }
+
+        $payload = json_encode([
+            'sender' => [
+                'name' => $config['fromName'],
+                'email' => $config['fromEmail'],
+            ],
+            'to' => [
+                ['email' => $to],
+            ],
+            'subject' => $subject,
+            'htmlContent' => $body,
+        ], JSON_UNESCAPED_UNICODE);
+
+        if ($payload === false) {
+            error_log('Unable to encode Brevo email payload');
+            return false;
+        }
+
+        $curl = curl_init('https://api.brevo.com/v3/smtp/email');
+        if ($curl === false) {
+            error_log('Unable to initialize cURL for Brevo');
+            return false;
+        }
+
+        curl_setopt_array($curl, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_HTTPHEADER => [
+                'accept: application/json',
+                'api-key: ' . $config['apiKey'],
+                'content-type: application/json',
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 20,
+        ]);
+
+        $response = curl_exec($curl);
+        $curlError = curl_error($curl);
+        $httpCode = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+
+        if ($response === false) {
+            error_log('Brevo request failed: ' . $curlError);
+            return false;
+        }
+
+        if ($httpCode < 200 || $httpCode >= 300) {
+            error_log('Brevo API rejected email with HTTP ' . $httpCode . ': ' . $response);
+            return false;
+        }
+
+        return true;
     }
 
     private static function getSubject(string $type): string
