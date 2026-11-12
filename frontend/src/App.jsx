@@ -32,6 +32,28 @@ function AppContent() {
   const [authTab, setAuthTab] = useState("login");
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const updateBodyScrollLock = () => {
+      const hasOverlay = document.querySelector(".fixed.inset-0") !== null;
+      document.body.style.overflow = hasOverlay ? "hidden" : previousOverflow;
+    };
+
+    updateBodyScrollLock();
+    const observer = new MutationObserver(updateBodyScrollLock);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => {
+      observer.disconnect();
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   // Khôi phục phiên đăng nhập đã lưu để F5 không bị đăng xuất.
   useEffect(() => {
     const token = localStorage.getItem("token");

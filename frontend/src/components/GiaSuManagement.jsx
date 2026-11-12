@@ -810,9 +810,9 @@ export default function GiaSuManagement() {
 
       {/* Edit Modal */}
       {editModal.open && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-gray-200 overflow-hidden">
-            <div className="p-5 flex justify-between items-center border-b bg-white">
+        <div className="modal-scrollbar fixed inset-0 bg-black/50 z-[100] flex items-center justify-center overflow-auto p-2 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] flex flex-col border border-gray-200 overflow-hidden">
+            <div className="p-4 sm:p-5 flex-shrink-0 flex justify-between items-center border-b bg-white">
               <h3 className="text-2xl font-bold text-gray-900">Chỉnh sửa thông tin gia sư</h3>
               <button onClick={() => setEditModal({ open: false, data: null, loading: false })} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition">
                 <X size={24} />
@@ -823,8 +823,8 @@ export default function GiaSuManagement() {
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-700"></div>
               </div>
             ) : (
-            <form onSubmit={handleUpdateSubmit}>
-              <div className="p-6 space-y-4">
+            <form onSubmit={handleUpdateSubmit} className="flex min-h-0 flex-1 flex-col">
+              <div className="modal-scrollbar min-h-0 flex-1 p-4 sm:p-6 space-y-4 overflow-auto overscroll-contain">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
                   <input
@@ -944,7 +944,7 @@ export default function GiaSuManagement() {
                   </select>
                 </div>
               </div>
-              <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
+              <div className="bg-gray-50 px-4 sm:px-6 py-4 flex-shrink-0 flex justify-end gap-3 border-t">
                 <button
                   type="button"
                   onClick={() => setEditModal({ open: false, data: null, loading: false })}

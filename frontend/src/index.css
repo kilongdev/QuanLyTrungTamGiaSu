@@ -254,3 +254,29 @@ input:-webkit-autofill:active {
 .scrollbar-custom::-webkit-scrollbar-thumb:hover {
   background: #ffffff;
 }
+
+/* Scrollbars for modal content remain visible against the white surface. */
+.modal-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: #9ca3af #e5e7eb;
+}
+
+.modal-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border: 2px solid #e5e7eb;
+  border-radius: 999px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
