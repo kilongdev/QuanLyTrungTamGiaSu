@@ -133,7 +133,7 @@ export default function Login({
             disabled={loading}
             className="w-full py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 disabled:opacity-60 text-sm"
           >
-            {loading ? 'Đang xử lý...' : 'Đăng nhập'}
+            {loading ? 'Đang xử lý...' : 'login'}
           </button>
         </form>
 
