@@ -35,7 +35,12 @@ function AppContent() {
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     const updateBodyScrollLock = () => {
-      const hasOverlay = document.querySelector(".fixed.inset-0") !== null;
+      const hasOverlay = [...document.querySelectorAll(".fixed.inset-0")].some(
+        (overlay) => {
+          const style = window.getComputedStyle(overlay);
+          return style.display !== "none" && style.visibility !== "hidden";
+        },
+      );
       document.body.style.overflow = hasOverlay ? "hidden" : previousOverflow;
     };
 
